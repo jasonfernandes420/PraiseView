@@ -1,0 +1,12 @@
+com\praiseview\model\ServiceItem$ItemType.class
+com\praiseview\ai\AutoAdvanceService.class
+com\praiseview\model\Theme.class
+com\praiseview\controller\ProjectionController.class
+com\praiseview\db\DatabaseService.class
+com\praiseview\controller\MainController.class
+com\praiseview\model\Verse$VerseType.class
+com\praiseview\controller\SongEditorDialog.class
+com\praiseview\model\Verse.class
+com\praiseview\model\ServiceItem.class
+com\praiseview\PraiseViewApp.class
+com\praiseview\model\Song.class

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.praiseview.controller.MainController">
+    <top>
+        <VBox>
+            <MenuBar>
+                <Menu text="File">
+                    <MenuItem text="New Song" />
+                    <MenuItem text="Import" />
+                    <MenuItem text="Export" />
+                </Menu>
+                <Menu text="Service">
+                    <MenuItem text="New Service" />
+                </Menu>
+            </MenuBar>
+            <ToolBar>
+                <Button text="Send to Projection" onAction="#sendToProjection" />
+                <Button text="Blackout" />
+                <Button text="Clear" />
+            </ToolBar>
+        </VBox>
+    </top>
+    <center>
+        <SplitPane dividerPositions="0.4">
+            <ListView fx:id="songListView" />
+            <VBox>
+                <Label text="Preview" />
+                <TextArea fx:id="previewArea" editable="false" />
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane>
