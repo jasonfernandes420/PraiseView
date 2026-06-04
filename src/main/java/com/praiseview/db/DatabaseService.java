@@ -21,8 +21,10 @@ public class DatabaseService {
                 CREATE TABLE IF NOT EXISTS songs (
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
-                    artist TEXT,
-                    key TEXT,
+                    language TEXT,
+                    category TEXT,
+                    author TEXT,
+                    composer TEXT,
                     copyright TEXT
                 )""");
 
@@ -43,20 +45,24 @@ public class DatabaseService {
 
     public void saveSong(Song song) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            // Save song
-            String sql = "INSERT OR REPLACE INTO songs (id, title, artist, key, copyright) VALUES (?, ?, ?, ?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            // Save/Update Song
+            String songSql = """
+                INSERT OR REPLACE INTO songs (id, title, language, category, author, composer, copyright)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(songSql)) {
                 pstmt.setString(1, song.getId());
                 pstmt.setString(2, song.getTitle());
-                pstmt.setString(3, song.getArtist());
-                pstmt.setString(4, song.getKey());
-                pstmt.setString(5, song.getCopyright());
+                pstmt.setString(3, song.getLanguage());
+                pstmt.setString(4, song.getCategory());
+                pstmt.setString(5, song.getAuthor());
+                pstmt.setString(6, song.getComposer());
+                pstmt.setString(7, song.getCopyright());
                 pstmt.executeUpdate();
             }
 
-            // Save verses
-            String deleteSql = "DELETE FROM verses WHERE song_id = ?";
-            try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
+            // Delete old verses and insert new ones
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM verses WHERE song_id = ?")) {
                 pstmt.setString(1, song.getId());
                 pstmt.executeUpdate();
             }
@@ -83,14 +89,16 @@ public class DatabaseService {
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement()) {
 
-            ResultSet rs = stmt.executeQuery("SELECT * FROM songs");
+            ResultSet rs = stmt.executeQuery("SELECT * FROM songs ORDER BY title");
             while (rs.next()) {
                 Song song = new Song();
                 song.setId(rs.getString("id"));
                 song.setTitle(rs.getString("title"));
-                song.setArtist(rs.getString("artist"));
-                song.setKey(rs.getString("key"));
-                // Load verses for this song (add logic if needed)
+                song.setLanguage(rs.getString("language"));
+                song.setCategory(rs.getString("category"));
+                song.setAuthor(rs.getString("author"));
+                song.setComposer(rs.getString("composer"));
+                // Verses can be loaded separately if needed
                 songs.add(song);
             }
         } catch (Exception e) {
