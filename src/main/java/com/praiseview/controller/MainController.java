@@ -133,6 +133,9 @@ public class MainController {
     }
 
     private void showCurrentItem() {
+        System.out.println(
+    "Projection Controller = "
+            + PraiseViewApp.getProjectionController());
         if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) return;
 
         ServiceItem item = serviceQueue.get(currentQueueIndex);
@@ -143,7 +146,11 @@ public class MainController {
         int verseIndex = song.getVerseOrder().get(currentVersePosition);
         Verse verse = song.getVerses().get(verseIndex);
 
-        // Update Center Live Preview
+        System.out.println(
+    "Showing: "
+            + song.getTitle()
+            + " Position: "
+            + currentVersePosition);// Update Center Live Preview
         updateCenterPreview(song, verse);
 
         // Update Actual Projection (if available)
