@@ -1,56 +1,67 @@
 package com.praiseview;
 
-import com.praiseview.controller.MainController;
+import com.praiseview.controller.ProjectionController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-
 import java.io.IOException;
 
 public class PraiseViewApp extends Application {
 
-    private static Stage primaryStage;
-    private static Stage projectionStage;
+    private static ProjectionController projectionController;
 
     @Override
-    public void start(Stage stage) throws IOException {
-        primaryStage = stage;
-        
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 1400, 900);
-        scene.getStylesheets().add(getClass().getResource("/com/praiseview/view/dark-theme.css").toExternalForm());
-        
-        stage.setTitle("PraiseView - Control");
-        stage.setScene(scene);
-        stage.show();
+    public void start(Stage primaryStage) throws IOException {
+        FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
+        Scene mainScene = new Scene(mainLoader.load(), 1480, 920);
+
+        primaryStage.setTitle("PraiseView - Operator Control");
+        primaryStage.setScene(mainScene);
+        primaryStage.setMinWidth(1300);
+        primaryStage.setMinHeight(780);
+        primaryStage.show();
 
         setupProjectionScreen();
     }
 
     private void setupProjectionScreen() {
         var screens = Screen.getScreens();
+
         if (screens.size() > 1) {
-            Screen projectorScreen = screens.get(1);
-            projectionStage = new Stage();
-            projectionStage.setTitle("PraiseView - Projection");
-            
-            projectionStage.setX(projectorScreen.getBounds().getMinX());
-            projectionStage.setY(projectorScreen.getBounds().getMinY());
-            projectionStage.setWidth(projectorScreen.getBounds().getWidth());
-            projectionStage.setHeight(projectorScreen.getBounds().getHeight());
-            
-            // Will be populated by controller later
-            projectionStage.show();
-            System.out.println("Projection screen activated on second monitor.");
+            Screen projector = screens.get(1);
+
+            try {
+                FXMLLoader projLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/projection-view.fxml"));
+                Scene projScene = new Scene(projLoader.load());
+
+                Stage projStage = new Stage();
+                projStage.setTitle("PraiseView - Live Projection");
+                projStage.setScene(projScene);
+
+                projStage.setX(projector.getBounds().getMinX());
+                projStage.setY(projector.getBounds().getMinY());
+                projStage.setWidth(projector.getBounds().getWidth());
+                projStage.setHeight(projector.getBounds().getHeight());
+                projStage.setFullScreen(true);
+
+                projStage.show();
+
+                projectionController = projLoader.getController();
+                System.out.println("✅ Projection successfully started on second monitor!");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         } else {
-            System.out.println("Single screen mode. Projection will open in separate window.");
+            System.out.println("⚠️ Only one screen found. Projection running in window mode.");
         }
     }
 
-    public static Stage getPrimaryStage() { return primaryStage; }
-    public static Stage getProjectionStage() { return projectionStage; }
+    public static ProjectionController getProjectionController() {
+        return projectionController;
+    }
 
     public static void main(String[] args) {
         launch();
