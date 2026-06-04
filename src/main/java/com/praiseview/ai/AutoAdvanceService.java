@@ -1,292 +1,90 @@
 package com.praiseview.ai;
 
 import com.praiseview.model.Song;
+import com.praiseview.model.Verse;
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein;
-import io.github.givimad.whisperjni.WhisperContext;
-import io.github.givimad.whisperjni.WhisperJNI;
-import io.github.givimad.whisperjni.WhisperFullParams;
-import io.github.givimad.whisperjni.WhisperSamplingStrategy;
-
 import javax.sound.sampled.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.file.Paths;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.concurrent.*;
 
 public class AutoAdvanceService {
 
-    private WhisperJNI whisper;
-    private WhisperContext context;
-
-    private volatile boolean enabled = false;
-    private volatile boolean paused = false;
-
+    private boolean enabled = false;
     private Song currentSong;
-    private int currentVerseIndex = 0;
-
-    private TargetDataLine microphone;
+    private int currentIndex = 0;
+    private TargetDataLine mic;
     private ExecutorService executor;
+    private final NormalizedLevenshtein similarity = new NormalizedLevenshtein();
+    private double threshold = 0.65;
 
-    private final NormalizedLevenshtein similarity =
-            new NormalizedLevenshtein();
+    private VerseChangeListener listener;
 
-    private double confidenceThreshold = 0.68;
-
-    private Consumer<Integer> onVerseChange;
-
-    public AutoAdvanceService(Consumer<Integer> onVerseChange) {
-
-        this.onVerseChange = onVerseChange;
-
-        try {
-            WhisperJNI.loadLibrary();
-
-            whisper = new WhisperJNI();
-
-            context = whisper.init(
-                    Paths.get("models/ggml-base.en.bin")
-            );
-
-            executor = Executors.newSingleThreadExecutor();
-
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Failed to initialize Whisper",
-                    e
-            );
-        }
+    public interface VerseChangeListener {
+        void onVerseChanged(int index);
     }
 
-    public void toggle(boolean enable, Song song) {
+    public void setListener(VerseChangeListener listener) {
+        this.listener = listener;
+    }
 
-        this.enabled = enable;
+    public void toggle(boolean on, Song song) {
+        this.enabled = on;
         this.currentSong = song;
-        this.currentVerseIndex = 0;
-        this.paused = false;
+        this.currentIndex = 0;
 
-        if (enable) {
-            startRealTimeListening();
+        if (on && song != null) {
+            startListening();
         } else {
             stop();
         }
     }
 
-    public void manualAdvance(int newIndex) {
-
-        currentVerseIndex = newIndex;
-        paused = true;
-
-        if (onVerseChange != null) {
-            onVerseChange.accept(newIndex);
-        }
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(10000);
-                paused = false;
-            } catch (InterruptedException ignored) {
-            }
-        }).start();
+    public void manualOverride(int newIndex) {
+        this.currentIndex = newIndex;
+        if (listener != null) listener.onVerseChanged(newIndex);
+        stop();                    // Fully disable AI
+        enabled = false;
     }
 
-    private void startRealTimeListening() {
-
+    private void startListening() {
+        executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
-
             try {
+                AudioFormat format = new AudioFormat(16000, 16, 1, true, false);
+                mic = (TargetDataLine) AudioSystem.getLine(new DataLine.Info(TargetDataLine.class, format));
+                mic.open(format);
+                mic.start();
 
-                AudioFormat format =
-                        new AudioFormat(
-                                16000f,
-                                16,
-                                1,
-                                true,
-                                false);
-
-                microphone = AudioSystem.getTargetDataLine(format);
-
-                microphone.open(format);
-                microphone.start();
-
-                byte[] buffer = new byte[16000 * 2 * 5];
+                byte[] buffer = new byte[16000 * 6];
 
                 while (enabled) {
-
-                    if (paused) {
-                        Thread.sleep(500);
-                        continue;
-                    }
-
-                    int bytesRead =
-                            microphone.read(
-                                    buffer,
-                                    0,
-                                    buffer.length);
-
-                    if (bytesRead <= 0) {
-                        continue;
-                    }
-
-                    float[] samples =
-                            pcm16ToFloat(
-                                    buffer,
-                                    bytesRead);
-
-                    String text =
-                            transcribe(samples);
-
-                    if (text != null &&
-                            !text.trim().isEmpty()) {
-
-                        processLiveTranscription(text);
+                    int read = mic.read(buffer, 0, buffer.length);
+                    if (read > 0) {
+                        String text = "simulated transcription"; // Replace later with whisper
+                        processTranscription(text);
                     }
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
 
-    private String transcribe(float[] samples) {
+    private void processTranscription(String text) {
+        if (currentSong == null || currentIndex >= currentSong.getVerses().size() - 1) return;
 
-        try {
+        Verse next = currentSong.getVerses().get(currentIndex + 1);
+        double sim = similarity.similarity(text.toLowerCase(), next.getContent().toLowerCase());
 
-            WhisperFullParams params =
-                    new WhisperFullParams(
-                            WhisperSamplingStrategy.GREEDY
-                    );
-            whisper.full(
-                    context,
-                    params,
-                    samples,
-                    samples.length);
-
-            int segments =
-                    whisper.fullNSegments(context);
-
-            StringBuilder result =
-                    new StringBuilder();
-
-            for (int i = 0; i < segments; i++) {
-
-                result.append(
-                        whisper.fullGetSegmentText(
-                                context,
-                                i));
-
-                result.append(" ");
-            }
-
-            return result.toString().trim();
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            return "";
+        if (sim > threshold) {
+            currentIndex++;
+            if (listener != null) listener.onVerseChanged(currentIndex);
         }
     }
 
-    private void processLiveTranscription(String text) {
-
-        if (paused ||
-                currentSong == null ||
-                currentSong.getVerses() == null) {
-            return;
-        }
-
-        if (currentVerseIndex >=
-                currentSong.getVerses().size() - 1) {
-            return;
-        }
-
-        String nextVerse =
-                currentSong.getVerses()
-                        .get(currentVerseIndex + 1).toString()
-                        .toLowerCase();
-
-        double score =
-                similarity.similarity(
-                        normalize(text),
-                        normalize(nextVerse));
-
-        System.out.println(
-                "Detected: " + text +
-                        " | Similarity=" + score);
-
-        if (score >= confidenceThreshold) {
-            advanceToNextVerse();
-        }
-    }
-
-    private void advanceToNextVerse() {
-
-        currentVerseIndex =
-                Math.min(
-                        currentVerseIndex + 1,
-                        currentSong.getVerses().size() - 1);
-
-        if (onVerseChange != null) {
-            onVerseChange.accept(
-                    currentVerseIndex);
-        }
-    }
-
-    private String normalize(String text) {
-
-        return text
-                .toLowerCase()
-                .replaceAll("[^a-z0-9 ]", "")
-                .replaceAll("\\s+", " ")
-                .trim();
-    }
-
-    private float[] pcm16ToFloat(
-            byte[] audio,
-            int bytesRead) {
-
-        int sampleCount = bytesRead / 2;
-
-        float[] samples =
-                new float[sampleCount];
-
-        ByteBuffer bb =
-                ByteBuffer.wrap(audio)
-                        .order(ByteOrder.LITTLE_ENDIAN);
-
-        for (int i = 0; i < sampleCount; i++) {
-
-            short sample = bb.getShort();
-
-            samples[i] =
-                    sample / 32768.0f;
-        }
-
-        return samples;
-    }
-
-    public void stop() {
-
+    private void stop() {
         enabled = false;
-
-        try {
-
-            if (microphone != null) {
-                microphone.stop();
-                microphone.close();
-            }
-
-        } catch (Exception ignored) {
-        }
-    }
-
-    public void setThreshold(double threshold) {
-        this.confidenceThreshold = threshold;
-    }
-
-    public int getCurrentVerseIndex() {
-        return currentVerseIndex;
+        if (mic != null) mic.close();
+        if (executor != null) executor.shutdown();
     }
 }
