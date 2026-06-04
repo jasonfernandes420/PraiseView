@@ -3,10 +3,10 @@
     -fx-text-fill: #ffffff;
 }
 
-.label, .button, .menu-bar {
-    -fx-text-fill: #ffffff;
+.label, .text {
+    -fx-text-fill: #eeeeee;
 }
 
-.list-view {
-    -fx-background-color: #3c3f41;
+.list-view .list-cell {
+    -fx-text-fill: #ffffff;
 }
