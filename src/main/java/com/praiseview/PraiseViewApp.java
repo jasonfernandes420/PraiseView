@@ -36,36 +36,54 @@ public class PraiseViewApp extends Application {
     }
 
     private void setupProjectionScreen() {
+
+    try {
+
+        FXMLLoader projLoader =
+                new FXMLLoader(
+                        getClass().getResource(
+                                "/com/praiseview/view/projection-view.fxml"));
+
+        Scene projScene = new Scene(projLoader.load());
+
+        Stage projStage = new Stage();
+        projStage.setTitle("PraiseView - Live Projection");
+        projStage.setScene(projScene);
+
         var screens = Screen.getScreens();
 
         if (screens.size() > 1) {
+
             Screen projector = screens.get(1);
 
-            try {
-                FXMLLoader projLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/projection-view.fxml"));
-                Scene projScene = new Scene(projLoader.load());
+            projStage.setX(projector.getBounds().getMinX());
+            projStage.setY(projector.getBounds().getMinY());
+            projStage.setWidth(projector.getBounds().getWidth());
+            projStage.setHeight(projector.getBounds().getHeight());
 
-                Stage projStage = new Stage();
-                projStage.setTitle("PraiseView - Live Projection");
-                projStage.setScene(projScene);
+            projStage.setFullScreen(true);
 
-                projStage.setX(projector.getBounds().getMinX());
-                projStage.setY(projector.getBounds().getMinY());
-                projStage.setWidth(projector.getBounds().getWidth());
-                projStage.setHeight(projector.getBounds().getHeight());
-                projStage.setFullScreen(true);
+            System.out.println("✅ Projection started on second monitor");
 
-                projStage.show();
-
-                projectionController = projLoader.getController();
-                System.out.println("✅ Projection successfully started on second monitor!");
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         } else {
-            System.out.println("⚠️ Only one screen found. Projection running in window mode.");
+
+            projStage.setWidth(1280);
+            projStage.setHeight(720);
+
+            System.out.println("⚠️ Running projection in window mode");
+
         }
+
+        projStage.show();
+
+        projectionController = projLoader.getController();
+
+        System.out.println(
+                "ProjectionController = " + projectionController);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
     }
 
     public static ProjectionController getProjectionController() {
