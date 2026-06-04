@@ -4,7 +4,9 @@
 <?import javafx.scene.layout.*?>
 
 <?import javafx.scene.text.TextFlow?>
-<StackPane xmlns="http://javafx.com/javafx"
+<StackPane 
+fx:id="projectionRoot"
+xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.praiseview.controller.ProjectionController"
            style="-fx-background-color: #1e1e1e;">
