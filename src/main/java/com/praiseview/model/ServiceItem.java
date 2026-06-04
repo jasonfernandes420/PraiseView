@@ -4,27 +4,33 @@ import java.util.UUID;
 
 public class ServiceItem {
 
-    private String id;
+    private String id = UUID.randomUUID().toString();
+    private String type;           // "SONG", "BIBLE", "ANNOUNCEMENT", "IMAGE"
     private Song song;
-    private Verse currentVerse;
-    private String type; // "SONG", "BIBLE", "ANNOUNCEMENT", "IMAGE"
+   // private BibleVerse bibleVerse; // for future use
+    private String announcementText;
+    private String title;
 
     public ServiceItem(Song song) {
-        this.id = UUID.randomUUID().toString();
-        this.song = song;
         this.type = "SONG";
-        if (!song.getVerses().isEmpty()) {
-            this.currentVerse = song.getVerses().get(0);
-        }
+        this.song = song;
+        this.title = song.getTitle();
     }
 
-    public Song getSong() { return song; }
-    public Verse getCurrentVerse() { return currentVerse; }
-    public void setCurrentVerse(Verse verse) { this.currentVerse = verse; }
+    public ServiceItem(String announcement) {
+        this.type = "ANNOUNCEMENT";
+        this.announcementText = announcement;
+        this.title = "Announcement";
+    }
+
+    public String getId() { return id; }
     public String getType() { return type; }
+    public Song getSong() { return song; }
+    public String getTitle() { return title; }
+    public String getAnnouncementText() { return announcementText; }
 
     @Override
     public String toString() {
-        return song != null ? song.getTitle() : "Unknown Item";
+        return title;
     }
 }

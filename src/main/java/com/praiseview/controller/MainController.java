@@ -4,78 +4,103 @@ import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.ServiceItem;
 import com.praiseview.model.Song;
+import com.praiseview.service.UpdateService;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
+import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainController {
 
-    @FXML private ListView<Song> songListView;
-    @FXML private ListView<ServiceItem> serviceListView;
-    @FXML private TextField searchField;
-    @FXML private TextFlow currentSlidePreview;
-    @FXML private TextFlow nextSlidePreview;
+    // Left Panel - Service Planner
+    @FXML private ListView<ServiceItem> servicePlannerList;
 
-    @FXML private Button addSongButton, projectButton, nextButton, previousButton;
-    @FXML private Button nextVerseButton, prevVerseButton, blackoutButton, clearButton;
+    // Center Panel
+    @FXML private TextArea itemEditorArea;
+    @FXML private StackPane livePreviewPane;
+    @FXML private TextFlow livePreviewText;
+
+    // Right Panel
+    @FXML private TextFlow nextSlidePreview;
+    @FXML private Button blackoutButton, clearButton;
     @FXML private ToggleButton aiToggle;
     @FXML private Slider fontSlider;
 
-    private DatabaseService dbService = new DatabaseService();
-    private ObservableList<Song> allSongs = FXCollections.observableArrayList();
-    private FilteredList<Song> filteredSongs;
-    private List<ServiceItem> serviceQueue = new ArrayList<>();
+    // Bottom Library
+    @FXML private ListView<Song> songLibraryList;
 
-    private int currentQueueIndex = -1;
-    private int currentVersePosition = 0;
+    // Toolbar
+    @FXML private Button newServiceButton, saveServiceButton, loadServiceButton, exportButton;
+
+    private DatabaseService dbService = new DatabaseService();
+    private ObservableList<ServiceItem> serviceQueue = FXCollections.observableArrayList();
+    private UpdateService updateService;
+    private int currentIndex = -1;
 
     @FXML
     public void initialize() {
-        loadSongs();
+        // Load songs into bottom library
+        loadLibrary();
 
-        // Search
-        filteredSongs = new FilteredList<>(allSongs, p -> true);
-        songListView.setItems(filteredSongs);
+        // Setup Service Planner
+        servicePlannerList.setItems(serviceQueue);
 
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            filteredSongs.setPredicate(song -> {
-                if (newVal == null || newVal.isEmpty()) return true;
-                String lower = newVal.toLowerCase();
-                return song.getTitle().toLowerCase().contains(lower) ||
-                        (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
-            });
-        });
-
-        // Drag & Drop from Song Library to Service Queue
+        // Drag & Drop from Library to Planner
         setupDragAndDrop();
 
         // Button Actions
-        addSongButton.setOnAction(e -> openSongEditor(null));
-        projectButton.setOnAction(e -> refreshProjection());
-        nextButton.setOnAction(e -> goToNextSong());
-        previousButton.setOnAction(e -> goToPreviousSong());
-        nextVerseButton.setOnAction(e -> nextVerse());
-        prevVerseButton.setOnAction(e -> previousVerse());
-        blackoutButton.setOnAction(e -> blackoutProjection());
-        clearButton.setOnAction(e -> clearProjection());
+        newServiceButton.setOnAction(e -> newService());
+        saveServiceButton.setOnAction(e -> saveService());
+        blackoutButton.setOnAction(e -> blackout());
+        clearButton.setOnAction(e -> clearScreen());
+
+        // Selection change in service planner
+        servicePlannerList.getSelectionModel().selectedIndexProperty().addListener((obs, old, newVal) -> {
+            if (newVal.intValue() >= 0) {
+                currentIndex = newVal.intValue();
+                updateLivePreview();
+                updateNextPreview();
+            }
+        });
+
+        // Font slider listener
+        fontSlider.valueProperty().addListener((obs, old, newVal) -> {
+            ProjectionController proj = PraiseViewApp.getProjectionController();
+            if (proj != null) {
+                proj.setFontSize(newVal.doubleValue());
+            }
+        });
+
+
+    }
+    // Add this field
+    private javafx.application.HostServices hostServices;
+
+    // Add this setter method
+    public void setHostServices(javafx.application.HostServices hostServices) {
+        this.hostServices = hostServices;
+    }
+    // Add a menu item or button for manual check:
+    @FXML
+    private void checkForUpdates() {
+        updateService.checkForUpdate(true);
     }
 
-    private void loadSongs() {
-        allSongs.setAll(dbService.loadAllSongs());
+    private void loadLibrary() {
+        songLibraryList.getItems().setAll(dbService.loadAllSongs());
     }
 
     private void setupDragAndDrop() {
-        songListView.setOnDragDetected(e -> {
-            Song selected = songListView.getSelectionModel().getSelectedItem();
+        songLibraryList.setOnDragDetected(e -> {
+            Song selected = songLibraryList.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                Dragboard db = songListView.startDragAndDrop(TransferMode.COPY);
+                Dragboard db = songLibraryList.startDragAndDrop(TransferMode.COPY);
                 ClipboardContent content = new ClipboardContent();
                 content.putString(selected.getId());
                 db.setContent(content);
@@ -83,108 +108,70 @@ public class MainController {
             }
         });
 
-        serviceListView.setOnDragOver(e -> {
-            if (e.getDragboard().hasString()) e.acceptTransferModes(TransferMode.COPY);
+        servicePlannerList.setOnDragOver(e -> {
+            if (e.getDragboard().hasString()) {
+                e.acceptTransferModes(TransferMode.COPY);
+            }
         });
 
-        serviceListView.setOnDragDropped(e -> {
-            Song song = songListView.getSelectionModel().getSelectedItem();
+        servicePlannerList.setOnDragDropped(e -> {
+            Song song = songLibraryList.getSelectionModel().getSelectedItem();
             if (song != null) {
                 serviceQueue.add(new ServiceItem(song));
-                serviceListView.getItems().setAll(serviceQueue);
                 e.setDropCompleted(true);
             }
         });
     }
 
-    private void openSongEditor(Song song) {
-        SongEditorDialog dialog = new SongEditorDialog(song);
-        dialog.showAndWait().ifPresent(result -> {
-            dbService.saveSong(result);
-            loadSongs();
-        });
+    private void newService() {
+        serviceQueue.clear();
+        currentIndex = -1;
+        itemEditorArea.clear();
+        System.out.println("New service created");
     }
 
-    private void refreshProjection() {
-        if (serviceQueue.isEmpty()) return;
-        if (currentQueueIndex == -1) currentQueueIndex = 0;
-        currentVersePosition = 0;
-        showCurrentItem();
+    private void saveService() {
+        // TODO: Save to file / database
+        System.out.println("Service saved");
     }
 
-    private void showCurrentItem() {
-        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) return;
+    private void updateLivePreview() {
+        if (currentIndex < 0 || currentIndex >= serviceQueue.size()) return;
 
-        ServiceItem item = serviceQueue.get(currentQueueIndex);
+        ServiceItem item = serviceQueue.get(currentIndex);
+        livePreviewText.getChildren().clear();
+
+        Text title = new Text(item.getSong().getTitle() + "\n\n");
+        title.setStyle("-fx-font-size: 22px; -fx-fill: #ffd700;");
+
+        Text content = new Text(item.getSong().getVerseAtPosition(0).getContent());
+        content.setStyle("-fx-font-size: 18px; -fx-fill: white;");
+
+        livePreviewText.getChildren().addAll(title, content);
+
+        // Send to actual projection
         ProjectionController proj = PraiseViewApp.getProjectionController();
-
         if (proj != null) {
-            proj.showSlide(item.getSong(), currentVersePosition);
+            proj.showSlide(item.getSong(), 0);
         }
-
-        updateSlidePreviews();
     }
 
-    private void updateSlidePreviews() {
-        // Current
-        currentSlidePreview.getChildren().clear();
-        if (currentQueueIndex >= 0 && currentQueueIndex < serviceQueue.size()) {
-            ServiceItem current = serviceQueue.get(currentQueueIndex);
-            Text t1 = new Text(current.getSong().getTitle() + "\n" +
-                    current.getSong().getVerseAtPosition(currentVersePosition).getLabel());
-            t1.setStyle("-fx-fill: white;");
-            currentSlidePreview.getChildren().add(t1);
-        }
-
-        // Next
+    private void updateNextPreview() {
         nextSlidePreview.getChildren().clear();
-        if (currentQueueIndex + 1 < serviceQueue.size()) {
-            ServiceItem next = serviceQueue.get(currentQueueIndex + 1);
-            Text t2 = new Text(next.getSong().getTitle());
-            t2.setStyle("-fx-fill: #aaaaaa;");
-            nextSlidePreview.getChildren().add(t2);
+        if (currentIndex + 1 < serviceQueue.size()) {
+            ServiceItem next = serviceQueue.get(currentIndex + 1);
+            Text text = new Text(next.getSong().getTitle());
+            text.setStyle("-fx-fill: #aaaaaa; -fx-font-size: 16px;");
+            nextSlidePreview.getChildren().add(text);
         }
     }
 
-    private void goToNextSong() {
-        if (currentQueueIndex < serviceQueue.size() - 1) {
-            currentQueueIndex++;
-            currentVersePosition = 0;
-            showCurrentItem();
-        }
-    }
-
-    private void goToPreviousSong() {
-        if (currentQueueIndex > 0) {
-            currentQueueIndex--;
-            currentVersePosition = 0;
-            showCurrentItem();
-        }
-    }
-
-    private void nextVerse() {
-        if (currentQueueIndex >= 0 && currentQueueIndex < serviceQueue.size()) {
-            ServiceItem item = serviceQueue.get(currentQueueIndex);
-            if (currentVersePosition < item.getSong().getVerseOrder().size() - 1) {
-                currentVersePosition++;
-                showCurrentItem();
-            }
-        }
-    }
-
-    private void previousVerse() {
-        if (currentVersePosition > 0) {
-            currentVersePosition--;
-            showCurrentItem();
-        }
-    }
-
-    private void blackoutProjection() {
+    private void blackout() {
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) proj.blackout();
     }
 
-    private void clearProjection() {
+    private void clearScreen() {
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) proj.clear();
     }

@@ -12,19 +12,21 @@
 
     <!-- Top Toolbar -->
     <top>
-        <HBox spacing="12" padding="10" styleClass="toolbar">
+        <HBox spacing="12" styleClass="toolbar">
+            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
             <Button text="New Service" fx:id="newServiceButton"/>
             <Button text="Save Service" fx:id="saveServiceButton"/>
             <Button text="Load Service" fx:id="loadServiceButton"/>
             <Button text="Export PDF" fx:id="exportButton"/>
             <Separator orientation="VERTICAL"/>
-            <Label text="Mass Planner" style="-fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <Label text="Mass Planner" style="-fx-font-weight: bold; -fx-font-size: 16px;"></Label>
         </HBox>
     </top>
 
     <!-- Left: Service Planner -->
     <left>
-        <VBox prefWidth="340" spacing="8" padding="10">
+        <VBox prefWidth="340" spacing="8">
+            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
             <Label text="Service Order" styleClass="header"/>
             <ListView fx:id="servicePlannerList" prefHeight="500"/>
             <Button text="Add Item" fx:id="addItemButton"/>
@@ -35,13 +37,15 @@
     <center>
         <SplitPane dividerPositions="0.55" orientation="VERTICAL">
             <!-- Top: Item Editor -->
-            <VBox spacing="8" padding="12">
+            <VBox spacing="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                 <Label text="Item Editor" styleClass="header"/>
                 <TextArea fx:id="itemEditorArea" promptText="Edit announcement, reading, or lyrics here..." prefHeight="180"/>
             </VBox>
 
             <!-- Bottom: Live Projection Preview -->
-            <VBox spacing="8" padding="12">
+            <VBox spacing="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                 <Label text="Live Projection Preview (What will be shown)" styleClass="header"/>
                 <StackPane fx:id="livePreviewPane" style="-fx-background-color: #1a1a1a;" prefHeight="320">
                     <TextFlow fx:id="livePreviewText" />
@@ -52,7 +56,8 @@
 
     <!-- Right: Next Slide + Controls -->
     <right>
-        <VBox prefWidth="280" spacing="15" padding="12">
+        <VBox prefWidth="280" spacing="15">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
             <Label text="Next Item" styleClass="header"/>
             <StackPane style="-fx-background-color: #252525;" prefHeight="210">
                 <TextFlow fx:id="nextSlidePreview" />

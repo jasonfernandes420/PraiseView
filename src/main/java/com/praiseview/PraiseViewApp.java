@@ -1,6 +1,8 @@
 package com.praiseview;
 
+import com.praiseview.controller.MainController;
 import com.praiseview.controller.ProjectionController;
+import com.praiseview.service.UpdateService;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -11,7 +13,7 @@ import java.io.IOException;
 public class PraiseViewApp extends Application {
 
     private static ProjectionController projectionController;
-
+    private UpdateService updateService;
     @Override
     public void start(Stage primaryStage) throws IOException {
         FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
@@ -23,6 +25,13 @@ public class PraiseViewApp extends Application {
         primaryStage.setMinHeight(780);
         primaryStage.show();
 
+        MainController controller = mainLoader.getController();
+
+        // Pass HostServices to MainController
+        controller.setHostServices(getHostServices());
+
+        // Initialize Update Service
+        updateService = new UpdateService(getHostServices());
         setupProjectionScreen();
     }
 

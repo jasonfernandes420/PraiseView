@@ -4,13 +4,23 @@
 }
 
 .header {
-    -fx-font-size: 18px;
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-text-fill: #ffffff;
 }
 
-.label {
-    -fx-text-fill: #dddddd;
+.toolbar {
+    -fx-background-color: #1e1e1e;
+    -fx-padding: 8px;
+}
+
+.button, .toggle-button {
+    -fx-background-color: #404040;
+    -fx-text-fill: white;
+}
+
+.button:hover {
+    -fx-background-color: #505050;
 }
 
 .list-view {
@@ -18,20 +28,10 @@
 }
 
 .list-cell {
+    -fx-padding: 10px;
     -fx-text-fill: #eeeeee;
-    -fx-padding: 8px;
 }
 
-.toggle-button:selected {
-    -fx-background-color: #00cc00;
-    -fx-text-fill: black;
-}
-
-.button {
-    -fx-background-color: #505050;
-    -fx-text-fill: white;
-}
-
-.button:hover {
-    -fx-background-color: #606060;
+.split-pane > .split-pane-divider {
+    -fx-background-color: #1e1e1e;
 }
