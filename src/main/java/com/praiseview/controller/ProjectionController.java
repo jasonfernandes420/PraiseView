@@ -20,6 +20,13 @@ public class ProjectionController {
     private Song currentSong;
     private int currentPosition = 0;   // Position in custom verseOrder
 
+    @FXML
+public void initialize() {
+
+    System.out.println(
+            "ProjectionController initialized"
+    );
+}
     public void showSlide(Song song, int position) {
         this.currentSong = song;
         this.currentPosition = position;
