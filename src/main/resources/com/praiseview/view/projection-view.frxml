@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.text.TextFlow?>
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.praiseview.controller.ProjectionController"
+           style="-fx-background-color: #1e1e1e;">
+
+    <VBox alignment="CENTER" spacing="30">
+        <Label fx:id="titleLabel" style="-fx-font-size: 42px; -fx-text-fill: white;"/>
+        <TextFlow fx:id="lyricsFlow" textAlignment="CENTER"/>
+    </VBox>
+
+</StackPane>
