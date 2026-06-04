@@ -1,0 +1,37 @@
+.root {
+    -fx-background-color: #2b2b2b;
+    -fx-text-fill: #eeeeee;
+}
+
+.header {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.label {
+    -fx-text-fill: #dddddd;
+}
+
+.list-view {
+    -fx-background-color: #363636;
+}
+
+.list-cell {
+    -fx-text-fill: #eeeeee;
+    -fx-padding: 8px;
+}
+
+.toggle-button:selected {
+    -fx-background-color: #00cc00;
+    -fx-text-fill: black;
+}
+
+.button {
+    -fx-background-color: #505050;
+    -fx-text-fill: white;
+}
+
+.button:hover {
+    -fx-background-color: #606060;
+}
