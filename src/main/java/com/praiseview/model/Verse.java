@@ -18,4 +18,8 @@ public class Verse {
     public String getLabel() { return label; }
     public String getContent() { return content; }
     public VerseType getType() { return type; }
+    @Override
+    public String toString() {
+        return label;        // This is important for ListView display
+    }
 }

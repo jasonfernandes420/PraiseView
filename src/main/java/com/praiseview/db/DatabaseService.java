@@ -17,6 +17,7 @@ public class DatabaseService {
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement()) {
 
+            // Updated songs table with all columns
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS songs (
                     id TEXT PRIMARY KEY,
@@ -38,6 +39,7 @@ public class DatabaseService {
                     position INTEGER,
                     FOREIGN KEY(song_id) REFERENCES songs(id)
                 )""");
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -45,7 +47,8 @@ public class DatabaseService {
 
     public void saveSong(Song song) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            // Save/Update Song
+
+            // Save song
             String songSql = """
                 INSERT OR REPLACE INTO songs (id, title, language, category, author, composer, copyright)
                 VALUES (?, ?, ?, ?, ?, ?, ?)""";
@@ -57,11 +60,11 @@ public class DatabaseService {
                 pstmt.setString(4, song.getCategory());
                 pstmt.setString(5, song.getAuthor());
                 pstmt.setString(6, song.getComposer());
-                pstmt.setString(7, song.getCopyright());
+                pstmt.setString(7, song.getCopyright() != null ? song.getCopyright() : "");
                 pstmt.executeUpdate();
             }
 
-            // Delete old verses and insert new ones
+            // Save verses
             try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM verses WHERE song_id = ?")) {
                 pstmt.setString(1, song.getId());
                 pstmt.executeUpdate();
@@ -79,6 +82,7 @@ public class DatabaseService {
                     pstmt.executeUpdate();
                 }
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -98,7 +102,6 @@ public class DatabaseService {
                 song.setCategory(rs.getString("category"));
                 song.setAuthor(rs.getString("author"));
                 song.setComposer(rs.getString("composer"));
-                // Verses can be loaded separately if needed
                 songs.add(song);
             }
         } catch (Exception e) {

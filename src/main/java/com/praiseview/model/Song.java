@@ -49,15 +49,22 @@ public class Song {
     }
 
     public List<Integer> getVerseOrder() { return verseOrder; }
-    public void setVerseOrder(List<Integer> verseOrder) {
-        this.verseOrder = verseOrder;
-    }
 
     // Get verse at specific position in the custom order
     public Verse getVerseAtPosition(int position) {
         if (position < 0 || position >= verseOrder.size()) return null;
         int verseIndex = verseOrder.get(position);
         return verses.get(verseIndex);
+    }
+    // New method for custom order from dialog
+    public void setVerseOrderFromList(List<Verse> orderedList) {
+        this.verseOrder.clear();
+        for (Verse v : orderedList) {
+            int index = verses.indexOf(v);
+            if (index != -1) {
+                verseOrder.add(index);
+            }
+        }
     }
 
     public int getTotalSlides() {
@@ -70,5 +77,10 @@ public class Song {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return getTitle();   // This fixes class name display
     }
 }

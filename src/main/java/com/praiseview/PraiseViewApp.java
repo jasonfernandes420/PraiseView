@@ -28,7 +28,7 @@ public class PraiseViewApp extends Application {
         MainController controller = mainLoader.getController();
 
         // Pass HostServices to MainController
-        controller.setHostServices(getHostServices());
+        //controller.setHostServices(getHostServices());
 
         // Initialize Update Service
         updateService = new UpdateService(getHostServices());

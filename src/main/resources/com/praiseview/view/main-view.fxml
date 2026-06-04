@@ -10,67 +10,63 @@
             fx:controller="com.praiseview.controller.MainController"
             styleClass="root">
 
-    <!-- Top Toolbar -->
+    <!-- Top Menu -->
     <top>
-        <HBox spacing="12" styleClass="toolbar">
-            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-            <Button text="New Service" fx:id="newServiceButton"/>
-            <Button text="Save Service" fx:id="saveServiceButton"/>
-            <Button text="Load Service" fx:id="loadServiceButton"/>
-            <Button text="Export PDF" fx:id="exportButton"/>
-            <Separator orientation="VERTICAL"/>
-            <Label text="Mass Planner" style="-fx-font-weight: bold; -fx-font-size: 16px;"></Label>
-        </HBox>
+        <MenuBar>
+            <Menu text="File">
+                <MenuItem text="New Service" onAction="#newService"/>
+                <MenuItem text="Save Service" onAction="#saveService"/>
+                <MenuItem text="Import JSON" onAction="#importService"/>
+                <MenuItem text="Export JSON" onAction="#exportService"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="Exit" onAction="#exitApp"/>
+            </Menu>
+            <Menu text="Help">
+                <MenuItem text="About" onAction="#showAbout"/>
+            </Menu>
+        </MenuBar>
     </top>
 
-    <!-- Left: Service Planner -->
+    <!-- Left: Mass Planner / Service Order -->
     <left>
         <VBox prefWidth="340" spacing="8">
             <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-            <Label text="Service Order" styleClass="header"/>
-            <ListView fx:id="servicePlannerList" prefHeight="500"/>
-            <Button text="Add Item" fx:id="addItemButton"/>
+            <Label text="Mass Planner - Service Order" styleClass="header"/>
+            <ListView fx:id="servicePlannerList" prefHeight="520"/>
         </VBox>
     </left>
 
     <!-- Center: Editor + Live Preview -->
     <center>
-        <SplitPane dividerPositions="0.55" orientation="VERTICAL">
-            <!-- Top: Item Editor -->
+        <SplitPane dividerPositions="0.5" orientation="VERTICAL">
+            <!-- Editor -->
             <VBox spacing="8">
                 <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                 <Label text="Item Editor" styleClass="header"/>
-                <TextArea fx:id="itemEditorArea" promptText="Edit announcement, reading, or lyrics here..." prefHeight="180"/>
+                <TextArea fx:id="itemEditorArea" promptText="Type announcement or edit lyrics here..." prefHeight="180"/>
             </VBox>
 
-            <!-- Bottom: Live Projection Preview -->
+            <!-- Live Projection Preview -->
             <VBox spacing="8">
                 <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                <Label text="Live Projection Preview (What will be shown)" styleClass="header"/>
+                <Label text="Live Projection Preview" styleClass="header"/>
                 <StackPane fx:id="livePreviewPane" style="-fx-background-color: #1a1a1a;" prefHeight="320">
-                    <TextFlow fx:id="livePreviewText" />
+                    <TextFlow fx:id="livePreviewText"/>
                 </StackPane>
             </VBox>
         </SplitPane>
     </center>
 
-    <!-- Right: Next Slide + Controls -->
+    <!-- Right: Controls -->
     <right>
-        <VBox prefWidth="280" spacing="15">
+        <VBox prefWidth="280" spacing="12">
             <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-            <Label text="Next Item" styleClass="header"/>
-            <StackPane style="-fx-background-color: #252525;" prefHeight="210">
-                <TextFlow fx:id="nextSlidePreview" />
-            </StackPane>
-
-            <Separator/>
-
-            <Button fx:id="blackoutButton" text="⏹ Blackout Screen" prefWidth="260"/>
+            <Label text="Live Controls" styleClass="header"/>
+            <Button fx:id="projectButton" text="▶ Start Projection" prefWidth="260"/>
+            <Button fx:id="blackoutButton" text="Blackout Screen" prefWidth="260"/>
             <Button fx:id="clearButton" text="Clear Screen" prefWidth="260"/>
-            <ToggleButton fx:id="aiToggle" text="🎤 AI Auto Advance" prefWidth="260"/>
-
-            <Label text="Font Size"/>
-            <Slider fx:id="fontSlider" min="35" max="130" value="65" showTickMarks="true"/>
+            <Button fx:id="nextVerseButton" text="Next Verse →"/>
+            <Button fx:id="prevVerseButton" text="← Previous Verse"/>
         </VBox>
     </right>
 
@@ -78,12 +74,16 @@
     <bottom>
         <TabPane prefHeight="260">
             <Tab text="Songs">
-                <ListView fx:id="songLibraryList"/>
+                <VBox>
+                    <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                    <TextField fx:id="searchField" promptText="Search songs..."/>
+                    <ListView fx:id="songLibraryList" prefHeight="220"/>
+                    <Button fx:id="addSongButton" text="Add New Song"/>
+                </VBox>
             </Tab>
             <Tab text="Bible"/>
             <Tab text="Images"/>
             <Tab text="Videos"/>
-            <Tab text="Announcements"/>
         </TabPane>
     </bottom>
 

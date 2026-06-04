@@ -4,7 +4,9 @@ import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.ServiceItem;
 import com.praiseview.model.Song;
-import com.praiseview.service.UpdateService;
+import com.praiseview.model.Verse;
+import com.praiseview.service.JsonService;
+import com.praiseview.util.AppLogger;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
@@ -13,87 +15,73 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import java.util.ArrayList;
-import java.util.List;
+import javafx.collections.transformation.FilteredList;
 
 public class MainController {
 
-    // Left Panel - Service Planner
+    // Left: Service Planner
     @FXML private ListView<ServiceItem> servicePlannerList;
 
-    // Center Panel
+    // Center: Editor + Preview
     @FXML private TextArea itemEditorArea;
     @FXML private StackPane livePreviewPane;
     @FXML private TextFlow livePreviewText;
 
-    // Right Panel
-    @FXML private TextFlow nextSlidePreview;
-    @FXML private Button blackoutButton, clearButton;
-    @FXML private ToggleButton aiToggle;
-    @FXML private Slider fontSlider;
+    // Right: Controls
+    @FXML private Button projectButton, blackoutButton, clearButton;
+    @FXML private Button nextVerseButton, prevVerseButton;
 
-    // Bottom Library
+    // Bottom: Library
     @FXML private ListView<Song> songLibraryList;
-
-    // Toolbar
-    @FXML private Button newServiceButton, saveServiceButton, loadServiceButton, exportButton;
+    @FXML private TextField searchField;
+    @FXML private Button addSongButton;
 
     private DatabaseService dbService = new DatabaseService();
-    private ObservableList<ServiceItem> serviceQueue = FXCollections.observableArrayList();
-    private UpdateService updateService;
-    private int currentIndex = -1;
+    private JsonService jsonService = new JsonService();
 
+    private ObservableList<Song> allSongs = FXCollections.observableArrayList();
+    private FilteredList<Song> filteredSongs;
+    private ObservableList<ServiceItem> serviceQueue = FXCollections.observableArrayList();
+
+    private int currentQueueIndex = -1;
+    private int currentVersePosition = 0;
     @FXML
     public void initialize() {
-        // Load songs into bottom library
-        loadLibrary();
+        loadSongs();
+
+        // Setup Song Library with Search
+        filteredSongs = new FilteredList<>(allSongs, p -> true);
+        songLibraryList.setItems(filteredSongs);
+
+        searchField.textProperty().addListener((obs, old, newVal) -> {
+            filteredSongs.setPredicate(song -> {
+                if (newVal == null || newVal.isEmpty()) return true;
+                String lower = newVal.toLowerCase();
+                return song.getTitle().toLowerCase().contains(lower) ||
+                        (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
+            });
+        });
 
         // Setup Service Planner
         servicePlannerList.setItems(serviceQueue);
 
-        // Drag & Drop from Library to Planner
+        // Drag & Drop from Library to Service Order
         setupDragAndDrop();
 
         // Button Actions
-        newServiceButton.setOnAction(e -> newService());
-        saveServiceButton.setOnAction(e -> saveService());
+        addSongButton.setOnAction(e -> openSongEditor(null));
+        projectButton.setOnAction(e -> startProjection());
         blackoutButton.setOnAction(e -> blackout());
         clearButton.setOnAction(e -> clearScreen());
 
-        // Selection change in service planner
-        servicePlannerList.getSelectionModel().selectedIndexProperty().addListener((obs, old, newVal) -> {
-            if (newVal.intValue() >= 0) {
-                currentIndex = newVal.intValue();
-                updateLivePreview();
-                updateNextPreview();
-            }
-        });
-
-        // Font slider listener
-        fontSlider.valueProperty().addListener((obs, old, newVal) -> {
-            ProjectionController proj = PraiseViewApp.getProjectionController();
-            if (proj != null) {
-                proj.setFontSize(newVal.doubleValue());
-            }
-        });
-
-
-    }
-    // Add this field
-    private javafx.application.HostServices hostServices;
-
-    // Add this setter method
-    public void setHostServices(javafx.application.HostServices hostServices) {
-        this.hostServices = hostServices;
-    }
-    // Add a menu item or button for manual check:
-    @FXML
-    private void checkForUpdates() {
-        updateService.checkForUpdate(true);
+        // Verse Navigation
+        if (nextVerseButton != null) nextVerseButton.setOnAction(e -> nextVerse());
+        if (prevVerseButton != null) prevVerseButton.setOnAction(e -> previousVerse());
     }
 
-    private void loadLibrary() {
-        songLibraryList.getItems().setAll(dbService.loadAllSongs());
+    private void loadSongs() {
+        allSongs.setAll(dbService.loadAllSongs());
+        songLibraryList.refresh();   // Add this line
     }
 
     private void setupDragAndDrop() {
@@ -118,51 +106,83 @@ public class MainController {
             Song song = songLibraryList.getSelectionModel().getSelectedItem();
             if (song != null) {
                 serviceQueue.add(new ServiceItem(song));
+                servicePlannerList.refresh();
                 e.setDropCompleted(true);
             }
         });
     }
 
-    private void newService() {
-        serviceQueue.clear();
-        currentIndex = -1;
-        itemEditorArea.clear();
-        System.out.println("New service created");
+    private void openSongEditor(Song song) {
+        SongEditorDialog dialog = new SongEditorDialog(song);
+        dialog.showAndWait().ifPresent(result -> {
+            dbService.saveSong(result);
+            loadSongs();
+            AppLogger.log("Song added/updated: " + result.getTitle());
+        });
     }
 
-    private void saveService() {
-        // TODO: Save to file / database
-        System.out.println("Service saved");
+    private void startProjection() {
+        if (serviceQueue.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Please add songs to the service order first.");
+            alert.show();
+            return;
+        }
+        if (currentQueueIndex == -1) currentQueueIndex = 0;
+        currentVersePosition = 0;
+        showCurrentItem();
     }
 
-    private void updateLivePreview() {
-        if (currentIndex < 0 || currentIndex >= serviceQueue.size()) return;
+    private void showCurrentItem() {
+        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) return;
 
-        ServiceItem item = serviceQueue.get(currentIndex);
-        livePreviewText.getChildren().clear();
+        ServiceItem item = serviceQueue.get(currentQueueIndex);
+        Song song = item.getSong();
 
-        Text title = new Text(item.getSong().getTitle() + "\n\n");
-        title.setStyle("-fx-font-size: 22px; -fx-fill: #ffd700;");
+        if (song == null || song.getVerseOrder().isEmpty()) return;
 
-        Text content = new Text(item.getSong().getVerseAtPosition(0).getContent());
-        content.setStyle("-fx-font-size: 18px; -fx-fill: white;");
+        int verseIndex = song.getVerseOrder().get(currentVersePosition);
+        Verse verse = song.getVerses().get(verseIndex);
 
-        livePreviewText.getChildren().addAll(title, content);
+        // Update Center Live Preview
+        updateCenterPreview(song, verse);
 
-        // Send to actual projection
+        // Update Actual Projection (if available)
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.showSlide(item.getSong(), 0);
+            proj.showSlide(song, currentVersePosition);
         }
     }
 
-    private void updateNextPreview() {
-        nextSlidePreview.getChildren().clear();
-        if (currentIndex + 1 < serviceQueue.size()) {
-            ServiceItem next = serviceQueue.get(currentIndex + 1);
-            Text text = new Text(next.getSong().getTitle());
-            text.setStyle("-fx-fill: #aaaaaa; -fx-font-size: 16px;");
-            nextSlidePreview.getChildren().add(text);
+    private void updateCenterPreview(Song song, Verse verse) {
+        livePreviewText.getChildren().clear();
+
+        Text titleText = new Text(song.getTitle() + "\n");
+        titleText.setStyle("-fx-font-size: 22px; -fx-fill: #ffd700;");
+
+        Text verseLabel = new Text(verse.getLabel() + "\n\n");
+        verseLabel.setStyle("-fx-font-size: 16px; -fx-fill: #aaaaaa;");
+
+        Text lyricsText = new Text(verse.getContent());
+        lyricsText.setStyle("-fx-font-size: 18px; -fx-fill: white; -fx-line-spacing: 6px;");
+
+        livePreviewText.getChildren().addAll(titleText, verseLabel, lyricsText);
+    }
+    @FXML
+    private void nextVerse() {
+        if (currentQueueIndex >= 0 && currentQueueIndex < serviceQueue.size()) {
+            ServiceItem item = serviceQueue.get(currentQueueIndex);
+            if (currentVersePosition < item.getSong().getVerseOrder().size() - 1) {
+                currentVersePosition++;
+                showCurrentItem();
+            }
+        }
+    }
+
+    @FXML
+    private void previousVerse() {
+        if (currentVersePosition > 0) {
+            currentVersePosition--;
+            showCurrentItem();
         }
     }
 
@@ -174,5 +194,34 @@ public class MainController {
     private void clearScreen() {
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) proj.clear();
+    }
+
+    // Menu Actions
+    @FXML private void newService() {
+        serviceQueue.clear();
+        servicePlannerList.getItems().clear();
+        AppLogger.log("New service created");
+    }
+
+    @FXML private void saveService() {
+        AppLogger.log("Save service requested");
+        System.out.println("Service saved (placeholder)");
+    }
+
+    @FXML private void importService() {
+        System.out.println("Import JSON - to be implemented");
+    }
+
+    @FXML private void exportService() {
+        System.out.println("Export JSON - to be implemented");
+    }
+
+    @FXML private void exitApp() {
+        AppLogger.log("Application exited");
+        System.exit(0);
+    }
+
+    @FXML private void showAbout() {
+        System.out.println("About clicked");
     }
 }
