@@ -5,71 +5,81 @@
 <?import javafx.scene.layout.*?>
 
 <?import javafx.scene.text.TextFlow?>
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.praiseview.controller.MainController"
-      spacing="12" styleClass="root">
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.praiseview.controller.MainController"
+            styleClass="root">
 
-    <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+    <!-- Top Toolbar -->
+    <top>
+        <HBox spacing="12" padding="10" styleClass="toolbar">
+            <Button text="New Service" fx:id="newServiceButton"/>
+            <Button text="Save Service" fx:id="saveServiceButton"/>
+            <Button text="Load Service" fx:id="loadServiceButton"/>
+            <Button text="Export PDF" fx:id="exportButton"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="Mass Planner" style="-fx-font-weight: bold; -fx-font-size: 16px;"/>
+        </HBox>
+    </top>
 
-    <HBox spacing="20">
-        <!-- Song Library -->
-        <VBox prefWidth="340">
-            <Label text="Song Library" styleClass="header"/>
-            <TextField fx:id="searchField" promptText="Search songs..."/>
-            <ListView fx:id="songListView" prefHeight="480"/>
-            <Button fx:id="addSongButton" text="Add New Song" prefWidth="340"/>
+    <!-- Left: Service Planner -->
+    <left>
+        <VBox prefWidth="340" spacing="8" padding="10">
+            <Label text="Service Order" styleClass="header"/>
+            <ListView fx:id="servicePlannerList" prefHeight="500"/>
+            <Button text="Add Item" fx:id="addItemButton"/>
         </VBox>
+    </left>
 
-        <!-- Service Queue -->
-        <VBox prefWidth="340">
-            <Label text="Service Queue" styleClass="header"/>
-            <ListView fx:id="serviceListView" prefHeight="480"/>
-        </VBox>
+    <!-- Center: Editor + Live Preview -->
+    <center>
+        <SplitPane dividerPositions="0.55" orientation="VERTICAL">
+            <!-- Top: Item Editor -->
+            <VBox spacing="8" padding="12">
+                <Label text="Item Editor" styleClass="header"/>
+                <TextArea fx:id="itemEditorArea" promptText="Edit announcement, reading, or lyrics here..." prefHeight="180"/>
+            </VBox>
 
-        <!-- Live Controls -->
-        <VBox spacing="15" prefWidth="520">
-            <Label text="Live Projection Controls" styleClass="header"/>
+            <!-- Bottom: Live Projection Preview -->
+            <VBox spacing="8" padding="12">
+                <Label text="Live Projection Preview (What will be shown)" styleClass="header"/>
+                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #1a1a1a;" prefHeight="320">
+                    <TextFlow fx:id="livePreviewText" />
+                </StackPane>
+            </VBox>
+        </SplitPane>
+    </center>
 
-            <!-- Current & Next Preview -->
-            <HBox spacing="15">
-                <VBox prefWidth="230">
-                    <Label text="Current Slide" style="-fx-font-weight: bold;"/>
-                    <ScrollPane prefHeight="160">
-                        <TextFlow fx:id="currentSlidePreview" style="-fx-background-color: #1e1e1e; -fx-padding: 12;"/>
-                    </ScrollPane>
-                </VBox>
-                <VBox prefWidth="230">
-                    <Label text="Next Slide" style="-fx-font-weight: bold;"/>
-                    <ScrollPane prefHeight="160">
-                        <TextFlow fx:id="nextSlidePreview" style="-fx-background-color: #1e1e1e; -fx-padding: 12;"/>
-                    </ScrollPane>
-                </VBox>
-            </HBox>
+    <!-- Right: Next Slide + Controls -->
+    <right>
+        <VBox prefWidth="280" spacing="15" padding="12">
+            <Label text="Next Item" styleClass="header"/>
+            <StackPane style="-fx-background-color: #252525;" prefHeight="210">
+                <TextFlow fx:id="nextSlidePreview" />
+            </StackPane>
 
-            <!-- Verse Navigation -->
-            <HBox spacing="8">
-                <Button fx:id="prevVerseButton" text="← Previous Verse" prefWidth="165"/>
-                <Button fx:id="nextVerseButton" text="Next Verse →" prefWidth="165"/>
-            </HBox>
+            <Separator/>
 
-            <!-- Song / Service Navigation -->
-            <HBox spacing="8">
-                <Button fx:id="previousButton" text="← Previous Song" prefWidth="165"/>
-                <Button fx:id="nextButton" text="Next Song →" prefWidth="165"/>
-            </HBox>
-
-            <!-- Other Controls -->
-            <HBox spacing="10">
-                <ToggleButton fx:id="aiToggle" text="🎤 AI Auto Advance" prefWidth="160"/>
-                <Button fx:id="blackoutButton" text="Blackout" prefWidth="110"/>
-                <Button fx:id="clearButton" text="Clear" prefWidth="110"/>
-            </HBox>
+            <Button fx:id="blackoutButton" text="⏹ Blackout Screen" prefWidth="260"/>
+            <Button fx:id="clearButton" text="Clear Screen" prefWidth="260"/>
+            <ToggleButton fx:id="aiToggle" text="🎤 AI Auto Advance" prefWidth="260"/>
 
             <Label text="Font Size"/>
-            <Slider fx:id="fontSlider" min="30" max="130" value="62" showTickMarks="true" showTickLabels="true"/>
-
-            <Button fx:id="projectButton" text="▶ Start / Refresh Projection" prefWidth="510" style="-fx-font-size: 15px;"/>
+            <Slider fx:id="fontSlider" min="35" max="130" value="65" showTickMarks="true"/>
         </VBox>
-    </HBox>
-</VBox>
+    </right>
+
+    <!-- Bottom: Library -->
+    <bottom>
+        <TabPane prefHeight="260">
+            <Tab text="Songs">
+                <ListView fx:id="songLibraryList"/>
+            </Tab>
+            <Tab text="Bible"/>
+            <Tab text="Images"/>
+            <Tab text="Videos"/>
+            <Tab text="Announcements"/>
+        </TabPane>
+    </bottom>
+
+</BorderPane>
