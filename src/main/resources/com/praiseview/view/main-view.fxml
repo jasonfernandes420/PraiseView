@@ -1,35 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.praiseview.controller.MainController">
-    <top>
-        <VBox>
-            <MenuBar>
-                <Menu text="File">
-                    <MenuItem text="New Song" />
-                    <MenuItem text="Import" />
-                    <MenuItem text="Export" />
-                </Menu>
-                <Menu text="Service">
-                    <MenuItem text="New Service" />
-                </Menu>
-            </MenuBar>
-            <ToolBar>
-                <Button text="Send to Projection" onAction="#sendToProjection" />
-                <Button text="Blackout" />
-                <Button text="Clear" />
-            </ToolBar>
+<?import javafx.scene.text.TextFlow?>
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.praiseview.controller.MainController"
+      spacing="12" styleClass="root">
+
+    <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+
+    <HBox spacing="20">
+        <!-- Song Library -->
+        <VBox prefWidth="340">
+            <Label text="Song Library" styleClass="header"/>
+            <TextField fx:id="searchField" promptText="Search songs..."/>
+            <ListView fx:id="songListView" prefHeight="480"/>
+            <Button fx:id="addSongButton" text="Add New Song" prefWidth="340"/>
         </VBox>
-    </top>
-    <center>
-        <SplitPane dividerPositions="0.4">
-            <ListView fx:id="songListView" />
-            <VBox>
-                <Label text="Preview" />
-                <TextArea fx:id="previewArea" editable="false" />
-            </VBox>
-        </SplitPane>
-    </center>
-</BorderPane>
+
+        <!-- Service Queue -->
+        <VBox prefWidth="340">
+            <Label text="Service Queue" styleClass="header"/>
+            <ListView fx:id="serviceListView" prefHeight="480"/>
+        </VBox>
+
+        <!-- Live Controls -->
+        <VBox spacing="15" prefWidth="520">
+            <Label text="Live Projection Controls" styleClass="header"/>
+
+            <!-- Current & Next Preview -->
+            <HBox spacing="15">
+                <VBox prefWidth="230">
+                    <Label text="Current Slide" style="-fx-font-weight: bold;"/>
+                    <ScrollPane prefHeight="160">
+                        <TextFlow fx:id="currentSlidePreview" style="-fx-background-color: #1e1e1e; -fx-padding: 12;"/>
+                    </ScrollPane>
+                </VBox>
+                <VBox prefWidth="230">
+                    <Label text="Next Slide" style="-fx-font-weight: bold;"/>
+                    <ScrollPane prefHeight="160">
+                        <TextFlow fx:id="nextSlidePreview" style="-fx-background-color: #1e1e1e; -fx-padding: 12;"/>
+                    </ScrollPane>
+                </VBox>
+            </HBox>
+
+            <!-- Verse Navigation -->
+            <HBox spacing="8">
+                <Button fx:id="prevVerseButton" text="← Previous Verse" prefWidth="165"/>
+                <Button fx:id="nextVerseButton" text="Next Verse →" prefWidth="165"/>
+            </HBox>
+
+            <!-- Song / Service Navigation -->
+            <HBox spacing="8">
+                <Button fx:id="previousButton" text="← Previous Song" prefWidth="165"/>
+                <Button fx:id="nextButton" text="Next Song →" prefWidth="165"/>
+            </HBox>
+
+            <!-- Other Controls -->
+            <HBox spacing="10">
+                <ToggleButton fx:id="aiToggle" text="🎤 AI Auto Advance" prefWidth="160"/>
+                <Button fx:id="blackoutButton" text="Blackout" prefWidth="110"/>
+                <Button fx:id="clearButton" text="Clear" prefWidth="110"/>
+            </HBox>
+
+            <Label text="Font Size"/>
+            <Slider fx:id="fontSlider" min="30" max="130" value="62" showTickMarks="true" showTickLabels="true"/>
+
+            <Button fx:id="projectButton" text="▶ Start / Refresh Projection" prefWidth="510" style="-fx-font-size: 15px;"/>
+        </VBox>
+    </HBox>
+</VBox>
