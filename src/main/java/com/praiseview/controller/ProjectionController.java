@@ -1,7 +1,6 @@
 package com.praiseview.controller;
 
 import com.praiseview.model.Song;
-import com.praiseview.model.Theme;
 import com.praiseview.model.Verse;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -14,54 +13,64 @@ import javafx.scene.text.TextFlow;
 public class ProjectionController {
 
     @FXML private StackPane projectionRoot;
-    @FXML private TextFlow lyricsDisplay;
-    @FXML private Label songTitleLabel;
+    @FXML private Label titleLabel;
+    @FXML private TextFlow lyricsFlow;
 
-    private Theme currentTheme = new Theme();
-    private double currentFontSize = 52.0;
+    private double currentFontSize = 62.0;
+    private Song currentSong;
+    private int currentPosition = 0;   // Position in verseOrder list
 
-    public void displaySong(Song song, Verse currentVerse) {
-        if (projectionRoot != null) {
-            projectionRoot.setStyle("-fx-background-color: " + toRgbString(currentTheme.getBackgroundColor()) + ";");
-        }
+    public void showSlide(Song song, int position) {
+        this.currentSong = song;
+        this.currentPosition = position;
 
-        if (songTitleLabel != null) {
-            songTitleLabel.setText(song.getTitle());
-            songTitleLabel.setStyle("-fx-text-fill: " + toRgbString(currentTheme.getTextColor()) + ";");
-        }
+        if (song == null || song.getVerseOrder().isEmpty()) return;
 
-        if (lyricsDisplay != null) {
-            lyricsDisplay.getChildren().clear();
-            Text verseText = new Text(currentVerse.getContent());
-            verseText.setStyle("-fx-font-size: " + currentFontSize + "px; -fx-font-family: '" + currentTheme.getFontFamily() + "';");
-            verseText.setFill(currentTheme.getTextColor());
-            lyricsDisplay.getChildren().add(verseText);
-            lyricsDisplay.setTextAlignment(TextAlignment.CENTER);
+        int verseIndex = song.getVerseOrder().get(position);
+        Verse verse = song.getVerses().get(verseIndex);
+
+        projectionRoot.setStyle("-fx-background-color: #0f0f0f;");
+
+        titleLabel.setText(song.getTitle() + " — " + verse.getLabel());
+        titleLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-size: 38px;");
+
+        lyricsFlow.getChildren().clear();
+        Text lyricsText = new Text(verse.getContent());
+        lyricsText.setFill(Color.WHITE);
+        lyricsText.setStyle("-fx-font-size: " + currentFontSize + "px;");
+        lyricsFlow.getChildren().add(lyricsText);
+        lyricsFlow.setTextAlignment(TextAlignment.CENTER);
+    }
+
+    public void nextVerse() {
+        if (currentSong == null) return;
+        if (currentPosition < currentSong.getVerseOrder().size() - 1) {
+            currentPosition++;
+            showSlide(currentSong, currentPosition);
         }
     }
 
-    public void clearScreen() {
-        if (lyricsDisplay != null) lyricsDisplay.getChildren().clear();
-        if (songTitleLabel != null) songTitleLabel.setText("");
+    public void previousVerse() {
+        if (currentSong == null) return;
+        if (currentPosition > 0) {
+            currentPosition--;
+            showSlide(currentSong, currentPosition);
+        }
     }
 
     public void blackout() {
-        if (projectionRoot != null) {
-            projectionRoot.setStyle("-fx-background-color: black;");
-        }
-        clearScreen();
+        projectionRoot.setStyle("-fx-background-color: black;");
+        lyricsFlow.getChildren().clear();
+        titleLabel.setText("");
     }
 
-    public void increaseFont() {
-        currentFontSize += 4;
+    public void clear() {
+        lyricsFlow.getChildren().clear();
+        titleLabel.setText("");
     }
 
-    public void decreaseFont() {
-        currentFontSize = Math.max(28, currentFontSize - 4);
-    }
-
-    private String toRgbString(Color color) {
-        return String.format("rgb(%d,%d,%d)", 
-            (int)(color.getRed()*255), (int)(color.getGreen()*255), (int)(color.getBlue()*255));
+    public void setFontSize(double size) {
+        currentFontSize = size;
+        // Re-render if needed
     }
 }
