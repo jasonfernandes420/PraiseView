@@ -1,21 +1,30 @@
 package com.praiseview.model;
 
+import java.util.UUID;
+
 public class ServiceItem {
+
     private String id;
-    private ItemType type;
     private Song song;
-    private String title;
-    private String content; // for non-song items
+    private Verse currentVerse;
+    private String type; // "SONG", "BIBLE", "ANNOUNCEMENT", "IMAGE"
 
-    public enum ItemType { SONG, BIBLE_VERSE, IMAGE, VIDEO, OTHER }
+    public ServiceItem(Song song) {
+        this.id = UUID.randomUUID().toString();
+        this.song = song;
+        this.type = "SONG";
+        if (!song.getVerses().isEmpty()) {
+            this.currentVerse = song.getVerses().get(0);
+        }
+    }
 
-    // Getters and Setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-    public ItemType getType() { return type; }
-    public void setType(ItemType type) { this.type = type; }
     public Song getSong() { return song; }
-    public void setSong(Song song) { this.song = song; }
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public Verse getCurrentVerse() { return currentVerse; }
+    public void setCurrentVerse(Verse verse) { this.currentVerse = verse; }
+    public String getType() { return type; }
+
+    @Override
+    public String toString() {
+        return song != null ? song.getTitle() : "Unknown Item";
+    }
 }
