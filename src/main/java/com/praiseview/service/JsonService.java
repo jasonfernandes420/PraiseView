@@ -1,6 +1,7 @@
 package com.praiseview.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.praiseview.model.ServiceItem;
 import com.praiseview.model.Song;
 import java.io.File;
 import java.util.List;
@@ -24,6 +25,27 @@ public class JsonService {
                     mapper.getTypeFactory().constructCollectionType(List.class, Song.class));
             System.out.println("✅ Imported " + songs.size() + " songs");
             return songs;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void saveService(List<ServiceItem> serviceQueue, File file) {
+        try {
+            mapper.writerWithDefaultPrettyPrinter().writeValue(file, serviceQueue);
+            System.out.println("✅ Service saved successfully to: " + file.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<ServiceItem> loadService(File file) {
+        try {
+            List<ServiceItem> service = mapper.readValue(file,
+                    mapper.getTypeFactory().constructCollectionType(List.class, ServiceItem.class));
+            System.out.println("✅ Loaded service with " + service.size() + " items");
+            return service;
         } catch (Exception e) {
             e.printStackTrace();
             return null;

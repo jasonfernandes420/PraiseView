@@ -8,7 +8,8 @@
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.praiseview.controller.MainController"
-            styleClass="root">
+            styleClass="root"
+            prefWidth="1480" prefHeight="920">
 
     <!-- Top Menu -->
     <top>
@@ -16,7 +17,7 @@
             <Menu text="File">
                 <MenuItem text="New Service" onAction="#newService"/>
                 <MenuItem text="Save Service" onAction="#saveService"/>
-                <MenuItem text="Import JSON" onAction="#importService"/>
+                <MenuItem text="Load Service" onAction="#importService"/>
                 <MenuItem text="Export JSON" onAction="#exportService"/>
                 <SeparatorMenuItem/>
                 <MenuItem text="Exit" onAction="#exitApp"/>
@@ -29,10 +30,10 @@
 
     <!-- Left: Mass Planner / Service Order -->
     <left>
-        <VBox prefWidth="340" spacing="8">
+        <VBox prefWidth="340" spacing="8" VBox.vgrow="ALWAYS">
             <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
             <Label text="Mass Planner - Service Order" styleClass="header"/>
-            <ListView fx:id="servicePlannerList" prefHeight="520"/>
+            <ListView fx:id="servicePlannerList" VBox.vgrow="ALWAYS"/>
         </VBox>
     </left>
 
@@ -47,26 +48,66 @@
             </VBox>
 
             <!-- Live Projection Preview -->
-            <VBox spacing="8">
-                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                <Label text="Live Projection Preview" styleClass="header"/>
-                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #1a1a1a;" prefHeight="320">
-                    <TextFlow fx:id="livePreviewText"/>
-                </StackPane>
-            </VBox>
+            <SplitPane dividerPositions="0.5" orientation="HORIZONTAL">
+                <!-- Stage View -->
+                <VBox spacing="8">
+                    <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                    <Label text="Stage View (Current)" styleClass="header"/>
+                    <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" prefHeight="280" prefWidth="500">
+                        <VBox alignment="CENTER" spacing="20">
+                            <Label fx:id="stageViewTitle" style="-fx-text-fill: #ffd700; -fx-font-size: 24px;"/>
+                            <TextFlow fx:id="livePreviewText" textAlignment="CENTER"/>
+                        </VBox>
+                    </StackPane>
+                </VBox>
+
+                <!-- Next Item Preview -->
+                <VBox spacing="8">
+                    <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                    <Label text="Preview Window" styleClass="header"/>
+                    <StackPane fx:id="nextItemPreviewPane" style="-fx-background-color: #0f0f0f;" prefHeight="280" prefWidth="500">
+                        <VBox alignment="CENTER" spacing="20">
+                            <Label fx:id="nextItemTitle" style="-fx-text-fill: #ffd700; -fx-font-size: 24px;"/>
+                            <TextFlow fx:id="nextItemPreviewText" textAlignment="CENTER"/>
+                        </VBox>
+                    </StackPane>
+                </VBox>
+            </SplitPane>
         </SplitPane>
     </center>
 
     <!-- Right: Controls -->
     <right>
-        <VBox prefWidth="280" spacing="12">
-            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+        <VBox prefWidth="280" spacing="12" VBox.vgrow="ALWAYS">
+            <padding>
+                <Insets top="12" right="12" bottom="12" left="12"/>
+            </padding>
+
             <Label text="Live Controls" styleClass="header"/>
+
             <Button fx:id="projectButton" text="▶ Start Projection" prefWidth="260"/>
             <Button fx:id="blackoutButton" text="Blackout Screen" prefWidth="260"/>
             <Button fx:id="clearButton" text="Clear Screen" prefWidth="260"/>
-            <Button fx:id="nextVerseButton" text="Next Verse →"/>
-            <Button fx:id="prevVerseButton" text="← Previous Verse"/>
+
+            <HBox spacing="10">
+                <Button fx:id="prevVerseButton"
+                        text="← Previous Verse"
+                        HBox.hgrow="ALWAYS"
+                        maxWidth="Infinity"/>
+
+                <Button fx:id="nextVerseButton"
+                        text="Next Verse →"
+                        HBox.hgrow="ALWAYS"
+                        maxWidth="Infinity"/>
+            </HBox>
+
+            <Separator/>
+
+            <Label text="Current Song Verses" styleClass="header"/>
+
+            <ListView fx:id="currentSongVersesList"
+                      VBox.vgrow="ALWAYS"
+                      prefHeight="200"/>
         </VBox>
     </right>
 
@@ -78,7 +119,10 @@
                     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
                     <TextField fx:id="searchField" promptText="Search songs..."/>
                     <ListView fx:id="songLibraryList" prefHeight="220"/>
-                    <Button fx:id="addSongButton" text="Add New Song"/>
+                    <HBox spacing="8">
+                        <Button fx:id="addSongButton" text="➕ Add New Song" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="editSongButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS"/>
+                    </HBox>
                 </VBox>
             </Tab>
             <Tab text="Bible"/>

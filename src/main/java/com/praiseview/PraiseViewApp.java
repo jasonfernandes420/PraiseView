@@ -26,6 +26,8 @@ public class PraiseViewApp extends Application {
         primaryStage.show();
 
         MainController controller = mainLoader.getController();
+        controller.setScene(mainScene);
+        controller.setupSceneKeyHandler();
 
         // Pass HostServices to MainController
         //controller.setHostServices(getHostServices());

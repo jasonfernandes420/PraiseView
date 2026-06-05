@@ -43,15 +43,38 @@ public class SongEditorDialog extends Dialog<Song> {
 
         TextArea lyricsArea = new TextArea();
         lyricsArea.setPromptText("Paste lyrics here...");
-        lyricsArea.setPrefHeight(220);        // ← Made bigger
+        lyricsArea.setPrefHeight(100);        // Reduced for edit area
+
+        TextArea editVerseArea = new TextArea();
+        editVerseArea.setPromptText("Select a verse to edit...");
+        editVerseArea.setWrapText(true);
+        editVerseArea.setPrefHeight(150);
 
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("VERSE", "CHORUS", "BRIDGE", "PRE_CHORUS", "CODA");
         typeCombo.setValue("VERSE");
 
         Button addVerseBtn = new Button("➕ Add Verse");
+        Button updateVerseBtn = new Button("✏ Update Selected Verse");
 
         ListView<Verse> availableList = new ListView<>();
+        
+        // Initialize typeCounter from existing song
+        if (songToEdit != null && !songToEdit.getVerses().isEmpty()) {
+            availableList.getItems().addAll(songToEdit.getVerses());
+            for (Verse v : songToEdit.getVerses()) {
+                String typeStr = v.getType().name();
+                String[] parts = v.getLabel().split(" ");
+                if (parts.length > 0) {
+                    try {
+                        int count = Integer.parseInt(parts[parts.length - 1]);
+                        typeCounter.put(typeStr, count);
+                    } catch (NumberFormatException e) {
+                        typeCounter.put(typeStr, typeCounter.getOrDefault(typeStr, 0) + 1);
+                    }
+                }
+            }
+        }
 
         addVerseBtn.setOnAction(e -> {
             if (!lyricsArea.getText().trim().isEmpty()) {
@@ -64,6 +87,23 @@ public class SongEditorDialog extends Dialog<Song> {
                 Verse verse = new Verse(label, lyricsArea.getText().trim(), Verse.VerseType.valueOf(type));
                 availableList.getItems().add(verse);
                 lyricsArea.clear();
+                editVerseArea.clear();
+            }
+        });
+
+        // Handle verse selection for editing
+        availableList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                editVerseArea.setText(newVal.getContent());
+            }
+        });
+
+        // Update verse button
+        updateVerseBtn.setOnAction(e -> {
+            Verse selected = availableList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                selected.setContent(editVerseArea.getText());
+                availableList.refresh();
             }
         });
 
@@ -72,6 +112,9 @@ public class SongEditorDialog extends Dialog<Song> {
                 typeCombo,
                 lyricsArea,
                 addVerseBtn,
+                new Label("Edit Verse Content"),
+                editVerseArea,
+                updateVerseBtn,
                 availableList
         );
 
@@ -80,6 +123,15 @@ public class SongEditorDialog extends Dialog<Song> {
         orderBox.setPrefWidth(340);
 
         ListView<Verse> orderList = new ListView<>();
+        
+        // Load existing verse order
+        if (songToEdit != null && !songToEdit.getVerseOrder().isEmpty()) {
+            for (int idx : songToEdit.getVerseOrder()) {
+                if (idx < songToEdit.getVerses().size()) {
+                    orderList.getItems().add(songToEdit.getVerses().get(idx));
+                }
+            }
+        }
 
         Button addToOrderBtn = new Button("→ Add to Performance Order");
         addToOrderBtn.setOnAction(e -> {

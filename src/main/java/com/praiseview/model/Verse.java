@@ -1,5 +1,12 @@
 package com.praiseview.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Verse {
     private String label;
     private String content;
@@ -9,14 +16,9 @@ public class Verse {
         VERSE, CHORUS, BRIDGE, CODA, PRECHORUS, OTHER
     }
 
-    public Verse(String label, String content, VerseType type) {
-        this.label = label;
-        this.content = content;
-        this.type = type;
-    }
-
     public String getLabel() { return label; }
     public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
     public VerseType getType() { return type; }
     @Override
     public String toString() {

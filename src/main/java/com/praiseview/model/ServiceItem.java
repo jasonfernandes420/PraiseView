@@ -1,7 +1,14 @@
 package com.praiseview.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ServiceItem {
 
     private String id = UUID.randomUUID().toString();

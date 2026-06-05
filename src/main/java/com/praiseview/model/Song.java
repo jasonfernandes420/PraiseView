@@ -1,9 +1,18 @@
 package com.praiseview.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Song {
 
     private String id = UUID.randomUUID().toString();
@@ -65,10 +74,6 @@ public class Song {
                 verseOrder.add(index);
             }
         }
-    }
-
-    public int getTotalSlides() {
-        return verseOrder.size();
     }
 
     public void addVerse(Verse verse) {

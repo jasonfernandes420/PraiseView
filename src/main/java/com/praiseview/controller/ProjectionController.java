@@ -42,8 +42,8 @@ public void initialize() {
         // Background
         projectionRoot.setStyle("-fx-background-color: #0f0f0f;");
 
-        // Title
-        titleLabel.setText(song.getTitle() + " — " + verse.getLabel());
+        // Title (just song title, no verse label)
+        titleLabel.setText(song.getTitle());
         titleLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-size: 42px;");
 
         // Lyrics
