@@ -26,7 +26,8 @@ public class DatabaseService {
                     category TEXT,
                     author TEXT,
                     composer TEXT,
-                    copyright TEXT
+                    copyright TEXT,
+                    verse_order TEXT
                 )""");
 
             stmt.execute("""
@@ -48,10 +49,14 @@ public class DatabaseService {
     public void saveSong(Song song) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
 
+            // Convert verseOrder to comma-separated string
+            String verseOrderStr = song.getVerseOrder().isEmpty() ? "" : 
+                String.join(",", song.getVerseOrder().stream().map(String::valueOf).toArray(String[]::new));
+
             // Save song
             String songSql = """
-                INSERT OR REPLACE INTO songs (id, title, language, category, author, composer, copyright)
-                VALUES (?, ?, ?, ?, ?, ?, ?)""";
+                INSERT OR REPLACE INTO songs (id, title, language, category, author, composer, copyright, verse_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""";
 
             try (PreparedStatement pstmt = conn.prepareStatement(songSql)) {
                 pstmt.setString(1, song.getId());
@@ -61,6 +66,7 @@ public class DatabaseService {
                 pstmt.setString(5, song.getAuthor());
                 pstmt.setString(6, song.getComposer());
                 pstmt.setString(7, song.getCopyright() != null ? song.getCopyright() : "");
+                pstmt.setString(8, verseOrderStr);
                 pstmt.executeUpdate();
             }
 
@@ -102,6 +108,34 @@ public class DatabaseService {
                 song.setCategory(rs.getString("category"));
                 song.setAuthor(rs.getString("author"));
                 song.setComposer(rs.getString("composer"));
+                
+                // Load verses for this song
+                List<Verse> verses = new ArrayList<>();
+                try (Statement verseStmt = conn.createStatement()) {
+                    ResultSet verseRs = verseStmt.executeQuery(
+                        "SELECT label, content, type, position FROM verses WHERE song_id = '" + song.getId() + "' ORDER BY position");
+                    while (verseRs.next()) {
+                        Verse verse = new Verse(
+                            verseRs.getString("label"),
+                            verseRs.getString("content"),
+                            Verse.VerseType.valueOf(verseRs.getString("type"))
+                        );
+                        verses.add(verse);
+                    }
+                }
+                song.setVerses(verses);
+                
+                // Load verse order
+                String verseOrderStr = rs.getString("verse_order");
+                if (verseOrderStr != null && !verseOrderStr.isEmpty()) {
+                    List<Integer> verseOrder = new ArrayList<>();
+                    for (String num : verseOrderStr.split(",")) {
+                        verseOrder.add(Integer.parseInt(num));
+                    }
+                    song.getVerseOrder().clear();
+                    song.getVerseOrder().addAll(verseOrder);
+                }
+                
                 songs.add(song);
             }
         } catch (Exception e) {

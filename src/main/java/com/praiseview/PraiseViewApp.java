@@ -62,6 +62,8 @@ public class PraiseViewApp extends Application {
             projStage.setHeight(projector.getBounds().getHeight());
 
             projStage.setFullScreen(true);
+            projStage.setFullScreenExitHint("");  // Hide ESC exit hint
+            projStage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);  // Disable ESC exit
 
             System.out.println("✅ Projection started on second monitor");
 
@@ -74,7 +76,13 @@ public class PraiseViewApp extends Application {
 
         }
 
+        // Keep projection window always on top - set BEFORE show
+        projStage.setAlwaysOnTop(true);
         projStage.show();
+        
+        // Request focus on the projection stage
+        projStage.toFront();
+        projStage.requestFocus();
 
         projectionController = projLoader.getController();
 

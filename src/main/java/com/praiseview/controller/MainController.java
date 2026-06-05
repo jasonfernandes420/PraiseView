@@ -106,6 +106,10 @@ public class MainController {
             Song song = songLibraryList.getSelectionModel().getSelectedItem();
             if (song != null) {
                 serviceQueue.add(new ServiceItem(song));
+                // If this is the first item, set currentQueueIndex to 0
+                if (currentQueueIndex == -1 && serviceQueue.size() == 1) {
+                    currentQueueIndex = 0;
+                }
                 servicePlannerList.refresh();
                 e.setDropCompleted(true);
             }
@@ -136,10 +140,10 @@ public class MainController {
         System.out.println(
     "Projection Controller = "
             + PraiseViewApp.getProjectionController());
-        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) return;
 
         ServiceItem item = serviceQueue.get(currentQueueIndex);
         Song song = item.getSong();
+        System.out.println(item.getTitle()+song);
 
         if (song == null || song.getVerseOrder().isEmpty()) return;
 
