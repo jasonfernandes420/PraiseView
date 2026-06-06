@@ -60,8 +60,10 @@ public class ProjectionController {
     private void hideAllMediaViews() {
         textContentContainer.setVisible(false);
         textContentContainer.setManaged(false);
+        lyricsFlow.getChildren().clear(); // Explicitly clear TextFlow content
         imageView.setVisible(false);
         imageView.setManaged(false);
+        imageView.setImage(null); // Explicitly clear image
         mediaView.setVisible(false);
         mediaView.setManaged(false);
         pptPlaceholderContainer.setVisible(false); // Hide PPT placeholder
@@ -88,7 +90,7 @@ public class ProjectionController {
             return;
         }
 
-        // Stop any existing media and hide all media views first
+        // Clear all previous content and hide all views
         hideAllMediaViews();
 
         this.currentProjectedItem = item;
@@ -115,26 +117,23 @@ public class ProjectionController {
                 textContentContainer.setVisible(true);
                 textContentContainer.setManaged(true);
 
-                // Determine if re-pagination is needed for text content
-                boolean itemChanged = (this.currentProjectedItem == null || !this.currentProjectedItem.equals(item));
-                boolean dimensionsChanged = (availableWidth != lastPaginationWidth || availableHeight != lastPaginationHeight);
-                boolean fontSizeChanged = (currentFontSize != lastPaginationFontSize);
-                boolean needsRepagination = itemChanged || dimensionsChanged || fontSizeChanged || currentProjectedItemPages == null;
-
-                if (needsRepagination) {
-                    AppLogger.log("ProjectionController: Re-paginating text content.");
-                    if (item instanceof Song) {
-                        currentProjectedItemPages = new java.util.ArrayList<>();
-                        for (int i = 0; i < item.getSubItemCount(currentFontSize, availableWidth, availableHeight); i++) {
-                            currentProjectedItemPages.add(item.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
-                        }
-                    } else { // For dynamic content (Prayer, Announcement)
-                        currentProjectedItemPages = TextPaginationUtil.paginateText(item.getFullContent(), currentFontSize, availableWidth, availableHeight);
+                // --- FORCE RECALCULATION FOR TEXT-BASED ITEMS ---
+                AppLogger.log("ProjectionController: Forcing re-pagination for text content.");
+                if (item instanceof Song) {
+                    currentProjectedItemPages = new java.util.ArrayList<>();
+                    for (int i = 0; i < item.getSubItemCount(currentFontSize, availableWidth, availableHeight); i++) {
+                        currentProjectedItemPages.add(item.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
                     }
-                    this.lastPaginationFontSize = currentFontSize;
-                    this.lastPaginationWidth = availableWidth;
-                    this.lastPaginationHeight = availableHeight;
+                } else { // For dynamic content (Prayer, Announcement)
+                    currentProjectedItemPages = TextPaginationUtil.paginateText(item.getFullContent(), currentFontSize, availableWidth, availableHeight);
                 }
+                this.lastPaginationFontSize = currentFontSize;
+                this.lastPaginationWidth = availableWidth;
+                this.lastPaginationHeight = availableHeight;
+                // --- END FORCE RECALCULATION ---
+
+                AppLogger.log("ProjectionController: currentProjectedItemPages after update (first page): " + (currentProjectedItemPages != null && !currentProjectedItemPages.isEmpty() ? (currentProjectedItemPages.get(0).length() > 50 ? currentProjectedItemPages.get(0).substring(0, 50) + "..." : currentProjectedItemPages.get(0)) : "EMPTY"));
+
 
                 // Ensure subItemIndex is within bounds of the newly calculated pages
                 if (currentProjectedItemPages != null && subItemIndex >= currentProjectedItemPages.size()) {
@@ -148,13 +147,13 @@ public class ProjectionController {
                 totalSubItems = currentProjectedItemPages != null ? currentProjectedItemPages.size() : 0;
 
                 // Only show (X/Y) if there's more than one sub-item/page AND it's not a Song
-                if (totalSubItems > 1 && !(item instanceof Song)) { 
+                if (totalSubItems > 1 && !(item instanceof Song)) {
                     titleText += " (" + (this.currentSubItemIndex + 1) + "/" + totalSubItems + ")";
                 }
                 titleLabel.setText(titleText);
                 titleLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-size: 42px;");
 
-                lyricsFlow.getChildren().clear();
+                lyricsFlow.getChildren().clear(); // Ensure cleared before adding new text
                 Text mainText = new Text(contentToDisplay);
                 mainText.setFill(Color.WHITE);
                 mainText.setStyle("-fx-font-size: " + currentFontSize + "px; -fx-line-spacing: 8px;");
@@ -302,23 +301,51 @@ public class ProjectionController {
     public String getCurrentDisplayedContent() {
         // This method now needs to return the content appropriate for the current item type.
         // For images/videos/PPT slides, it should return the path to the image, or a descriptive text.
-        if (currentProjectedItem instanceof Song || currentProjectedItem instanceof Prayer || currentProjectedItem instanceof Announcement) {
-            if (lyricsFlow != null && !lyricsFlow.getChildren().isEmpty() && lyricsFlow.getChildren().get(0) instanceof Text) {
-                return ((Text) lyricsFlow.getChildren().get(0)).getText();
-            }
-        } else if (currentProjectedItem instanceof MediaItem) {
-            MediaItem media = (MediaItem) currentProjectedItem;
-            if (media.getMediaType() == MediaItem.MediaType.IMAGE || media.getMediaType() == MediaItem.MediaType.VIDEO) {
-                return media.getFilePath(); // Return file path for image/video
-            }
-        } else if (currentProjectedItem instanceof PptItem) {
-            PptItem ppt = (PptItem) currentProjectedItem;
-            // Return the path to the current slide image
-            if (ppt.getRenderedSlideImagePaths() != null && !ppt.getRenderedSlideImagePaths().isEmpty() && currentSubItemIndex < ppt.getRenderedSlideImagePaths().size()) {
-                return ppt.getRenderedSlideImagePaths().get(currentSubItemIndex);
-            }
+        if (currentProjectedItem == null) {
+            AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItem is null.");
+            return "";
         }
-        return ""; // Default for non-text or unhandled cases
+
+        String content = "";
+        switch (currentProjectedItem.getType()) {
+            case "SONG":
+            case "PRAYER":
+            case "ANNOUNCEMENT":
+                // Return content from the cached pages
+                if (currentProjectedItemPages != null && currentSubItemIndex >= 0 && currentSubItemIndex < currentProjectedItemPages.size()) {
+                    content = currentProjectedItemPages.get(currentSubItemIndex);
+                } else {
+                    AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItemPages is null or index out of bounds for text type.");
+                }
+                break;
+            case "IMAGE":
+            case "VIDEO":
+                // Return file path for image/video
+                if (currentProjectedItem instanceof MediaItem) {
+                    content = ((MediaItem) currentProjectedItem).getFilePath();
+                } else {
+                    AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItem is not MediaItem for media type.");
+                }
+                break;
+            case "PPT":
+                // Return the path to the current slide image
+                if (currentProjectedItem instanceof PptItem) {
+                    PptItem ppt = (PptItem) currentProjectedItem;
+                    if (ppt.getRenderedSlideImagePaths() != null && currentSubItemIndex >= 0 && currentSubItemIndex < ppt.getRenderedSlideImagePaths().size()) {
+                        content = ppt.getRenderedSlideImagePaths().get(currentSubItemIndex);
+                    } else {
+                        AppLogger.log("ProjectionController.getCurrentDisplayedContent: PPT renderedSlideImagePaths is null or index out of bounds.");
+                    }
+                } else {
+                    AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItem is not PptItem for PPT type.");
+                }
+                break;
+            default:
+                AppLogger.log("ProjectionController.getCurrentDisplayedContent: Unhandled item type: " + currentProjectedItem.getType());
+                break;
+        }
+        AppLogger.log("ProjectionController.getCurrentDisplayedContent: Returning content (first 50 chars): " + (content.length() > 50 ? content.substring(0, 50) + "..." : content));
+        return content;
     }
 
 

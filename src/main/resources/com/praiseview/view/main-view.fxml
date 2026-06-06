@@ -125,7 +125,7 @@
             <!-- Current Song Verses List (moved from right) -->
             <VBox prefWidth="280" spacing="8" HBox.hgrow="NEVER">
                 <Label text="Current Item Verses/Pages" styleClass="header"/>
-                <ListView fx:id="currentSongVersesList" VBox.vgrow="ALWAYS"/>
+                <ListView fx:id="currentSubItemList" VBox.vgrow="ALWAYS"/>
             </VBox>
         </HBox>
     </center>

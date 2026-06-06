@@ -110,6 +110,9 @@ public class MainController {
     }
     @FXML
     public void initialize() {
+        AppLogger.log("MainController: Initializing...");
+        AppLogger.log("MainController: currentSubItemList (before setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
+
         loadSongs();
         loadPrayers();
 
@@ -214,6 +217,8 @@ public class MainController {
         if (pptList != null) pptList.setItems(pptLibrary);
         if (openPptButton != null) openPptButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.PPT));
         if (clearPptButton != null) clearPptButton.setOnAction(e -> pptLibrary.clear());
+
+        AppLogger.log("MainController: currentSubItemList (after setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
     }
 
     public void setupSceneKeyHandler() {
@@ -318,6 +323,7 @@ public class MainController {
 
             String data = db.getString();
             ServiceItem newItem = null;
+
 
             if (data.startsWith("SONG:")) {
                 String songId = data.substring("SONG:".length());
@@ -721,6 +727,7 @@ public class MainController {
                             livePreviewText.getChildren().add(new Text("No slides rendered for: " + pptItem.getTitle()));
                         }
                     }
+
                 } else {
                     AppLogger.log("MainController: liveImageView is null for PPT preview.");
                 }
@@ -906,6 +913,7 @@ public class MainController {
     @FXML private void showAbout() {
         System.out.println("About clicked");
     }
+
 
     // Renamed from updateVersesList to updateSubItemList
     private void updateSubItemList(Projectable item) {
