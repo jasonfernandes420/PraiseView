@@ -30,6 +30,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,6 +60,12 @@ public class MainController {
     @FXML private Button projectButton, blackoutButton, clearButton;
     @FXML private Button nextVerseButton, prevVerseButton;
     @FXML private ListView<SubItemDisplayItem> currentSubItemList; // Renamed from currentSongVersesList
+
+    // Video Controls (newly added)
+    @FXML private Button videoPlayPauseButton;
+    @FXML private Button videoRewindButton;
+    @FXML private Button videoForwardButton;
+
 
     // Bottom: Library
     @FXML private ListView<Song> songLibraryList;
@@ -181,6 +188,12 @@ public class MainController {
         // Verse Navigation
         if (nextVerseButton != null) nextVerseButton.setOnAction(e -> nextItemOrSubItem());
         if (prevVerseButton != null) prevVerseButton.setOnAction(e -> previousItemOrSubItem());
+
+        // Video Controls
+        if (videoPlayPauseButton != null) videoPlayPauseButton.setOnAction(e -> playPauseVideo());
+        if (videoRewindButton != null) videoRewindButton.setOnAction(e -> onVideoRewind());
+        if (videoForwardButton != null) videoForwardButton.setOnAction(e -> onVideoForward());
+
 
         // Context menu for song library
         ContextMenu libraryContextMenu = new ContextMenu();
@@ -518,6 +531,10 @@ public class MainController {
             livePptPlaceholderContainer.setVisible(false);
             livePptPlaceholderContainer.setManaged(false);
         }
+        // Disable video controls when not showing video
+        if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
+        if (videoRewindButton != null) videoRewindButton.setDisable(true);
+        if (videoForwardButton != null) videoForwardButton.setDisable(true);
     }
 
     // This method now mirrors the projection screen
@@ -631,28 +648,39 @@ public class MainController {
                     liveMediaView.setVisible(true);
                     liveMediaView.setManaged(true);
                     File videoFile = new File(((MediaItem)currentProjectedItem).getFilePath());
-                    AppLogger.log("MainController: Preparing video preview placeholder for: " + videoFile.getAbsolutePath());
+                    AppLogger.log("MainController: Preparing video preview for: " + videoFile.getAbsolutePath());
                     if (videoFile.exists()) {
-                        // For preview, we'll just show a static image or text, not full video playback
-                        // To play video in preview, uncomment below and manage liveMediaPlayer lifecycle
-                        // Media media = new Media(videoFile.toURI().toString());
-                        // liveMediaPlayer = new MediaPlayer(media);
-                        // liveMediaView.setMediaPlayer(liveMediaPlayer);
-                        // liveMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-                        // liveMediaPlayer.play();
-                        // liveMediaView.setFitWidth(livePreviewPane.getWidth());
-                        // liveMediaView.setFitHeight(livePreviewPane.getHeight());
-                        // liveMediaView.setPreserveRatio(true);
+                        Media media = new Media(videoFile.toURI().toString());
+                        if (liveMediaPlayer != null) {
+                            liveMediaPlayer.stop();
+                            liveMediaPlayer.dispose();
+                        }
+                        liveMediaPlayer = new MediaPlayer(media);
+                        liveMediaView.setMediaPlayer(liveMediaPlayer);
+                        liveMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
+                        liveMediaPlayer.play();
+                        liveMediaView.fitWidthProperty().bind(livePreviewPane.widthProperty());
+                        liveMediaView.fitHeightProperty().bind(livePreviewPane.heightProperty());
+                        liveMediaView.setPreserveRatio(true);
 
-                        // Placeholder for video preview
-                        if (liveTextContentContainer != null) {
-                            liveTextContentContainer.setVisible(true);
-                            liveTextContentContainer.setManaged(true);
+                        // Enable video controls
+                        if (videoPlayPauseButton != null) {
+                            videoPlayPauseButton.setDisable(false);
+                            videoPlayPauseButton.setText("Pause"); // Initial state
                         }
-                        if (livePreviewText != null) {
-                            livePreviewText.getChildren().clear();
-                            livePreviewText.getChildren().add(new Text("Video Preview: " + currentProjectedItem.getTitle() + "\n(Playing on Projection Screen)"));
-                        }
+                        if (videoRewindButton != null) videoRewindButton.setDisable(false);
+                        if (videoForwardButton != null) videoForwardButton.setDisable(false);
+
+                        liveMediaPlayer.statusProperty().addListener((obs, oldStatus, newStatus) -> {
+                            if (videoPlayPauseButton != null) {
+                                if (newStatus == MediaPlayer.Status.PLAYING) {
+                                    videoPlayPauseButton.setText("Pause");
+                                } else {
+                                    videoPlayPauseButton.setText("Play");
+                                }
+                            }
+                        });
+
                     } else {
                         AppLogger.log("MainController: Video file not found for preview: " + videoFile.getAbsolutePath());
                         // Display error message on screen
@@ -754,6 +782,52 @@ public class MainController {
                 break;
         }
     }
+
+    @FXML
+    private void playPauseVideo() {
+        // Control local preview media player
+        if (liveMediaPlayer != null) {
+            if (liveMediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+                liveMediaPlayer.pause();
+                if (videoPlayPauseButton != null) videoPlayPauseButton.setText("Play");
+            } else {
+                liveMediaPlayer.play();
+                if (videoPlayPauseButton != null) videoPlayPauseButton.setText("Pause");
+            }
+        }
+
+        // Control projection media player
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj != null) {
+            proj.playPauseVideo();
+        }
+    }
+
+    @FXML
+    private void onVideoRewind() {
+        seekVideo(-10.0);
+    }
+
+    @FXML
+    private void onVideoForward() {
+        seekVideo(10.0);
+    }
+
+    private void seekVideo(double seconds) {
+        // Control local preview media player
+        if (liveMediaPlayer != null && liveMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
+            Duration currentTime = liveMediaPlayer.getCurrentTime();
+            Duration newTime = currentTime.add(Duration.seconds(seconds));
+            liveMediaPlayer.seek(newTime);
+        }
+
+        // Control projection media player
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj != null) {
+            proj.seekVideo(seconds);
+        }
+    }
+
 
     @FXML
     private void nextItemOrSubItem() {

@@ -21,6 +21,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
+import javafx.util.Duration; // Import Duration
 
 import java.io.File;
 import java.util.List;
@@ -202,6 +203,10 @@ public class ProjectionController {
                 AppLogger.log("ProjectionController: Video file path: " + videoFile.getAbsolutePath());
                 if (videoFile.exists()) {
                     Media media = new Media(videoFile.toURI().toString());
+                    if (mediaPlayer != null) {
+                        mediaPlayer.stop();
+                        mediaPlayer.dispose();
+                    }
                     mediaPlayer = new MediaPlayer(media);
                     mediaView.setMediaPlayer(mediaPlayer);
                     mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
@@ -278,6 +283,39 @@ public class ProjectionController {
                 break;
         }
     }
+
+    /**
+     * Toggles play/pause for the currently playing video.
+     */
+    public void playPauseVideo() {
+        if (mediaPlayer != null) {
+            if (mediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+                mediaPlayer.pause();
+                AppLogger.log("ProjectionController: Video paused.");
+            } else {
+                mediaPlayer.play();
+                AppLogger.log("ProjectionController: Video played.");
+            }
+        } else {
+            AppLogger.log("ProjectionController: No media player available to play/pause.");
+        }
+    }
+
+    /**
+     * Seeks the currently playing video by a given number of seconds.
+     * @param seconds The number of seconds to seek. Positive for forward, negative for backward.
+     */
+    public void seekVideo(double seconds) {
+        if (mediaPlayer != null && mediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
+            Duration currentTime = mediaPlayer.getCurrentTime();
+            Duration newTime = currentTime.add(Duration.seconds(seconds));
+            mediaPlayer.seek(newTime);
+            AppLogger.log("ProjectionController: Video seeked by " + seconds + " seconds to " + newTime);
+        } else {
+            AppLogger.log("ProjectionController: No media player available or video stopped for seeking.");
+        }
+    }
+
 
     /**
      * Returns the total number of sub-items (pages/verses) for the currently projected item.

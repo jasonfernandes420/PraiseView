@@ -120,6 +120,37 @@
                         </graphic>
                     </Button>
                 </HBox>
+
+                <!-- Video Controls -->
+                <HBox alignment="CENTER" spacing="10" VBox.vgrow="NEVER">
+                    <Button fx:id="videoRewindButton" text="⏪ -10s" onAction="#onVideoRewind" disable="true">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20" pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@../images/rewind.png"/> <!-- Placeholder for icon -->
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="videoPlayPauseButton" text="⏯️ Play/Pause" onAction="#playPauseVideo" disable="true">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20" pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@../images/play_pause.png"/> <!-- Placeholder for icon -->
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
+                    <Button fx:id="videoForwardButton" text="⏩ +10s" onAction="#onVideoForward" disable="true">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20" pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@../images/forward.png"/> <!-- Placeholder for icon -->
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
+                </HBox>
             </VBox>
 
             <!-- Current Song Verses List (moved from right) -->
