@@ -118,4 +118,9 @@ public class Song implements Projectable { // Implement Projectable interface
     public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
         return verseOrder.size();
     }
+    @Override
+    public String getSubItemLabel(int index) {
+        Verse verse = getVerseAtPosition(index);
+        return (verse != null) ? verse.getLabel() : "Verse (N/A)";
+    }
 }

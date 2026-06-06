@@ -62,4 +62,16 @@ public class Prayer implements Projectable { // Implement Projectable interface
     public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
         return TextPaginationUtil.paginateText(this.content, fontSize, maxWidth, maxHeight).size();
     }
+    @Override
+    public String getSubItemLabel(int index) {
+        // For prayers, sub-items are pages.
+        // We need to re-paginate to get the total count for accurate labeling.
+        // This might be inefficient if called frequently, but for UI labels, it's acceptable.
+        // Use arbitrary reasonable dimensions for label calculation, as it's just for the label text.
+        int totalPages = TextPaginationUtil.paginateText(this.content, 16.0, 400.0, 300.0).size(); // Use preview-like dimensions
+        if (index >= 0 && index < totalPages) {
+            return "Page " + (index + 1);
+        }
+        return "Page (N/A)";
+    }
 }

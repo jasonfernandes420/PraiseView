@@ -8,20 +8,35 @@ import com.praiseview.model.Projectable;
 import com.praiseview.model.ServiceItem;
 import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
+import com.praiseview.model.MediaItem; // Import MediaItem
+import com.praiseview.model.PptItem; // Import PptItem
 import com.praiseview.service.JsonService;
 import com.praiseview.util.AppLogger;
+import com.praiseview.util.PptRenderer; // Import PptRenderer for cleanup
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList; // Added for cleanup
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainController {
 
@@ -31,23 +46,42 @@ public class MainController {
 
     // Center: Stage View
     @FXML private StackPane livePreviewPane;
+    // FXML elements for mirroring projection content
+    @FXML private VBox liveTextContentContainer;
     @FXML private Label stageViewTitle;
     @FXML private TextFlow livePreviewText;
-    
+    @FXML private ImageView liveImageView;
+    @FXML private MediaView liveMediaView;
+    @FXML private VBox livePptPlaceholderContainer;
+    @FXML private Text livePptPlaceholderText;
+
     // Right: Controls (moved from old right pane)
     @FXML private Button projectButton, blackoutButton, clearButton;
     @FXML private Button nextVerseButton, prevVerseButton;
-    @FXML private ListView<VerseDisplayItem> currentSongVersesList;
+    @FXML private ListView<SubItemDisplayItem> currentSubItemList; // Renamed from currentSongVersesList
 
     // Bottom: Library
     @FXML private ListView<Song> songLibraryList;
     @FXML private TextField searchField;
     @FXML private Button addSongButton;
 
-    //prayer tab
+    // Prayer tab
     @FXML private ListView<Prayer> prayerList;
     @FXML private Button addPrayerButton;
-    @FXML private Button editPrayerButton; // Added for edit prayer functionality
+    @FXML private Button editPrayerButton;
+
+    // Media tabs
+    @FXML private Button openImageButton;
+    @FXML private Button clearImageButton;
+    @FXML private ListView<MediaItem> imageList;
+    @FXML private Button openVideoButton;
+    @FXML private Button clearVideoButton;
+    @FXML private ListView<MediaItem> videoList;
+    @FXML private Button openPptButton;
+    @FXML private Button clearPptButton;
+    @FXML private ListView<PptItem> pptList; // Changed to PptItem
+
+    private MediaPlayer liveMediaPlayer; // For video playback in the live preview
 
     private DatabaseService dbService = new DatabaseService();
     private JsonService jsonService = new JsonService();
@@ -56,6 +90,10 @@ public class MainController {
     private FilteredList<Song> filteredSongs;
     private ObservableList<ServiceItem> serviceQueue = FXCollections.observableArrayList();
     private ObservableList<Prayer> allPrayers = FXCollections.observableArrayList();
+    private ObservableList<MediaItem> imageLibrary = FXCollections.observableArrayList();
+    private ObservableList<MediaItem> videoLibrary = FXCollections.observableArrayList();
+    private ObservableList<PptItem> pptLibrary = FXCollections.observableArrayList();
+
 
     private int currentQueueIndex = -1;
     private int currentSubItemIndex = 0; // For songs: verse index, for prayers/announcements: page index
@@ -93,21 +131,22 @@ public class MainController {
 
         // Context menu for service list
         ContextMenu serviceContextMenu = new ContextMenu();
-        // Removed previewItem as next item preview pane is gone
         MenuItem deleteItem = new MenuItem("Delete");
         serviceContextMenu.getItems().addAll(deleteItem);
-
-        // Removed previewItem.setOnAction
 
         deleteItem.setOnAction(e -> {
             int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
             if (selectedIdx >= 0) {
-                serviceQueue.remove(selectedIdx);
+                ServiceItem removedItem = serviceQueue.remove(selectedIdx);
+                // Clean up PPT temp files if a PptItem is removed
+                if (removedItem != null && removedItem.getContent() instanceof PptItem) {
+                    ((PptItem) removedItem.getContent()).dispose();
+                }
                 // Reset if we deleted the current item
                 if (currentQueueIndex >= serviceQueue.size()) {
                     currentQueueIndex = -1;
                 }
-                AppLogger.log("Song removed from service order");
+                AppLogger.log("Item removed from service order");
             }
         });
 
@@ -142,10 +181,6 @@ public class MainController {
 
         // Context menu for song library
         ContextMenu libraryContextMenu = new ContextMenu();
-        // Removed previewLibraryItem as next item preview pane is gone
-        // libraryContextMenu.getItems().add(previewLibraryItem); // Removed
-
-        // Removed previewLibraryItem.setOnAction
 
         songLibraryList.setOnMouseClicked(e -> {
             if (e.getButton() == javafx.scene.input.MouseButton.SECONDARY) {
@@ -163,14 +198,25 @@ public class MainController {
         // Prayers
         prayerList.setItems(allPrayers);
         addPrayerButton.setOnAction(e -> openPrayerEditor(null));
-        // Set action for editPrayerButton
         if (editPrayerButton != null) {
             editPrayerButton.setOnAction(e -> editSelectedPrayer());
         }
+
+        // Media Tab Setup
+        if (imageList != null) imageList.setItems(imageLibrary);
+        if (openImageButton != null) openImageButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.IMAGE));
+        if (clearImageButton != null) clearImageButton.setOnAction(e -> imageLibrary.clear());
+
+        if (videoList != null) videoList.setItems(videoLibrary);
+        if (openVideoButton != null) openVideoButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.VIDEO));
+        if (clearVideoButton != null) clearVideoButton.setOnAction(e -> videoLibrary.clear());
+
+        if (pptList != null) pptList.setItems(pptLibrary);
+        if (openPptButton != null) openPptButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.PPT));
+        if (clearPptButton != null) clearPptButton.setOnAction(e -> pptLibrary.clear());
     }
 
     public void setupSceneKeyHandler() {
-        // Called from PraiseViewApp after scene is set
         if (scene != null) {
             scene.setOnKeyPressed(this::handleArrowKey);
         }
@@ -198,7 +244,7 @@ public class MainController {
             if (selected != null) {
                 Dragboard db = songLibraryList.startDragAndDrop(TransferMode.COPY);
                 ClipboardContent content = new ClipboardContent();
-                content.putString("SONG:" + selected.getId());
+                content.putString("SONG:" + selected.getId()); // Use ID for lookup
                 db.setContent(content);
                 e.consume();
             }
@@ -210,11 +256,54 @@ public class MainController {
             if (selected != null) {
                 Dragboard db = prayerList.startDragAndDrop(TransferMode.COPY);
                 ClipboardContent content = new ClipboardContent();
-                content.putString("PRAYER:" + selected.getId());
+                content.putString("PRAYER:" + selected.getId()); // Use ID for lookup
                 db.setContent(content);
                 e.consume();
             }
         });
+
+        // === Drag from Image List ===
+        if (imageList != null) {
+            imageList.setOnDragDetected(e -> {
+                MediaItem selected = imageList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    Dragboard db = imageList.startDragAndDrop(TransferMode.COPY);
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString("IMAGE:" + selected.getFilePath()); // Use file path for lookup
+                    db.setContent(content);
+                    e.consume();
+                }
+            });
+        }
+
+        // === Drag from Video List ===
+        if (videoList != null) {
+            videoList.setOnDragDetected(e -> {
+                MediaItem selected = videoList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    Dragboard db = videoList.startDragAndDrop(TransferMode.COPY);
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString("VIDEO:" + selected.getFilePath()); // Use file path for lookup
+                    db.setContent(content);
+                    e.consume();
+                }
+            });
+        }
+
+        // === Drag from PPT List ===
+        if (pptList != null) {
+            pptList.setOnDragDetected(e -> {
+                PptItem selected = pptList.getSelectionModel().getSelectedItem(); // Changed to PptItem
+                if (selected != null) {
+                    Dragboard db = pptList.startDragAndDrop(TransferMode.COPY);
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString("PPT:" + selected.getOriginalFilePath()); // Use original file path for lookup
+                    db.setContent(content);
+                    e.consume();
+                }
+            });
+        }
+
 
         // === Drop on Service Queue ===
         servicePlannerList.setOnDragOver(e -> {
@@ -228,18 +317,52 @@ public class MainController {
             if (!db.hasString()) return;
 
             String data = db.getString();
+            ServiceItem newItem = null;
 
             if (data.startsWith("SONG:")) {
-                Song song = songLibraryList.getSelectionModel().getSelectedItem();
+                String songId = data.substring("SONG:".length());
+                Song song = allSongs.stream().filter(s -> s.getId().equals(songId)).findFirst().orElse(null);
                 if (song != null) {
-                    serviceQueue.add(new ServiceItem(song)); // Create ServiceItem with Projectable
+                    newItem = new ServiceItem(song);
                 }
             }
             else if (data.startsWith("PRAYER:")) {
-                Prayer prayer = prayerList.getSelectionModel().getSelectedItem();
+                String prayerId = data.substring("PRAYER:".length());
+                Prayer prayer = allPrayers.stream().filter(p -> p.getId().equals(prayerId)).findFirst().orElse(null);
                 if (prayer != null) {
-                    serviceQueue.add(new ServiceItem(prayer)); // Create ServiceItem with Projectable
+                    newItem = new ServiceItem(prayer);
                 }
+            }
+            else if (data.startsWith("IMAGE:")) {
+                String filePath = data.substring("IMAGE:".length());
+                File file = new File(filePath);
+                if (file.exists()) {
+                    newItem = new ServiceItem(new MediaItem(file, MediaItem.MediaType.IMAGE));
+                }
+            }
+            else if (data.startsWith("VIDEO:")) {
+                String filePath = data.substring("VIDEO:".length());
+                File file = new File(filePath);
+                if (file.exists()) {
+                    newItem = new ServiceItem(new MediaItem(file, MediaItem.MediaType.VIDEO));
+                }
+            }
+            else if (data.startsWith("PPT:")) {
+                String filePath = data.substring("PPT:".length());
+                File file = new File(filePath);
+                if (file.exists()) {
+                    try {
+                        newItem = new ServiceItem(new PptItem(file)); // Create PptItem
+                    } catch (IOException ex) {
+                        AppLogger.log("Failed to render PPT: " + ex.getMessage());
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT: " + ex.getMessage());
+                        alert.show();
+                    }
+                }
+            }
+
+            if (newItem != null) {
+                serviceQueue.add(newItem);
             }
 
             servicePlannerList.refresh();
@@ -266,7 +389,6 @@ public class MainController {
         }
     }
 
-    // New method to edit selected prayer
     @FXML
     private void editSelectedPrayer() {
         Prayer selected = prayerList.getSelectionModel().getSelectedItem();
@@ -277,6 +399,56 @@ public class MainController {
             alert.show();
         }
     }
+
+    // Generic method to open media files
+    private void openMediaFiles(MediaItem.MediaType type) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open " + type.name() + " Files");
+
+        // Set extension filters based on media type
+        switch (type) {
+            case IMAGE:
+                fileChooser.getExtensionFilters().addAll(
+                        new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"),
+                        new FileChooser.ExtensionFilter("All Files", "*.*")
+                );
+                break;
+            case VIDEO:
+                fileChooser.getExtensionFilters().addAll(
+                        new FileChooser.ExtensionFilter("Video Files", "*.mp4", "*.avi", "*.mov", "*.wmv", "*.flv"),
+                        new FileChooser.ExtensionFilter("All Files", "*.*")
+                );
+                break;
+            case PPT:
+                fileChooser.getExtensionFilters().addAll(
+                        new FileChooser.ExtensionFilter("Presentation Files", "*.ppt", "*.pptx"),
+                        new FileChooser.ExtensionFilter("All Files", "*.*")
+                );
+                break;
+        }
+
+        Window ownerWindow = livePreviewPane.getScene().getWindow();
+        List<File> selectedFiles = fileChooser.showOpenMultipleDialog(ownerWindow);
+
+        if (selectedFiles != null) {
+            for (File file : selectedFiles) {
+                if (type == MediaItem.MediaType.PPT) {
+                    try {
+                        pptLibrary.add(new PptItem(file)); // Create PptItem
+                    } catch (IOException e) {
+                        AppLogger.log("Failed to render PPT " + file.getName() + ": " + e.getMessage());
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT " + file.getName() + ": " + e.getMessage());
+                        alert.show();
+                    }
+                } else if (type == MediaItem.MediaType.IMAGE) {
+                    imageLibrary.add(new MediaItem(file, type)); // Create MediaItem
+                } else if (type == MediaItem.MediaType.VIDEO) {
+                    videoLibrary.add(new MediaItem(file, type)); // Create MediaItem
+                }
+            }
+        }
+    }
+
 
     private void startProjection() {
         if (serviceQueue.isEmpty()) {
@@ -315,36 +487,264 @@ public class MainController {
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
     }
 
+    // Helper to hide all media preview elements
+    private void hideAllLiveMediaViews() {
+        if (liveTextContentContainer != null) {
+            liveTextContentContainer.setVisible(false);
+            liveTextContentContainer.setManaged(false);
+        }
+        if (liveImageView != null) {
+            liveImageView.setVisible(false);
+            liveImageView.setManaged(false);
+            liveImageView.setImage(null); // Clear image
+        }
+        if (liveMediaView != null) {
+            liveMediaView.setVisible(false);
+            liveMediaView.setManaged(false);
+            if (liveMediaPlayer != null) {
+                liveMediaPlayer.stop();
+                liveMediaPlayer.dispose();
+                liveMediaPlayer = null;
+            }
+            liveMediaView.setMediaPlayer(null); // Clear media player
+        }
+        if (livePptPlaceholderContainer != null) {
+            livePptPlaceholderContainer.setVisible(false);
+            livePptPlaceholderContainer.setManaged(false);
+        }
+    }
+
     // This method now mirrors the projection screen
     private void updateCenterPreview() {
-        livePreviewText.getChildren().clear();
-        currentSongVersesList.getItems().clear(); // Clear verse list by default
+        AppLogger.log("MainController: updateCenterPreview called.");
+        hideAllLiveMediaViews(); // Hide all before showing new content
+
+        // Add null check here
+        if (currentSubItemList != null) {
+            currentSubItemList.getItems().clear(); // Clear sub-item list by default // Renamed
+        }
+
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
-        if (proj == null || proj.getCurrentProjectedItem() == null) {
-            stageViewTitle.setText("");
+        if (proj == null) {
+            AppLogger.log("MainController: ProjectionController is null.");
+            stageViewTitle.setText(""); // Clear title even if no item
+            return;
+        }
+        if (proj.getCurrentProjectedItem() == null) {
+            AppLogger.log("MainController: No item currently projected.");
+            stageViewTitle.setText(""); // Clear title even if no item
             return;
         }
 
-        // Get the currently displayed content and title directly from the ProjectionController
-        stageViewTitle.setText(proj.getCurrentDisplayedTitle());
-        
-        Text mainText = new Text(proj.getCurrentDisplayedContent());
-        mainText.setFill(javafx.scene.paint.Color.WHITE);
-        mainText.setStyle("-fx-font-size: " + PREVIEW_FONT_SIZE + "px; -fx-line-spacing: 8px;");
-        livePreviewText.getChildren().add(mainText);
-        livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        
-        // Only update verse list if it's a Song
         Projectable currentProjectedItem = proj.getCurrentProjectedItem();
-        if (currentProjectedItem instanceof Song) {
-            Song song = (Song) currentProjectedItem;
-            updateVersesList(song);
-            // Select the current verse in the list
-            if (proj.getCurrentSubItemIndex() >= 0 && proj.getCurrentSubItemIndex() < currentSongVersesList.getItems().size()) {
-                currentSongVersesList.getSelectionModel().select(proj.getCurrentSubItemIndex());
-                currentSongVersesList.scrollTo(proj.getCurrentSubItemIndex());
-            }
+        String displayedTitle = proj.getCurrentDisplayedTitle();
+        String displayedContent = proj.getCurrentDisplayedContent(); // For text/PPT placeholder
+
+        AppLogger.log("MainController: Projecting item type: " + currentProjectedItem.getType());
+        AppLogger.log("MainController: Displayed Title: " + displayedTitle);
+        AppLogger.log("MainController: Displayed Content (first 50 chars): " + (displayedContent.length() > 50 ? displayedContent.substring(0, 50) + "..." : displayedContent));
+
+
+        stageViewTitle.setText(displayedTitle); // Always set title
+
+        switch (currentProjectedItem.getType()) {
+            case "SONG":
+            case "PRAYER":
+            case "ANNOUNCEMENT":
+                if (liveTextContentContainer != null) {
+                    liveTextContentContainer.setVisible(true);
+                    liveTextContentContainer.setManaged(true);
+                }
+                if (livePreviewText != null) {
+                    livePreviewText.getChildren().clear();
+                    Text mainText = new Text(displayedContent);
+                    mainText.setFill(javafx.scene.paint.Color.WHITE);
+                    mainText.setStyle("-fx-font-size: " + PREVIEW_FONT_SIZE + "px; -fx-line-spacing: 8px;");
+                    livePreviewText.getChildren().add(mainText);
+                    livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+                }
+
+                // Update sub-item list for text-based items
+                updateSubItemList(currentProjectedItem); // Generalized call
+                // Select the current sub-item in the list
+                if (proj.getCurrentSubItemIndex() >= 0 && currentSubItemList != null && proj.getCurrentSubItemIndex() < currentSubItemList.getItems().size()) {
+                    currentSubItemList.getSelectionModel().select(proj.getCurrentSubItemIndex());
+                    currentSubItemList.scrollTo(proj.getCurrentSubItemIndex());
+                }
+                break;
+
+            case "IMAGE":
+                if (liveImageView != null) {
+                    liveImageView.setVisible(true);
+                    liveImageView.setManaged(true);
+                    File imageFile = new File(((MediaItem)currentProjectedItem).getFilePath());
+                    AppLogger.log("MainController: Loading image for preview: " + imageFile.getAbsolutePath());
+                    if (imageFile.exists()) {
+                        try {
+                            Image image = new Image(imageFile.toURI().toString());
+                            liveImageView.setImage(image);
+                            // Bind image view size to parent pane size
+                            liveImageView.fitWidthProperty().bind(livePreviewPane.widthProperty());
+                            liveImageView.fitHeightProperty().bind(livePreviewPane.heightProperty());
+                            liveImageView.setPreserveRatio(true);
+                            AppLogger.log("MainController: Image loaded successfully for preview.");
+                        } catch (Exception e) {
+                            AppLogger.log("MainController: Error loading image for preview: " + e.getMessage());
+                            // Fallback to text error
+                            if (liveTextContentContainer != null) {
+                                liveTextContentContainer.setVisible(true);
+                                liveTextContentContainer.setManaged(true);
+                            }
+                            stageViewTitle.setText("Error Loading Image");
+                            if (livePreviewText != null) {
+                                livePreviewText.getChildren().clear();
+                                livePreviewText.getChildren().add(new Text("Error loading image: " + imageFile.getName() + "\n" + e.getMessage()));
+                            }
+                        }
+                    } else {
+                        AppLogger.log("MainController: Image file not found for preview: " + imageFile.getAbsolutePath());
+                        // Display error message on screen
+                        if (liveTextContentContainer != null) {
+                            liveTextContentContainer.setVisible(true);
+                            liveTextContentContainer.setManaged(true);
+                        }
+                        stageViewTitle.setText("Error Loading Image");
+                        if (livePreviewText != null) {
+                            livePreviewText.getChildren().clear();
+                            livePreviewText.getChildren().add(new Text("File not found: " + imageFile.getName()));
+                        }
+                    }
+                } else {
+                    AppLogger.log("MainController: liveImageView is null.");
+                }
+                break;
+
+            case "VIDEO":
+                if (liveMediaView != null) {
+                    liveMediaView.setVisible(true);
+                    liveMediaView.setManaged(true);
+                    File videoFile = new File(((MediaItem)currentProjectedItem).getFilePath());
+                    AppLogger.log("MainController: Preparing video preview placeholder for: " + videoFile.getAbsolutePath());
+                    if (videoFile.exists()) {
+                        // For preview, we'll just show a static image or text, not full video playback
+                        // To play video in preview, uncomment below and manage liveMediaPlayer lifecycle
+                        // Media media = new Media(videoFile.toURI().toString());
+                        // liveMediaPlayer = new MediaPlayer(media);
+                        // liveMediaView.setMediaPlayer(liveMediaPlayer);
+                        // liveMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                        // liveMediaPlayer.play();
+                        // liveMediaView.setFitWidth(livePreviewPane.getWidth());
+                        // liveMediaView.setFitHeight(livePreviewPane.getHeight());
+                        // liveMediaView.setPreserveRatio(true);
+
+                        // Placeholder for video preview
+                        if (liveTextContentContainer != null) {
+                            liveTextContentContainer.setVisible(true);
+                            liveTextContentContainer.setManaged(true);
+                        }
+                        if (livePreviewText != null) {
+                            livePreviewText.getChildren().clear();
+                            livePreviewText.getChildren().add(new Text("Video Preview: " + currentProjectedItem.getTitle() + "\n(Playing on Projection Screen)"));
+                        }
+                    } else {
+                        AppLogger.log("MainController: Video file not found for preview: " + videoFile.getAbsolutePath());
+                        // Display error message on screen
+                        if (liveTextContentContainer != null) {
+                            liveTextContentContainer.setVisible(true);
+                            liveTextContentContainer.setManaged(true);
+                        }
+                        stageViewTitle.setText("Error Loading Video");
+                        if (livePreviewText != null) {
+                            livePreviewText.getChildren().clear();
+                            livePreviewText.getChildren().add(new Text("File not found: " + videoFile.getName()));
+                        }
+                    }
+                } else {
+                    AppLogger.log("MainController: liveMediaView is null.");
+                }
+                break;
+
+            case "PPT":
+                if (liveImageView != null) { // Reuse liveImageView for PPT slides
+                    liveImageView.setVisible(true);
+                    liveImageView.setManaged(true);
+                    PptItem pptItem = (PptItem) currentProjectedItem;
+                    if (pptItem.getRenderedSlideImagePaths() != null && !pptItem.getRenderedSlideImagePaths().isEmpty()) {
+                        String slideImagePath = pptItem.getSubItemContent(proj.getCurrentSubItemIndex(), PREVIEW_FONT_SIZE, livePreviewPane.getWidth(), livePreviewPane.getHeight());
+                        File slideImageFile = new File(slideImagePath);
+                        AppLogger.log("MainController: Loading PPT slide image for preview: " + slideImageFile.getAbsolutePath());
+
+                        if (slideImageFile.exists()) {
+                            try {
+                                Image slideImage = new Image(slideImageFile.toURI().toString());
+                                liveImageView.setImage(slideImage);
+                                liveImageView.fitWidthProperty().bind(livePreviewPane.widthProperty());
+                                liveImageView.fitHeightProperty().bind(livePreviewPane.heightProperty());
+                                liveImageView.setPreserveRatio(true);
+                                AppLogger.log("MainController: PPT slide image loaded successfully for preview.");
+                            } catch (Exception e) {
+                                AppLogger.log("MainController: Error loading PPT slide image for preview: " + e.getMessage());
+                                // Fallback to text error
+                                if (liveTextContentContainer != null) {
+                                    liveTextContentContainer.setVisible(true);
+                                    liveTextContentContainer.setManaged(true);
+                                }
+                                stageViewTitle.setText("Error Loading PPT Slide");
+                                if (livePreviewText != null) {
+                                    livePreviewText.getChildren().clear();
+                                    livePreviewText.getChildren().add(new Text("Failed to load slide " + (proj.getCurrentSubItemIndex() + 1) + ": " + slideImageFile.getName() + "\n" + e.getMessage()));
+                                }
+                            }
+                        } else {
+                            AppLogger.log("MainController: PPT slide image file not found for preview: " + slideImageFile.getAbsolutePath());
+                            // Fallback to text error
+                            if (liveTextContentContainer != null) {
+                                liveTextContentContainer.setVisible(true);
+                                liveTextContentContainer.setManaged(true);
+                            }
+                            stageViewTitle.setText("Error Loading PPT Slide");
+                            if (livePreviewText != null) {
+                                livePreviewText.getChildren().clear();
+                                livePreviewText.getChildren().add(new Text("Slide image not found: " + slideImageFile.getName()));
+                            }
+                        }
+                    } else {
+                        AppLogger.log("MainController: No rendered slides found for PPT preview: " + pptItem.getTitle());
+                        if (liveTextContentContainer != null) {
+                            liveTextContentContainer.setVisible(true);
+                            liveTextContentContainer.setManaged(true);
+                        }
+                        stageViewTitle.setText("Error Loading PPT");
+                        if (livePreviewText != null) {
+                            livePreviewText.getChildren().clear();
+                            livePreviewText.getChildren().add(new Text("No slides rendered for: " + pptItem.getTitle()));
+                        }
+                    }
+                } else {
+                    AppLogger.log("MainController: liveImageView is null for PPT preview.");
+                }
+                // Update sub-item list for PPT slides
+                updateSubItemList(currentProjectedItem); // Generalized call
+                // Select the current sub-item in the list
+                if (proj.getCurrentSubItemIndex() >= 0 && currentSubItemList != null && proj.getCurrentSubItemIndex() < currentSubItemList.getItems().size()) {
+                    currentSubItemList.getSelectionModel().select(proj.getCurrentSubItemIndex());
+                    currentSubItemList.scrollTo(proj.getCurrentSubItemIndex());
+                }
+                break;
+
+            default:
+                if (liveTextContentContainer != null) {
+                    liveTextContentContainer.setVisible(true);
+                    liveTextContentContainer.setManaged(true);
+                }
+                stageViewTitle.setText("Unsupported Item Type");
+                if (livePreviewText != null) {
+                    livePreviewText.getChildren().clear();
+                    livePreviewText.getChildren().add(new Text("Cannot display: " + currentProjectedItem.getType()));
+                }
+                AppLogger.log("MainController: Unsupported item type: " + currentProjectedItem.getType());
+                break;
         }
     }
 
@@ -398,13 +798,13 @@ public class MainController {
                 // For previous item, go to its last sub-item
                 ServiceItem prevItem = serviceQueue.get(currentQueueIndex);
                 Projectable prevProjectable = prevItem.getContent();
-                
+
                 // Temporarily show the previous item on projection to get its correct sub-item count
                 // This is a bit of a workaround to get the correct pagination for the *previous* item
                 // without fully displaying it yet.
                 proj.showItem(prevProjectable, 0); // Show first sub-item to trigger pagination calculation
                 currentSubItemIndex = proj.getCurrentProjectedItemSubItemCount() - 1;
-                
+
                 showCurrentItem(); // Now display the previous item at its last sub-item
             }
         }
@@ -438,7 +838,6 @@ public class MainController {
             servicePlannerList.getItems().clear();
             currentQueueIndex = -1;
             currentSubItemIndex = 0;
-            // Removed clearNextItemPreview() as next item preview pane is gone
             clearScreen(); // Clear main preview as well
             AppLogger.log("New service created");
         }
@@ -492,6 +891,15 @@ public class MainController {
 
     @FXML private void exitApp() {
         AppLogger.log("Application exited");
+        // Clean up all temporary PPT image directories on exit
+        for (ServiceItem item : serviceQueue) {
+            if (item.getContent() instanceof PptItem) {
+                ((PptItem) item.getContent()).dispose();
+            }
+        }
+        for (PptItem item : pptLibrary) {
+            item.dispose();
+        }
         System.exit(0);
     }
 
@@ -499,56 +907,65 @@ public class MainController {
         System.out.println("About clicked");
     }
 
-    // Removed updateNextItemPreview() as next item preview pane is gone
-    // Removed clearNextItemPreview() as next item preview pane is gone
+    // Renamed from updateVersesList to updateSubItemList
+    private void updateSubItemList(Projectable item) {
+        ObservableList<SubItemDisplayItem> subItems = FXCollections.observableArrayList();
 
-    private void updateVersesList(Song song) {
-        ObservableList<VerseDisplayItem> verseItems = FXCollections.observableArrayList();
-        
-        if (song != null && !song.getVerseOrder().isEmpty()) {
-            for (int i = 0; i < song.getVerseOrder().size(); i++) {
-                int verseIndex = song.getVerseOrder().get(i);
-                Verse verse = song.getVerses().get(verseIndex);
-                verseItems.add(new VerseDisplayItem(i, verse.getLabel(), verse.getContent()));
+        if (item != null) {
+            // Use arbitrary reasonable dimensions for label calculation, as it's just for the label text.
+            // The actual content for projection will use projection-specific dimensions.
+            double labelCalcWidth = 400.0;
+            double labelCalcHeight = 300.0;
+            double labelCalcFontSize = 16.0;
+
+            int totalSubItems = item.getSubItemCount(labelCalcFontSize, labelCalcWidth, labelCalcHeight);
+            for (int i = 0; i < totalSubItems; i++) {
+                String label = item.getSubItemLabel(i);
+                String contentPreview = item.getSubItemContent(i, labelCalcFontSize, labelCalcWidth, labelCalcHeight);
+                subItems.add(new SubItemDisplayItem(i, label, contentPreview));
             }
         }
-        
-        currentSongVersesList.setItems(verseItems);
-        
-        // Set custom cell factory to display verse labels with preview
-        currentSongVersesList.setCellFactory(lv -> new ListCell<VerseDisplayItem>() {
-            @Override
-            protected void updateItem(VerseDisplayItem item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    String preview = item.content.length() > 30 ? 
-                        item.content.substring(0, 30) + "..." : item.content;
-                    setText(item.label + ": " + preview);
+
+        if (currentSubItemList != null) { // Added null check
+            currentSubItemList.setItems(subItems);
+
+            // Set custom cell factory to display sub-item labels with preview
+            currentSubItemList.setCellFactory(lv -> new ListCell<SubItemDisplayItem>() {
+                @Override
+                protected void updateItem(SubItemDisplayItem item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        String preview = item.content.length() > 30 ?
+                                item.content.substring(0, 30) + "..." : item.content;
+                        setText(item.label + ": " + preview);
+                    }
                 }
-            }
-        });
-        
-        // Double-click handler to jump to verse
-        currentSongVersesList.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 2) {
-                VerseDisplayItem selected = currentSongVersesList.getSelectionModel().getSelectedItem();
-                if (selected != null) {
-                    currentSubItemIndex = selected.position;
-                    showCurrentItem();
+            });
+
+            // Double-click handler to jump to sub-item
+            currentSubItemList.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 2) {
+                    SubItemDisplayItem selected = currentSubItemList.getSelectionModel().getSelectedItem();
+                    if (selected != null) {
+                        currentSubItemIndex = selected.position;
+                        showCurrentItem();
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            AppLogger.log("MainController: currentSubItemList is null, cannot update sub-item list.");
+        }
     }
 
-    // Helper class to display verse information
-    private static class VerseDisplayItem {
+    // Helper class to display sub-item information (generalized from VerseDisplayItem)
+    private static class SubItemDisplayItem {
         int position;
         String label;
         String content;
 
-        VerseDisplayItem(int position, String label, String content) {
+        SubItemDisplayItem(int position, String label, String content) {
             this.position = position;
             this.label = label;
             this.content = content;

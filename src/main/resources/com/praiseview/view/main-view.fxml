@@ -7,6 +7,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.text.Text?>
+<?import javafx.scene.media.MediaView?> <!-- Added for MediaView -->
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -48,11 +49,26 @@
             <!-- Stage View and Controls -->
             <VBox spacing="8" HBox.hgrow="ALWAYS">
                 <Label text="Stage View (Current Projection)" styleClass="header"/>
-                <!-- The livePreviewPane will now directly embed the projectionRoot from ProjectionController -->
+                <!-- The livePreviewPane will now contain its own title and textflow -->
                 <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefHeight="500" prefWidth="800">
-                    <VBox alignment="CENTER" spacing="10">
+                    <!-- Container for text-based content (Song, Prayer, Announcement) -->
+                    <VBox fx:id="liveTextContentContainer" alignment="CENTER" spacing="10" StackPane.alignment="CENTER">
                         <Label fx:id="stageViewTitle" style="-fx-text-fill: #ffd700; -fx-font-size: 24px;"/>
                         <TextFlow fx:id="livePreviewText" textAlignment="CENTER" style="-fx-padding: 10px;"/>
+                    </VBox>
+
+                    <!-- ImageView for displaying image previews -->
+                    <ImageView fx:id="liveImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
+                               preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
+
+                    <!-- MediaView for displaying video previews -->
+                    <MediaView fx:id="liveMediaView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
+                               visible="false" managed="false" StackPane.alignment="CENTER"/>
+
+                    <!-- Placeholder for PPT previews (text-based for now) -->
+                    <VBox fx:id="livePptPlaceholderContainer" alignment="CENTER" spacing="20" visible="false" managed="false" StackPane.alignment="CENTER">
+                        <Label text="PPT Preview (Placeholder)" style="-fx-font-size: 24px; -fx-text-fill: #ffd700;"/>
+                        <Text fx:id="livePptPlaceholderText" style="-fx-font-size: 16px; -fx-text-fill: white;" textAlignment="CENTER"/>
                     </VBox>
                 </StackPane>
 
@@ -156,8 +172,36 @@
                 </VBox>
             </Tab>
             <Tab text="Bible"/>
-            <Tab text="Images"/>
-            <Tab text="Videos"/>
+            <Tab text="Images">
+                <VBox>
+                    <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                    <HBox spacing="8">
+                        <Button fx:id="openImageButton" text="📂 Open Images" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="clearImageButton" text="🗑️ Clear Images" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <ListView fx:id="imageList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                </VBox>
+            </Tab>
+            <Tab text="Videos">
+                <VBox>
+                    <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                    <HBox spacing="8">
+                        <Button fx:id="openVideoButton" text="🎬 Open Videos" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="clearVideoButton" text="🗑️ Clear Videos" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <ListView fx:id="videoList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                </VBox>
+            </Tab>
+            <Tab text="PPT">
+                <VBox>
+                    <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                    <HBox spacing="8">
+                        <Button fx:id="openPptButton" text="📊 Open PPTs" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="clearPptButton" text="🗑️ Clear PPTs" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <ListView fx:id="pptList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                </VBox>
+            </Tab>
         </TabPane>
     </bottom>
 

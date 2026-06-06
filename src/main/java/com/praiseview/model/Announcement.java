@@ -55,4 +55,15 @@ public class Announcement implements Projectable {
     public String toString() {
         return title + ": " + (content.length() > 50 ? content.substring(0, 47) + "..." : content);
     }
+
+    @Override
+    public String getSubItemLabel(int index) {
+        // For announcements, sub-items are pages.
+        // Similar to Prayer, re-paginate for accurate labeling.
+        int totalPages = TextPaginationUtil.paginateText(this.content, 16.0, 400.0, 300.0).size(); // Use preview-like dimensions
+        if (index >= 0 && index < totalPages) {
+            return "Page " + (index + 1);
+        }
+        return "Page (N/A)";
+    }
 }

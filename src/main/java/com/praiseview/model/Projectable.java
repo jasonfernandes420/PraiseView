@@ -17,7 +17,10 @@ import java.util.List;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Song.class, name = "SONG"),
         @JsonSubTypes.Type(value = Prayer.class, name = "PRAYER"),
-        @JsonSubTypes.Type(value = Announcement.class, name = "ANNOUNCEMENT")
+        @JsonSubTypes.Type(value = Announcement.class, name = "ANNOUNCEMENT"),
+        @JsonSubTypes.Type(value = MediaItem.class, name = "IMAGE"), // Add MediaItem for IMAGE
+        @JsonSubTypes.Type(value = MediaItem.class, name = "VIDEO"), // Add MediaItem for VIDEO
+        @JsonSubTypes.Type(value = PptItem.class, name = "PPT")    // Add PptItem for PPT
         // Add other Projectable implementations here as they are created
 })
 public interface Projectable {
@@ -42,7 +45,7 @@ public interface Projectable {
     String getFullContent();
 
     /**
-     * Returns the content for a specific sub-item (e.g., a verse for a song, a page for a prayer).
+     * Returns the content for a specific sub-item (e.g., a verse for a song, a page for a prayer, an image path for a PPT slide).
      * The interpretation of 'index' depends on the item type.
      * @param index The index of the sub-item (e.g., verse number, page number).
      * @param fontSize The font size to consider for dynamic content (e.g., pagination).
@@ -53,7 +56,7 @@ public interface Projectable {
     String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight);
 
     /**
-     * Returns the total number of sub-items (e.g., verses for a song, pages for a prayer).
+     * Returns the total number of sub-items (e.g., verses for a song, pages for a prayer, slides for a PPT).
      * This can be dynamic for items like prayers that are paginated based on display size.
      * @param fontSize The font size to consider for dynamic content (e.g., pagination).
      * @param maxWidth The maximum width available for rendering (for pagination).
@@ -61,4 +64,12 @@ public interface Projectable {
      * @return The total count of sub-items.
      */
     int getSubItemCount(double fontSize, double maxWidth, double maxHeight);
+
+    /**
+     * Returns a user-friendly label for a specific sub-item (e.g., "Verse 1", "Page 2", "Slide 3").
+     * This is used for displaying in lists like the "Current Item Verses/Pages" pane.
+     * @param index The index of the sub-item.
+     * @return A descriptive label for the sub-item.
+     */
+    String getSubItemLabel(int index);
 }

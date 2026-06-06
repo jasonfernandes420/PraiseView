@@ -2,18 +2,36 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
 <?import javafx.scene.text.TextFlow?>
-<StackPane 
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.media.MediaView?>
+<?import javafx.scene.text.Text?>
+
+<StackPane
 fx:id="projectionRoot"
 xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.praiseview.controller.ProjectionController"
            style="-fx-background-color: #1e1e1e;">
 
-    <VBox alignment="CENTER" spacing="30">
+    <!-- Container for text-based content (Song, Prayer, Announcement) -->
+    <VBox fx:id="textContentContainer" alignment="CENTER" spacing="30" StackPane.alignment="CENTER">
         <Label fx:id="titleLabel" style="-fx-font-size: 42px; -fx-text-fill: white;"/>
         <TextFlow fx:id="lyricsFlow" textAlignment="CENTER"/>
+    </VBox>
+
+    <!-- ImageView for displaying images -->
+    <ImageView fx:id="imageView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
+               preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
+
+    <!-- MediaView for displaying videos -->
+    <MediaView fx:id="mediaView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
+               visible="false" managed="false" StackPane.alignment="CENTER"/>
+
+    <!-- Placeholder for PPTs (text-based for now) -->
+    <VBox fx:id="pptPlaceholderContainer" alignment="CENTER" spacing="20" visible="false" managed="false" StackPane.alignment="CENTER">
+        <Label text="PPT Projection (Placeholder)" style="-fx-font-size: 36px; -fx-text-fill: #ffd700;"/>
+        <Text fx:id="pptPlaceholderText" style="-fx-font-size: 24px; -fx-text-fill: white;" textAlignment="CENTER"/>
     </VBox>
 
 </StackPane>
