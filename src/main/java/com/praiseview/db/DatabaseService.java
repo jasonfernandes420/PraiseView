@@ -1,5 +1,6 @@
 package com.praiseview.db;
 
+import com.praiseview.model.Prayer;
 import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
 import java.sql.*;
@@ -40,6 +41,14 @@ public class DatabaseService {
                     position INTEGER,
                     FOREIGN KEY(song_id) REFERENCES songs(id)
                 )""");
+
+            stmt.execute("""
+            CREATE TABLE IF NOT EXISTS prayers (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                content TEXT,
+                category TEXT
+            )""");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -142,5 +151,42 @@ public class DatabaseService {
             e.printStackTrace();
         }
         return songs;
+    }
+    public void savePrayer(Prayer prayer) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            String sql = """
+            INSERT OR REPLACE INTO prayers (id, title, content, category)
+            VALUES (?, ?, ?, ?)""";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, prayer.getId());
+                pstmt.setString(2, prayer.getTitle());
+                pstmt.setString(3, prayer.getContent());
+                pstmt.setString(4, prayer.getCategory());
+                pstmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Prayer> loadAllPrayers() {
+        List<Prayer> prayers = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement()) {
+
+            ResultSet rs = stmt.executeQuery("SELECT * FROM prayers ORDER BY title");
+            while (rs.next()) {
+                Prayer p = new Prayer();
+                p.setId(rs.getString("id"));
+                p.setTitle(rs.getString("title"));
+                p.setContent(rs.getString("content"));
+                p.setCategory(rs.getString("category"));
+                prayers.add(p);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return prayers;
     }
 }

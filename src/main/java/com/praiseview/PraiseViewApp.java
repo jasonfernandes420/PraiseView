@@ -8,6 +8,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle; // Import StageStyle
 import java.io.IOException;
 
 public class PraiseViewApp extends Application {
@@ -58,28 +59,34 @@ public class PraiseViewApp extends Application {
 
             Screen projector = screens.get(1);
 
+            // Make it undecorated to remove OS window borders/title bar
+            projStage.initStyle(StageStyle.UNDECORATED);
+
+            // Set position and size to cover the entire projector screen
             projStage.setX(projector.getBounds().getMinX());
             projStage.setY(projector.getBounds().getMinY());
             projStage.setWidth(projector.getBounds().getWidth());
             projStage.setHeight(projector.getBounds().getHeight());
 
-            projStage.setFullScreen(true);
-            projStage.setFullScreenExitHint("");  // Hide ESC exit hint
+            // Keep projection window always on top
+            projStage.setAlwaysOnTop(true);
+
+            // Removed setFullScreen(true) as we are using undecorated + manual sizing
+            projStage.setFullScreenExitHint("");  // Still good to keep, even if not strictly fullScreen
             projStage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);  // Disable ESC exit
 
-            System.out.println("✅ Projection started on second monitor");
+            System.out.println("✅ Projection started on second monitor (undecorated)");
 
         } else {
 
             projStage.setWidth(1280);
             projStage.setHeight(720);
-
+            // For windowed mode, we might still want it undecorated or not, depending on preference.
+            // Keeping it decorated for now if only one screen.
             System.out.println("⚠️ Running projection in window mode");
 
         }
 
-        // Keep projection window always on top - set BEFORE show
-        projStage.setAlwaysOnTop(true);
         projStage.show();
         
         // Request focus on the projection stage

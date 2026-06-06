@@ -2,6 +2,9 @@ package com.praiseview.controller;
 
 import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
+import com.praiseview.model.Announcement;
+import com.praiseview.model.Prayer;
+import com.praiseview.model.Projectable;
 import com.praiseview.model.ServiceItem;
 import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
@@ -26,17 +29,12 @@ public class MainController {
     @FXML private ListView<ServiceItem> servicePlannerList;
     @FXML private Button editSongButton;
 
-    // Center: Editor + Preview
-    @FXML private TextArea itemEditorArea;
+    // Center: Stage View
     @FXML private StackPane livePreviewPane;
     @FXML private Label stageViewTitle;
     @FXML private TextFlow livePreviewText;
     
-    @FXML private StackPane nextItemPreviewPane;
-    @FXML private Label nextItemTitle;
-    @FXML private TextFlow nextItemPreviewText;
-
-    // Right: Controls
+    // Right: Controls (moved from old right pane)
     @FXML private Button projectButton, blackoutButton, clearButton;
     @FXML private Button nextVerseButton, prevVerseButton;
     @FXML private ListView<VerseDisplayItem> currentSongVersesList;
@@ -46,16 +44,28 @@ public class MainController {
     @FXML private TextField searchField;
     @FXML private Button addSongButton;
 
+    //prayer tab
+    @FXML private ListView<Prayer> prayerList;
+    @FXML private Button addPrayerButton;
+    @FXML private Button editPrayerButton; // Added for edit prayer functionality
+
     private DatabaseService dbService = new DatabaseService();
     private JsonService jsonService = new JsonService();
 
     private ObservableList<Song> allSongs = FXCollections.observableArrayList();
     private FilteredList<Song> filteredSongs;
     private ObservableList<ServiceItem> serviceQueue = FXCollections.observableArrayList();
+    private ObservableList<Prayer> allPrayers = FXCollections.observableArrayList();
 
     private int currentQueueIndex = -1;
-    private int currentVersePosition = 0;
+    private int currentSubItemIndex = 0; // For songs: verse index, for prayers/announcements: page index
     private javafx.scene.Scene scene;
+
+    // Constants for preview text sizing (can be adjusted or made dynamic)
+    private static final double PREVIEW_FONT_SIZE = 16.0;
+    private static final double PREVIEW_WIDTH_DEFAULT = 400.0; // Default width for preview pane
+    private static final double PREVIEW_HEIGHT_DEFAULT = 300.0; // Default height for preview pane
+
 
     public void setScene(javafx.scene.Scene scene) {
         this.scene = scene;
@@ -63,6 +73,7 @@ public class MainController {
     @FXML
     public void initialize() {
         loadSongs();
+        loadPrayers();
 
         // Setup Song Library with Search
         filteredSongs = new FilteredList<>(allSongs, p -> true);
@@ -82,16 +93,11 @@ public class MainController {
 
         // Context menu for service list
         ContextMenu serviceContextMenu = new ContextMenu();
-        MenuItem previewItem = new MenuItem("Preview");
+        // Removed previewItem as next item preview pane is gone
         MenuItem deleteItem = new MenuItem("Delete");
-        serviceContextMenu.getItems().addAll(previewItem, deleteItem);
+        serviceContextMenu.getItems().addAll(deleteItem);
 
-        previewItem.setOnAction(e -> {
-            ServiceItem selected = servicePlannerList.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                updateNextItemPreview(selected);
-            }
-        });
+        // Removed previewItem.setOnAction
 
         deleteItem.setOnAction(e -> {
             int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
@@ -111,7 +117,7 @@ public class MainController {
             if (e.getClickCount() == 2 && selected != null) {
                 // Double-click: start from that song
                 currentQueueIndex = servicePlannerList.getSelectionModel().getSelectedIndex();
-                currentVersePosition = 0;
+                currentSubItemIndex = 0;
                 startProjection();
             } else if (e.getButton() == javafx.scene.input.MouseButton.SECONDARY && selected != null) {
                 // Right-click: show context menu
@@ -131,22 +137,15 @@ public class MainController {
         editSongButton.setOnAction(e -> editSelectedSong());
 
         // Verse Navigation
-        if (nextVerseButton != null) nextVerseButton.setOnAction(e -> nextVerse());
-        if (prevVerseButton != null) prevVerseButton.setOnAction(e -> previousVerse());
+        if (nextVerseButton != null) nextVerseButton.setOnAction(e -> nextItemOrSubItem());
+        if (prevVerseButton != null) prevVerseButton.setOnAction(e -> previousItemOrSubItem());
 
         // Context menu for song library
         ContextMenu libraryContextMenu = new ContextMenu();
-        MenuItem previewLibraryItem = new MenuItem("Preview");
-        libraryContextMenu.getItems().add(previewLibraryItem);
+        // Removed previewLibraryItem as next item preview pane is gone
+        // libraryContextMenu.getItems().add(previewLibraryItem); // Removed
 
-        previewLibraryItem.setOnAction(e -> {
-            Song selected = songLibraryList.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                // Create a temporary ServiceItem to preview
-                ServiceItem tempItem = new ServiceItem(selected);
-                updateNextItemPreview(tempItem);
-            }
-        });
+        // Removed previewLibraryItem.setOnAction
 
         songLibraryList.setOnMouseClicked(e -> {
             if (e.getButton() == javafx.scene.input.MouseButton.SECONDARY) {
@@ -160,6 +159,14 @@ public class MainController {
 
         // Add scene-level arrow key handler (global)
         livePreviewPane.setFocusTraversable(true);
+
+        // Prayers
+        prayerList.setItems(allPrayers);
+        addPrayerButton.setOnAction(e -> openPrayerEditor(null));
+        // Set action for editPrayerButton
+        if (editPrayerButton != null) {
+            editPrayerButton.setOnAction(e -> editSelectedPrayer());
+        }
     }
 
     public void setupSceneKeyHandler() {
@@ -171,31 +178,45 @@ public class MainController {
 
     private void handleArrowKey(KeyEvent e) {
         if (e.getCode() == KeyCode.LEFT) {
-            previousVerse();
+            previousItemOrSubItem();
             e.consume();
         } else if (e.getCode() == KeyCode.RIGHT) {
-            nextVerse();
+            nextItemOrSubItem();
             e.consume();
         }
     }
 
     private void loadSongs() {
         allSongs.setAll(dbService.loadAllSongs());
-        songLibraryList.refresh();   // Add this line
+        songLibraryList.refresh();
     }
 
     private void setupDragAndDrop() {
+        // === Drag from Song Library ===
         songLibraryList.setOnDragDetected(e -> {
             Song selected = songLibraryList.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 Dragboard db = songLibraryList.startDragAndDrop(TransferMode.COPY);
                 ClipboardContent content = new ClipboardContent();
-                content.putString(selected.getId());
+                content.putString("SONG:" + selected.getId());
                 db.setContent(content);
                 e.consume();
             }
         });
 
+        // === Drag from Prayers ===
+        prayerList.setOnDragDetected(e -> {
+            Prayer selected = prayerList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                Dragboard db = prayerList.startDragAndDrop(TransferMode.COPY);
+                ClipboardContent content = new ClipboardContent();
+                content.putString("PRAYER:" + selected.getId());
+                db.setContent(content);
+                e.consume();
+            }
+        });
+
+        // === Drop on Service Queue ===
         servicePlannerList.setOnDragOver(e -> {
             if (e.getDragboard().hasString()) {
                 e.acceptTransferModes(TransferMode.COPY);
@@ -203,16 +224,26 @@ public class MainController {
         });
 
         servicePlannerList.setOnDragDropped(e -> {
-            Song song = songLibraryList.getSelectionModel().getSelectedItem();
-            if (song != null) {
-                serviceQueue.add(new ServiceItem(song));
-                // If this is the first item, set currentQueueIndex to 0
-                if (currentQueueIndex == -1 && serviceQueue.size() == 1) {
-                    currentQueueIndex = 0;
+            Dragboard db = e.getDragboard();
+            if (!db.hasString()) return;
+
+            String data = db.getString();
+
+            if (data.startsWith("SONG:")) {
+                Song song = songLibraryList.getSelectionModel().getSelectedItem();
+                if (song != null) {
+                    serviceQueue.add(new ServiceItem(song)); // Create ServiceItem with Projectable
                 }
-                servicePlannerList.refresh();
-                e.setDropCompleted(true);
             }
+            else if (data.startsWith("PRAYER:")) {
+                Prayer prayer = prayerList.getSelectionModel().getSelectedItem();
+                if (prayer != null) {
+                    serviceQueue.add(new ServiceItem(prayer)); // Create ServiceItem with Projectable
+                }
+            }
+
+            servicePlannerList.refresh();
+            e.setDropCompleted(true);
         });
     }
 
@@ -235,93 +266,164 @@ public class MainController {
         }
     }
 
+    // New method to edit selected prayer
+    @FXML
+    private void editSelectedPrayer() {
+        Prayer selected = prayerList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            openPrayerEditor(selected);
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Please select a prayer in the library to edit.");
+            alert.show();
+        }
+    }
+
     private void startProjection() {
         if (serviceQueue.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Please add songs to the service order first.");
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Please add items to the service order first.");
             alert.show();
             return;
         }
         if (currentQueueIndex == -1) currentQueueIndex = 0;
-        currentVersePosition = 0;
-        showCurrentItem();
+        currentSubItemIndex = 0; // Reset sub-item position for new item
+
+        // Update projection first, then mirror in preview
+        ServiceItem item = serviceQueue.get(currentQueueIndex);
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj != null) {
+            proj.showItem(item.getContent(), currentSubItemIndex);
+        }
+        updateCenterPreview(); // Mirror the projection
+        livePreviewPane.requestFocus(); // Ensure focus for arrow keys
     }
 
     private void showCurrentItem() {
+        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+            clearScreen();
+            return;
+        }
 
         ServiceItem item = serviceQueue.get(currentQueueIndex);
-        Song song = item.getSong();
+        Projectable projectable = item.getContent();
 
-        if (song == null || song.getVerseOrder().isEmpty()) return;
-
-        int verseIndex = song.getVerseOrder().get(currentVersePosition);
-        Verse verse = song.getVerses().get(verseIndex);
-
-        updateCenterPreview(song, verse);
-
-        // Update Actual Projection (if available)
+        // Update projection first, then mirror in preview
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.showSlide(song, currentVersePosition);
+            proj.showItem(projectable, currentSubItemIndex);
         }
+        updateCenterPreview(); // Mirror the projection
+        livePreviewPane.requestFocus(); // Ensure focus for arrow keys
     }
 
-    private void updateCenterPreview(Song song, Verse verse) {
-        // Update title (just the song title, no verse label)
-        stageViewTitle.setText(song.getTitle());
-
-        // Update lyrics
+    // This method now mirrors the projection screen
+    private void updateCenterPreview() {
         livePreviewText.getChildren().clear();
-        Text lyricsText = new Text(verse.getContent());
-        lyricsText.setFill(javafx.scene.paint.Color.WHITE);
-        lyricsText.setStyle("-fx-font-size: 16px; -fx-line-spacing: 8px;");
+        currentSongVersesList.getItems().clear(); // Clear verse list by default
 
-        livePreviewText.getChildren().add(lyricsText);
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null || proj.getCurrentProjectedItem() == null) {
+            stageViewTitle.setText("");
+            return;
+        }
+
+        // Get the currently displayed content and title directly from the ProjectionController
+        stageViewTitle.setText(proj.getCurrentDisplayedTitle());
+        
+        Text mainText = new Text(proj.getCurrentDisplayedContent());
+        mainText.setFill(javafx.scene.paint.Color.WHITE);
+        mainText.setStyle("-fx-font-size: " + PREVIEW_FONT_SIZE + "px; -fx-line-spacing: 8px;");
+        livePreviewText.getChildren().add(mainText);
         livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         
-        // Update current song verses list
-        updateVersesList(song);
-    }
-    @FXML
-    private void nextVerse() {
-        if (currentQueueIndex >= 0 && currentQueueIndex < serviceQueue.size()) {
-            ServiceItem item = serviceQueue.get(currentQueueIndex);
-            // If there are more verses in the current song, go to next verse
-            if (currentVersePosition < item.getSong().getVerseOrder().size() - 1) {
-                currentVersePosition++;
-                showCurrentItem();
-            } else {
-                // Current song is done, move to next song
-                if (currentQueueIndex < serviceQueue.size() - 1) {
-                    currentQueueIndex++;
-                    currentVersePosition = 0;
-                    showCurrentItem();
-                }
+        // Only update verse list if it's a Song
+        Projectable currentProjectedItem = proj.getCurrentProjectedItem();
+        if (currentProjectedItem instanceof Song) {
+            Song song = (Song) currentProjectedItem;
+            updateVersesList(song);
+            // Select the current verse in the list
+            if (proj.getCurrentSubItemIndex() >= 0 && proj.getCurrentSubItemIndex() < currentSongVersesList.getItems().size()) {
+                currentSongVersesList.getSelectionModel().select(proj.getCurrentSubItemIndex());
+                currentSongVersesList.scrollTo(proj.getCurrentSubItemIndex());
             }
         }
     }
 
     @FXML
-    private void previousVerse() {
-        if (currentVersePosition > 0) {
-            currentVersePosition--;
+    private void nextItemOrSubItem() {
+        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+            return; // No item selected or queue is empty
+        }
+
+        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        Projectable currentProjectable = currentItem.getContent();
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) return;
+
+        // Get total sub-items from the ProjectionController's current state
+        int totalSubItems = proj.getCurrentProjectedItemSubItemCount();
+
+        if (currentSubItemIndex < totalSubItems - 1) {
+            currentSubItemIndex++; // Move to next sub-item (verse/page)
             showCurrentItem();
-        } else if (currentQueueIndex > 0) {
-            // At start of current song, go to previous song's last verse
-            currentQueueIndex--;
-            ServiceItem item = serviceQueue.get(currentQueueIndex);
-            currentVersePosition = item.getSong().getVerseOrder().size() - 1;
+        } else {
+            // Last sub-item of current Projectable, move to next ServiceItem
+            if (currentQueueIndex < serviceQueue.size() - 1) {
+                currentQueueIndex++;
+                currentSubItemIndex = 0; // Reset sub-item position for new item
+                showCurrentItem();
+            }
+        }
+    }
+
+    @FXML
+    private void previousItemOrSubItem() {
+        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+            return; // No item selected or queue is empty
+        }
+
+        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        Projectable currentProjectable = currentItem.getContent();
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) return;
+
+        if (currentSubItemIndex > 0) {
+            currentSubItemIndex--; // Move to previous sub-item (verse/page)
             showCurrentItem();
+        } else {
+            // First sub-item of current Projectable, move to previous ServiceItem
+            if (currentQueueIndex > 0) {
+                currentQueueIndex--;
+                // For previous item, go to its last sub-item
+                ServiceItem prevItem = serviceQueue.get(currentQueueIndex);
+                Projectable prevProjectable = prevItem.getContent();
+                
+                // Temporarily show the previous item on projection to get its correct sub-item count
+                // This is a bit of a workaround to get the correct pagination for the *previous* item
+                // without fully displaying it yet.
+                proj.showItem(prevProjectable, 0); // Show first sub-item to trigger pagination calculation
+                currentSubItemIndex = proj.getCurrentProjectedItemSubItemCount() - 1;
+                
+                showCurrentItem(); // Now display the previous item at its last sub-item
+            }
         }
     }
 
     private void blackout() {
         ProjectionController proj = PraiseViewApp.getProjectionController();
-        if (proj != null) proj.blackout();
+        if (proj != null) {
+            proj.blackout();
+            updateCenterPreview(); // Mirror the blackout state in the stage view
+        }
     }
 
     private void clearScreen() {
         ProjectionController proj = PraiseViewApp.getProjectionController();
-        if (proj != null) proj.clear();
+        if (proj != null) {
+            proj.clear();
+            updateCenterPreview(); // Mirror the clear state in the stage view
+        }
     }
 
     // Menu Actions
@@ -329,21 +431,22 @@ public class MainController {
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("New Service");
         confirmAlert.setHeaderText("Create New Service?");
-        confirmAlert.setContentText("This will clear all songs from the current service. Continue?");
+        confirmAlert.setContentText("This will clear all items from the current service. Continue?");
 
         if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             serviceQueue.clear();
             servicePlannerList.getItems().clear();
             currentQueueIndex = -1;
-            currentVersePosition = 0;
-            clearNextItemPreview();
+            currentSubItemIndex = 0;
+            // Removed clearNextItemPreview() as next item preview pane is gone
+            clearScreen(); // Clear main preview as well
             AppLogger.log("New service created");
         }
     }
 
     @FXML private void saveService() {
         if (serviceQueue.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot save empty service. Add songs first.");
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot save empty service. Add items first.");
             alert.show();
             return;
         }
@@ -373,7 +476,8 @@ public class MainController {
                 serviceQueue.addAll(loadedService);
                 servicePlannerList.refresh();
                 currentQueueIndex = -1;
-                currentVersePosition = 0;
+                currentSubItemIndex = 0;
+                clearScreen(); // Clear main preview after loading new service
                 AppLogger.log("Service loaded: " + file.getName());
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load service file.");
@@ -395,37 +499,8 @@ public class MainController {
         System.out.println("About clicked");
     }
 
-    private void updateNextItemPreview(ServiceItem item) {
-        if (item == null || item.getSong() == null) {
-            clearNextItemPreview();
-            return;
-        }
-
-        Song song = item.getSong();
-        if (song.getVerseOrder().isEmpty()) {
-            clearNextItemPreview();
-            return;
-        }
-
-        // Show first verse of the song
-        int verseIndex = song.getVerseOrder().get(0);
-        Verse verse = song.getVerses().get(verseIndex);
-
-        nextItemTitle.setText(song.getTitle());
-        nextItemPreviewText.getChildren().clear();
-        
-        Text lyricsText = new Text(verse.getContent());
-        lyricsText.setFill(javafx.scene.paint.Color.WHITE);
-        lyricsText.setStyle("-fx-font-size: 16px; -fx-line-spacing: 8px;");
-
-        nextItemPreviewText.getChildren().add(lyricsText);
-        nextItemPreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-    }
-
-    private void clearNextItemPreview() {
-        nextItemTitle.setText("");
-        nextItemPreviewText.getChildren().clear();
-    }
+    // Removed updateNextItemPreview() as next item preview pane is gone
+    // Removed clearNextItemPreview() as next item preview pane is gone
 
     private void updateVersesList(Song song) {
         ObservableList<VerseDisplayItem> verseItems = FXCollections.observableArrayList();
@@ -460,7 +535,7 @@ public class MainController {
             if (e.getClickCount() == 2) {
                 VerseDisplayItem selected = currentSongVersesList.getSelectionModel().getSelectedItem();
                 if (selected != null) {
-                    currentVersePosition = selected.position;
+                    currentSubItemIndex = selected.position;
                     showCurrentItem();
                 }
             }
@@ -478,5 +553,19 @@ public class MainController {
             this.label = label;
             this.content = content;
         }
+    }
+
+    private void openPrayerEditor(Prayer prayer) {
+        PrayerEditorDialog dialog = new PrayerEditorDialog(prayer);
+        dialog.showAndWait().ifPresent(result -> {
+            dbService.savePrayer(result);           // ← Save to DB
+            loadPrayers();                          // Refresh list
+            AppLogger.log("Prayer saved: " + result.getTitle());
+        });
+    }
+
+    private void loadPrayers() {
+        allPrayers.setAll(dbService.loadAllPrayers());
+        prayerList.refresh(); // Explicitly refresh the ListView
     }
 }

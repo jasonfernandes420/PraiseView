@@ -13,7 +13,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Song {
+public class Song implements Projectable { // Implement Projectable interface
 
     private String id = UUID.randomUUID().toString();
     private String title;
@@ -87,5 +87,35 @@ public class Song {
     @Override
     public String toString() {
         return getTitle();   // This fixes class name display
+    }
+
+    // --- Projectable Interface Implementations ---
+
+    @Override
+    public String getType() {
+        return "SONG";
+    }
+
+    @Override
+    public String getFullContent() {
+        StringBuilder fullContent = new StringBuilder();
+        for (int i = 0; i < verseOrder.size(); i++) {
+            Verse verse = getVerseAtPosition(i);
+            if (verse != null) {
+                fullContent.append(verse.getContent()).append("\n\n");
+            }
+        }
+        return fullContent.toString().trim();
+    }
+
+    @Override
+    public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
+        Verse verse = getVerseAtPosition(index);
+        return (verse != null) ? verse.getContent() : "";
+    }
+
+    @Override
+    public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
+        return verseOrder.size();
     }
 }
