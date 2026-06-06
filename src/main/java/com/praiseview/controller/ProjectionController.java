@@ -6,6 +6,7 @@ import com.praiseview.model.Projectable;
 import com.praiseview.model.Song;
 import com.praiseview.model.MediaItem;
 import com.praiseview.model.PptItem; // Import PptItem
+import com.praiseview.model.Theme; // Import Theme
 import com.praiseview.util.AppLogger;
 import com.praiseview.util.TextPaginationUtil;
 import javafx.fxml.FXML;
@@ -313,6 +314,103 @@ public class ProjectionController {
             AppLogger.log("ProjectionController: Video seeked by " + seconds + " seconds to " + newTime);
         } else {
             AppLogger.log("ProjectionController: No media player available or video stopped for seeking.");
+        }
+    }
+
+    /**
+     * Applies the given theme to the projection screen.
+     * @param theme The theme to apply.
+     */
+    public void applyTheme(Theme theme) {
+        if (theme == null) {
+            AppLogger.log("ProjectionController: Attempted to apply a null theme.");
+            return;
+        }
+        AppLogger.log("ProjectionController: Applying theme: " + theme.getName());
+
+        // Apply font, size, color, line spacing, and alignment to lyricsFlow
+        lyricsFlow.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-fill: %s; -fx-line-spacing: %.1fpx;",
+                theme.getFontFamily(), theme.getFontSize(), theme.getTextColor(), theme.getLineSpacing()));
+        
+        // Apply font, size, and color to titleLabel
+        titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
+                theme.getFontFamily(), theme.getFontSize() * 0.7, theme.getTextColor())); // Title font size slightly smaller
+
+        // Apply text alignment
+        switch (theme.getTextAlignment().toUpperCase()) {
+            case "LEFT":
+                lyricsFlow.setTextAlignment(TextAlignment.LEFT);
+                break;
+            case "RIGHT":
+                lyricsFlow.setTextAlignment(TextAlignment.RIGHT);
+                break;
+            case "CENTER":
+            default:
+                lyricsFlow.setTextAlignment(TextAlignment.CENTER);
+                break;
+        }
+
+        // Handle background: color, image, or video
+        // First, clear any existing background media
+        projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Default to color
+        imageView.setVisible(false);
+        imageView.setManaged(false);
+        imageView.setImage(null);
+        mediaView.setVisible(false);
+        mediaView.setManaged(false);
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
+
+        if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
+            File imageFile = new File(theme.getBackgroundImagePath());
+            if (imageFile.exists()) {
+                try {
+                    Image image = new Image(imageFile.toURI().toString());
+                    imageView.setImage(image);
+                    imageView.setPreserveRatio(true);
+                    imageView.setFitWidth(projectionRoot.getWidth());
+                    imageView.setFitHeight(projectionRoot.getHeight());
+                    imageView.setVisible(true);
+                    imageView.setManaged(true);
+                    AppLogger.log("ProjectionController: Applied background image: " + theme.getBackgroundImagePath());
+                } catch (Exception e) {
+                    AppLogger.log("ProjectionController: Error applying background image: " + e.getMessage());
+                }
+            } else {
+                AppLogger.log("ProjectionController: Background image file not found: " + theme.getBackgroundImagePath());
+            }
+        } else if (theme.getBackgroundVideoPath() != null && !theme.getBackgroundVideoPath().isEmpty()) {
+            File videoFile = new File(theme.getBackgroundVideoPath());
+            if (videoFile.exists()) {
+                try {
+                    Media media = new Media(videoFile.toURI().toString());
+                    mediaPlayer = new MediaPlayer(media);
+                    mediaView.setMediaPlayer(mediaPlayer);
+                    mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                    mediaPlayer.play();
+                    mediaView.setPreserveRatio(true);
+                    mediaView.setFitWidth(projectionRoot.getWidth());
+                    mediaView.setFitHeight(projectionRoot.getHeight());
+                    mediaView.setVisible(true);
+                    mediaView.setManaged(true);
+                    AppLogger.log("ProjectionController: Applied background video: " + theme.getBackgroundVideoPath());
+                } catch (Exception e) {
+                    AppLogger.log("ProjectionController: Error applying background video: " + e.getMessage());
+                }
+            } else {
+                AppLogger.log("ProjectionController: Background video file not found: " + theme.getBackgroundVideoPath());
+            }
+        }
+
+        // Update currentFontSize for pagination calculations
+        this.currentFontSize = theme.getFontSize();
+
+        // Re-render the current projected item to ensure new styles are applied
+        if (currentProjectedItem != null) {
+            showItem(currentProjectedItem, currentSubItemIndex);
         }
     }
 

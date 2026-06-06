@@ -10,6 +10,7 @@ import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
 import com.praiseview.model.MediaItem; // Import MediaItem
 import com.praiseview.model.PptItem; // Import PptItem
+import com.praiseview.model.Theme; // Import Theme
 import com.praiseview.service.JsonService;
 import com.praiseview.util.AppLogger;
 import com.praiseview.util.PptRenderer; // Import PptRenderer for cleanup
@@ -31,6 +32,13 @@ import javafx.collections.transformation.FilteredList;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import javafx.scene.layout.GridPane;
+import javafx.geometry.Insets;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +46,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList; // Added for cleanup
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Optional;
 
 public class MainController {
 
@@ -101,6 +112,11 @@ public class MainController {
     private ObservableList<MediaItem> videoLibrary = FXCollections.observableArrayList();
     private ObservableList<PptItem> pptLibrary = FXCollections.observableArrayList();
 
+    // Theme Management
+    private ObservableList<Theme> availableThemes = FXCollections.observableArrayList();
+    private static final String THEMES_FILE_PATH = "themes.json"; // File to store themes
+    private Theme currentActiveTheme; // The theme currently applied to projection and preview
+
 
     private int currentQueueIndex = -1;
     private int currentSubItemIndex = 0; // For songs: verse index, for prayers/announcements: page index
@@ -122,6 +138,7 @@ public class MainController {
 
         loadSongs();
         loadPrayers();
+        loadThemes(); // Load themes on startup
 
         // Setup Song Library with Search
         filteredSongs = new FilteredList<>(allSongs, p -> true);
@@ -966,8 +983,98 @@ public class MainController {
         }
     }
 
-    @FXML private void exportService() {
-        System.out.println("Export JSON - to be implemented");
+    @FXML private void exportSongs() {
+        // 1. Get all unique languages
+        Set<String> uniqueLanguages = allSongs.stream()
+                .map(Song::getLanguage)
+                .filter(lang -> lang != null && !lang.trim().isEmpty())
+                .collect(Collectors.toCollection(HashSet::new));
+
+        // 2. Create a custom dialog for language selection
+        Dialog<List<String>> dialog = new Dialog<>();
+        dialog.setTitle("Export Songs by Language");
+        dialog.setHeaderText("Select languages to export:");
+
+        ButtonType exportButtonType = new ButtonType("Export", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(exportButtonType, ButtonType.CANCEL);
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+
+        CheckBox exportAllCheckbox = new CheckBox("Export All Languages");
+        exportAllCheckbox.setSelected(true); // Default to exporting all
+
+        List<CheckBox> languageCheckBoxes = new ArrayList<>();
+        if (uniqueLanguages.isEmpty()) {
+            content.getChildren().add(new Label("No languages found in your song library. Exporting all songs."));
+            exportAllCheckbox.setDisable(true);
+        } else {
+            for (String lang : uniqueLanguages) {
+                CheckBox cb = new CheckBox(lang);
+                cb.setSelected(true); // Default to selecting all found languages
+                cb.disableProperty().bind(exportAllCheckbox.selectedProperty()); // Disable if "Export All" is selected
+                languageCheckBoxes.add(cb);
+                content.getChildren().add(cb);
+            }
+        }
+
+        content.getChildren().add(0, exportAllCheckbox); // Add "Export All" at the top
+
+        dialog.getDialogPane().setContent(content);
+
+        // Convert the result to a list of selected languages
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == exportButtonType) {
+                if (exportAllCheckbox.isSelected() || uniqueLanguages.isEmpty()) {
+                    return new ArrayList<>(uniqueLanguages); // Return all unique languages to signify "export all"
+                } else {
+                    return languageCheckBoxes.stream()
+                            .filter(CheckBox::isSelected)
+                            .map(CheckBox::getText)
+                            .collect(Collectors.toList());
+                }
+            }
+            return null;
+        });
+
+        Optional<List<String>> result = dialog.showAndWait();
+
+        result.ifPresent(selectedLanguages -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save Songs Export");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+            fileChooser.setInitialFileName("songs_export.json");
+
+            File file = fileChooser.showSaveDialog(null);
+            if (file != null) {
+                List<Song> songsToExport;
+                if (selectedLanguages.containsAll(uniqueLanguages) && selectedLanguages.size() == uniqueLanguages.size()) {
+                    // If all languages were selected (or no languages existed), export all songs
+                    songsToExport = new ArrayList<>(allSongs);
+                    AppLogger.log("Exporting all songs to: " + file.getAbsolutePath());
+                } else {
+                    // Filter songs by selected languages
+                    songsToExport = allSongs.stream()
+                            .filter(song -> selectedLanguages.contains(song.getLanguage()))
+                            .collect(Collectors.toList());
+                    AppLogger.log("Exporting songs for languages " + selectedLanguages + " to: " + file.getAbsolutePath());
+                }
+                jsonService.exportSongs(songsToExport, file);
+            }
+        });
+    }
+
+    @FXML private void exportPrayers() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Prayers");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        fileChooser.setInitialFileName("prayers_export.json");
+
+        File file = fileChooser.showSaveDialog(null);
+        if (file != null) {
+            jsonService.exportPrayers(new ArrayList<>(allPrayers), file);
+            AppLogger.log("Prayers exported to: " + file.getAbsolutePath());
+        }
     }
 
     @FXML private void exitApp() {
@@ -986,6 +1093,128 @@ public class MainController {
 
     @FXML private void showAbout() {
         System.out.println("About clicked");
+    }
+
+    // Theme Management Getters/Setters
+    public ObservableList<Theme> getAvailableThemes() {
+        return availableThemes;
+    }
+
+    public Theme getCurrentActiveTheme() {
+        return currentActiveTheme;
+    }
+
+    public void setCurrentActiveTheme(Theme theme) {
+        this.currentActiveTheme = theme;
+    }
+
+    private void loadThemes() {
+        File themesFile = new File(THEMES_FILE_PATH);
+        if (themesFile.exists()) {
+            List<Theme> loaded = jsonService.importThemes(themesFile);
+            if (loaded != null && !loaded.isEmpty()) {
+                availableThemes.setAll(loaded);
+                AppLogger.log("Themes loaded from " + THEMES_FILE_PATH);
+            } else {
+                AppLogger.log("No themes found in " + THEMES_FILE_PATH + ". Creating default theme.");
+                createDefaultTheme();
+            }
+        } else {
+            AppLogger.log(THEMES_FILE_PATH + " not found. Creating default theme.");
+            createDefaultTheme();
+        }
+
+        // Set the first theme as active if available, otherwise use the default
+        if (!availableThemes.isEmpty()) {
+            currentActiveTheme = availableThemes.get(0);
+            applyTheme(currentActiveTheme);
+        }
+    }
+
+    private void createDefaultTheme() {
+        Theme defaultTheme = new Theme(); // Uses default constructor with sensible defaults
+        availableThemes.add(defaultTheme);
+        saveThemes(); // Save the default theme
+        AppLogger.log("Default theme created and saved.");
+    }
+
+    public void saveThemes() { // Made public so ThemeEditorController can call it
+        File themesFile = new File(THEMES_FILE_PATH);
+        jsonService.exportThemes(new ArrayList<>(availableThemes), themesFile);
+        AppLogger.log("Themes saved to " + THEMES_FILE_PATH);
+    }
+
+    /**
+     * Applies the given theme to both the preview and projection screens.
+     * This method will need to be expanded as more theme properties are supported.
+     * @param theme The theme to apply.
+     */
+    public void applyTheme(Theme theme) { // Made public so ThemeEditorController can call it
+        if (theme == null) {
+            AppLogger.log("Attempted to apply a null theme.");
+            return;
+        }
+        this.currentActiveTheme = theme;
+        AppLogger.log("Applying theme: " + theme.getName());
+
+        // Apply to preview screen
+        if (livePreviewText != null) {
+            livePreviewText.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-fill: %s; -fx-line-spacing: %.1fpx;",
+                    theme.getFontFamily(), theme.getFontSize(), theme.getTextColor(), theme.getLineSpacing()));
+            // Background color for preview pane
+            livePreviewPane.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";");
+            // Text alignment
+            switch (theme.getTextAlignment().toUpperCase()) {
+                case "LEFT":
+                    livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.LEFT);
+                    break;
+                case "RIGHT":
+                    livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.RIGHT);
+                    break;
+                case "CENTER":
+                default:
+                    livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+                    break;
+            }
+        }
+
+        // Apply to projection screen
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj != null) {
+            proj.applyTheme(theme); // This method will be added to ProjectionController next
+        }
+
+        // Re-render current item to reflect new theme
+        if (currentQueueIndex != -1 && currentQueueIndex < serviceQueue.size()) {
+            showCurrentItem();
+        }
+    }
+
+    @FXML
+    private void openThemeEditor() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/praiseview/view/theme-editor-dialog.fxml"));
+            DialogPane dialogPane = loader.load();
+
+            ThemeEditorController themeEditorController = loader.getController();
+            themeEditorController.setMainController(this); // Pass reference to MainController
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setDialogPane(dialogPane);
+            dialog.initOwner(scene.getWindow()); // Set owner to main window
+            dialog.initModality(Modality.APPLICATION_MODAL); // Block interaction with other windows
+
+            dialog.showAndWait();
+
+        } catch (IOException e) {
+            AppLogger.log("Error opening theme editor: " + e.getMessage());
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Could not open Theme Editor");
+            alert.setContentText("An error occurred while loading the theme editor: " + e.getMessage());
+            alert.showAndWait();
+        }
     }
 
 

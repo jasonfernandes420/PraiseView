@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.Color?>
+
+<DialogPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.praiseview.controller.ThemeEditorController"
+            prefWidth="800" prefHeight="600">
+    <headerText>Theme Editor</headerText>
+    <content>
+        <HBox spacing="10" VBox.vgrow="ALWAYS">
+            <VBox spacing="5" prefWidth="200">
+                <Label text="Available Themes" styleClass="header"/>
+                <ListView fx:id="themeListView" VBox.vgrow="ALWAYS"/>
+                <HBox spacing="5">
+                    <Button fx:id="newThemeButton" text="New" onAction="#handleNewTheme"/>
+                    <Button fx:id="deleteThemeButton" text="Delete" onAction="#handleDeleteTheme"/>
+                </HBox>
+            </VBox>
+
+            <VBox spacing="10" HBox.hgrow="ALWAYS">
+                <Label text="Theme Details" styleClass="header"/>
+                <GridPane hgap="10" vgap="10">
+                    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+
+                    <Label text="Theme Name:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <TextField fx:id="themeNameField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="Font Family:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="fontFamilyComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="Font Size:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Slider fx:id="fontSizeSlider" min="10" max="100" value="62" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Text Color:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <ColorPicker fx:id="textColorPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text="Background Color:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                    <ColorPicker fx:id="backgroundColorPicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                    <Label text="Background Image:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                    <HBox spacing="5" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                        <TextField fx:id="backgroundImagePathField" HBox.hgrow="ALWAYS" promptText="Path to image file"/>
+                        <Button text="Browse..." onAction="#handleBrowseImage"/>
+                        <Button text="Clear" onAction="#handleClearImage"/>
+                    </HBox>
+
+                    <Label text="Background Video:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                    <HBox spacing="5" GridPane.rowIndex="6" GridPane.columnIndex="1">
+                        <TextField fx:id="backgroundVideoPathField" HBox.hgrow="ALWAYS" promptText="Path to video file"/>
+                        <Button text="Browse..." onAction="#handleBrowseVideo"/>
+                        <Button text="Clear" onAction="#handleClearVideo"/>
+                    </HBox>
+
+                    <Label text="Text Alignment:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="textAlignmentComboBox" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+
+                    <Label text="Line Spacing:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+                    <Slider fx:id="lineSpacingSlider" min="0" max="50" value="8" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+
+                </GridPane>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Button fx:id="applyThemeButton" text="Apply Theme" onAction="#handleApplyTheme"/>
+                    <Button fx:id="saveThemeButton" text="Save Theme" onAction="#handleSaveTheme"/>
+                </HBox>
+            </VBox>
+        </HBox>
+    </content>
+    <buttonTypes>
+        <ButtonType fx:constant="CLOSE"/>
+    </buttonTypes>
+</DialogPane>

@@ -22,7 +22,11 @@
                 <MenuItem text="New Service" onAction="#newService"/>
                 <MenuItem text="Save Service" onAction="#saveService"/>
                 <MenuItem text="Load Service" onAction="#importService"/>
-                <MenuItem text="Export JSON" onAction="#exportService"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="Export Songs..." onAction="#exportSongs"/>
+                <MenuItem text="Export Prayers..." onAction="#exportPrayers"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="Theme Editor..." onAction="#openThemeEditor"/>
                 <SeparatorMenuItem/>
                 <MenuItem text="Exit" onAction="#exitApp"/>
             </Menu>
