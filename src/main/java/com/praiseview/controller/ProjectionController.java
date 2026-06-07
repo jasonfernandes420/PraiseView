@@ -1,12 +1,6 @@
 package com.praiseview.controller;
 
-import com.praiseview.model.Announcement;
-import com.praiseview.model.Prayer;
-import com.praiseview.model.Projectable;
-import com.praiseview.model.Song;
-import com.praiseview.model.MediaItem;
-import com.praiseview.model.PptItem; // Import PptItem
-import com.praiseview.model.Theme; // Import Theme
+import com.praiseview.model.*;
 import com.praiseview.util.AppLogger;
 import com.praiseview.util.TextPaginationUtil;
 import javafx.fxml.FXML;
@@ -22,7 +16,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
-import javafx.util.Duration; // Import Duration
+import javafx.util.Duration;
 
 import java.io.File;
 import java.util.List;
@@ -33,14 +27,20 @@ public class ProjectionController {
     @FXML private Label titleLabel;
     @FXML public TextFlow lyricsFlow; // Made public for MainController to access dimensions
 
-    // New FXML elements for media
+    // FXML elements for content items
     @FXML private VBox textContentContainer;
-    @FXML private ImageView imageView;
-    @FXML private MediaView mediaView;
-    @FXML private VBox pptPlaceholderContainer; // This will now be used for error/loading messages for PPT
-    @FXML private Text pptPlaceholderText; // This will now be used for error/loading messages for PPT
+    @FXML private ImageView itemImageView; // Renamed from imageView to match FXML fx:id
+    @FXML private MediaView itemMediaView; // Renamed from mediaView to match FXML fx:id
+    @FXML private VBox pptPlaceholderContainer;
+    @FXML private Text pptPlaceholderText;
+    @FXML private ImageView logoImageView;
 
-    private MediaPlayer mediaPlayer; // For video playback
+    // New FXML elements for theme backgrounds
+    @FXML private ImageView themeBackgroundImageView;
+    @FXML private MediaView themeBackgroundMediaView;
+
+    private MediaPlayer itemMediaPlayer; // For video playback of content items
+    private MediaPlayer themeBackgroundMediaPlayer; // For video playback of theme backgrounds
 
     public double currentFontSize = 62.0; // Made public for MainController to access
 
@@ -51,31 +51,66 @@ public class ProjectionController {
     private double lastPaginationWidth = -1;    // Track width used for last pagination
     private double lastPaginationHeight = -1;   // Track height used for last pagination
 
+    private Theme activeTheme; // Store the currently active theme to check showTitle property
+
 
     @FXML
     public void initialize() {
         AppLogger.log("ProjectionController initialized");
         // Ensure media views are initially hidden
-        hideAllMediaViews();
+        _clearAllContentAndMedia(); // Clear everything first
+        showLogo(); // Show logo on initialization
     }
 
-    private void hideAllMediaViews() {
+    /**
+     * Hides all content containers, stops media players, and clears text/image views.
+     * This is a low-level clear, not intended to show the logo or set default background.
+     */
+    private void _clearAllContentAndMedia() {
+        // Content-related views
         textContentContainer.setVisible(false);
         textContentContainer.setManaged(false);
         lyricsFlow.getChildren().clear(); // Explicitly clear TextFlow content
-        imageView.setVisible(false);
-        imageView.setManaged(false);
-        imageView.setImage(null); // Explicitly clear image
-        mediaView.setVisible(false);
-        mediaView.setManaged(false);
+        itemImageView.setVisible(false); // Changed from imageView
+        itemImageView.setManaged(false); // Changed from imageView
+        itemImageView.setImage(null); // Explicitly clear image
+        itemMediaView.setVisible(false); // Changed from mediaView
+        itemMediaView.setManaged(false); // Changed from mediaView
         pptPlaceholderContainer.setVisible(false); // Hide PPT placeholder
         pptPlaceholderContainer.setManaged(false);
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.dispose();
-            mediaPlayer = null;
-            AppLogger.log("ProjectionController: Stopped and disposed media player.");
+        if (itemMediaPlayer != null) {
+            itemMediaPlayer.stop();
+            itemMediaPlayer.dispose();
+            itemMediaPlayer = null;
+            AppLogger.log("ProjectionController: Stopped and disposed item media player.");
         }
+        if (logoImageView != null) {
+            logoImageView.setVisible(false);
+            logoImageView.setManaged(false);
+        }
+        titleLabel.setText(""); // Clear title
+        titleLabel.setVisible(false); // Ensure title is hidden
+        titleLabel.setManaged(false); // Ensure title is not taking up space
+
+        // Theme background views
+        themeBackgroundImageView.setVisible(false);
+        themeBackgroundImageView.setManaged(false);
+        themeBackgroundImageView.setImage(null);
+        themeBackgroundMediaView.setVisible(false);
+        themeBackgroundMediaView.setManaged(false);
+        if (themeBackgroundMediaPlayer != null) {
+            themeBackgroundMediaPlayer.stop();
+            themeBackgroundMediaPlayer.dispose();
+            themeBackgroundMediaPlayer = null;
+            AppLogger.log("ProjectionController: Stopped and disposed theme background media player.");
+        }
+
+        currentProjectedItem = null; // Clear current item state
+        currentSubItemIndex = 0;
+        currentProjectedItemPages = null; // Clear cached pages
+        lastPaginationFontSize = -1; // Reset pagination state
+        lastPaginationWidth = -1;
+        lastPaginationHeight = -1;
     }
 
     /**
@@ -92,14 +127,33 @@ public class ProjectionController {
             return;
         }
 
-        // Clear all previous content and hide all views
-        hideAllMediaViews();
+        // Clear only content-specific views, theme background should persist
+        textContentContainer.setVisible(false);
+        textContentContainer.setManaged(false);
+        lyricsFlow.getChildren().clear();
+        itemImageView.setVisible(false); // Changed from imageView
+        itemImageView.setManaged(false); // Changed from imageView
+        itemImageView.setImage(null); // Changed from imageView
+        itemMediaView.setVisible(false); // Changed from mediaView
+        itemMediaView.setManaged(false); // Changed from mediaView
+        pptPlaceholderContainer.setVisible(false);
+        pptPlaceholderContainer.setManaged(false);
+        if (itemMediaPlayer != null) {
+            itemMediaPlayer.stop();
+            itemMediaPlayer.dispose();
+            itemMediaPlayer = null;
+        }
+        if (logoImageView != null) {
+            logoImageView.setVisible(false);
+            logoImageView.setManaged(false);
+        }
+        titleLabel.setText("");
+        titleLabel.setVisible(false);
+        titleLabel.setManaged(false);
+
 
         this.currentProjectedItem = item;
         this.currentSubItemIndex = subItemIndex;
-
-        // Reset styling
-        projectionRoot.setStyle("-fx-background-color: #0f0f0f;"); // Default background
 
         // Get actual dimensions of the lyricsFlow for accurate pagination
         // Fallback to reasonable defaults if not yet laid out
@@ -109,6 +163,10 @@ public class ProjectionController {
         String titleText = item.getTitle();
         String contentToDisplay = "";
         int totalSubItems = 0;
+
+        // Declare imageFile and slideImageFile here to ensure definite assignment
+        File imageFile = null;
+        File slideImageFile = null;
 
         // Handle different Projectable types
         switch (item.getType()) {
@@ -152,28 +210,48 @@ public class ProjectionController {
                 if (totalSubItems > 1 && !(item instanceof Song)) {
                     titleText += " (" + (this.currentSubItemIndex + 1) + "/" + totalSubItems + ")";
                 }
-                titleLabel.setText(titleText);
-                titleLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-size: 42px;");
+
+                // Set title visibility based on activeTheme
+                if (activeTheme != null && activeTheme.isShowTitle()) {
+                    titleLabel.setText(titleText);
+                    titleLabel.setVisible(true);
+                    titleLabel.setManaged(true);
+                    // Apply title-specific font settings
+                    titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
+                            activeTheme.getTitleFontFamily(), activeTheme.getTitleFontSize(), activeTheme.getTitleTextColor()));
+                } else {
+                    titleLabel.setText("");
+                    titleLabel.setVisible(false);
+                    titleLabel.setManaged(false);
+                }
 
                 lyricsFlow.getChildren().clear(); // Ensure cleared before adding new text
                 Text mainText = new Text(contentToDisplay);
-                mainText.setFill(Color.WHITE);
-                mainText.setStyle("-fx-font-size: " + currentFontSize + "px; -fx-line-spacing: 8px;");
+                // Set fill color using theme's text color
+                try {
+                    mainText.setFill(Color.web(activeTheme.getTextColor()));
+                } catch (IllegalArgumentException | NullPointerException e) {
+                    AppLogger.log("Invalid or null text color in active theme: '" + activeTheme.getTextColor() + "'. Falling back to WHITE. Error: " + e.getMessage());
+                    mainText.setFill(Color.WHITE); // Fallback
+                }
+                mainText.setStyle("-fx-font-size: " + currentFontSize + "px; -fx-line-spacing: 8px;"); // Default, will be overridden by applyTheme
                 lyricsFlow.getChildren().add(mainText);
-                lyricsFlow.setTextAlignment(TextAlignment.CENTER);
+                lyricsFlow.setTextAlignment(TextAlignment.CENTER); // Default, will be overridden by applyTheme
                 break;
 
             case "IMAGE":
                 AppLogger.log("ProjectionController: Displaying image.");
-                imageView.setVisible(true);
-                imageView.setManaged(true);
-                File imageFile = new File(((MediaItem)item).getFilePath());
+                itemImageView.setVisible(true); // Changed from imageView
+                itemImageView.setManaged(true); // Changed from imageView
+                imageFile = new File(((MediaItem)item).getFilePath()); // Assignment here
                 AppLogger.log("ProjectionController: Image file path: " + imageFile.getAbsolutePath());
                 if (imageFile.exists()) {
                     try {
                         Image image = new Image(imageFile.toURI().toString());
-                        imageView.setImage(image);
-                        imageView.setPreserveRatio(true); // Maintain aspect ratio
+                        itemImageView.setImage(image); // Changed from imageView
+                        itemImageView.setPreserveRatio(true); // Maintain aspect ratio // Changed from imageView
+                        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty()); // Changed from imageView
+                        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Changed from imageView
                         AppLogger.log("ProjectionController: Image loaded successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading image: " + e.getMessage());
@@ -193,27 +271,48 @@ public class ProjectionController {
                     lyricsFlow.getChildren().clear();
                     lyricsFlow.getChildren().add(new Text("File not found: " + imageFile.getName()));
                 }
-                titleLabel.setText(titleText); // Set title for image
+                // Set title visibility based on activeTheme
+                if (activeTheme != null && activeTheme.isShowTitle()) {
+                    titleLabel.setText(titleText);
+                    titleLabel.setVisible(true);
+                    titleLabel.setManaged(true);
+                } else {
+                    titleLabel.setText("");
+                    titleLabel.setVisible(false);
+                    titleLabel.setManaged(false);
+                }
                 break;
 
             case "VIDEO":
                 AppLogger.log("ProjectionController: Displaying video.");
-                mediaView.setVisible(true);
-                mediaView.setManaged(true);
+                itemMediaView.setVisible(true); // Changed from mediaView
+                itemMediaView.setManaged(true); // Changed from mediaView
                 File videoFile = new File(((MediaItem)item).getFilePath());
                 AppLogger.log("ProjectionController: Video file path: " + videoFile.getAbsolutePath());
                 if (videoFile.exists()) {
-                    Media media = new Media(videoFile.toURI().toString());
-                    if (mediaPlayer != null) {
-                        mediaPlayer.stop();
-                        mediaPlayer.dispose();
+                    try {
+                        Media media = new Media(videoFile.toURI().toString());
+                        if (itemMediaPlayer != null) { // Use itemMediaPlayer
+                            itemMediaPlayer.stop();
+                            itemMediaPlayer.dispose();
+                        }
+                        itemMediaPlayer = new MediaPlayer(media); // Use itemMediaPlayer
+                        itemMediaView.setMediaPlayer(itemMediaPlayer); // Changed from mediaView
+                        itemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
+                        itemMediaPlayer.play();
+                        itemMediaView.setPreserveRatio(true); // Changed from mediaView
+                        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty()); // Changed from mediaView
+                        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Changed from mediaView
+                        AppLogger.log("ProjectionController: Video started successfully.");
+                    } catch (Exception e) {
+                        AppLogger.log("ProjectionController: Error loading video: " + e.getMessage());
+                        // Fallback to text error
+                        textContentContainer.setVisible(true);
+                        textContentContainer.setManaged(true);
+                        titleLabel.setText("Error Loading Video");
+                        lyricsFlow.getChildren().clear();
+                        lyricsFlow.getChildren().add(new Text("File not found: " + videoFile.getName()));
                     }
-                    mediaPlayer = new MediaPlayer(media);
-                    mediaView.setMediaPlayer(mediaPlayer);
-                    mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
-                    mediaPlayer.play();
-                    mediaView.setPreserveRatio(true);
-                    AppLogger.log("ProjectionController: Video started successfully.");
                 } else {
                     AppLogger.log("ProjectionController: Video file not found: " + videoFile.getAbsolutePath());
                     // Display error message on screen
@@ -223,24 +322,35 @@ public class ProjectionController {
                     lyricsFlow.getChildren().clear();
                     lyricsFlow.getChildren().add(new Text("File not found: " + videoFile.getName()));
                 }
-                titleLabel.setText(titleText); // Set title for video
+                // Set title visibility based on activeTheme
+                if (activeTheme != null && activeTheme.isShowTitle()) {
+                    titleLabel.setText(titleText);
+                    titleLabel.setVisible(true);
+                    titleLabel.setManaged(true);
+                } else {
+                    titleLabel.setText("");
+                    titleLabel.setVisible(false);
+                    titleLabel.setManaged(false);
+                }
                 break;
 
             case "PPT": // Now handles PptItem by displaying rendered slide image
                 AppLogger.log("ProjectionController: Displaying PPT slide.");
-                imageView.setVisible(true); // Reuse imageView for PPT slides
-                imageView.setManaged(true);
+                itemImageView.setVisible(true); // Changed from imageView
+                itemImageView.setManaged(true); // Changed from imageView
                 PptItem pptItem = (PptItem) item;
                 if (pptItem.getRenderedSlideImagePaths() != null && !pptItem.getRenderedSlideImagePaths().isEmpty()) {
                     String slideImagePath = pptItem.getSubItemContent(subItemIndex, currentFontSize, availableWidth, availableHeight);
-                    File slideImageFile = new File(slideImagePath);
+                    slideImageFile = new File(slideImagePath); // Assignment here
                     AppLogger.log("ProjectionController: PPT slide image path: " + slideImageFile.getAbsolutePath());
 
                     if (slideImageFile.exists()) {
                         try {
                             Image slideImage = new Image(slideImageFile.toURI().toString());
-                            imageView.setImage(slideImage);
-                            imageView.setPreserveRatio(true);
+                            itemImageView.setImage(slideImage); // Changed from imageView
+                            itemImageView.setPreserveRatio(true); // Changed from imageView
+                            itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty()); // Changed from imageView
+                            itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Changed from imageView
                             // Update title with slide number
                             titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, availableWidth, availableHeight) + ")";
                             AppLogger.log("ProjectionController: PPT slide image loaded successfully.");
@@ -271,7 +381,16 @@ public class ProjectionController {
                     lyricsFlow.getChildren().clear();
                     lyricsFlow.getChildren().add(new Text("No slides rendered for: " + pptItem.getTitle()));
                 }
-                titleLabel.setText(titleText); // Set title for PPT
+                // Set title visibility based on activeTheme
+                if (activeTheme != null && activeTheme.isShowTitle()) {
+                    titleLabel.setText(titleText);
+                    titleLabel.setVisible(true);
+                    titleLabel.setManaged(true);
+                } else {
+                    titleLabel.setText("");
+                    titleLabel.setVisible(false);
+                    titleLabel.setManaged(false);
+                }
                 break;
 
             default:
@@ -281,6 +400,9 @@ public class ProjectionController {
                 titleLabel.setText("Unsupported Item Type");
                 lyricsFlow.getChildren().clear();
                 lyricsFlow.getChildren().add(new Text("Cannot display: " + item.getType()));
+                // Hide title for unsupported types
+                titleLabel.setVisible(false);
+                titleLabel.setManaged(false);
                 break;
         }
     }
@@ -289,16 +411,16 @@ public class ProjectionController {
      * Toggles play/pause for the currently playing video.
      */
     public void playPauseVideo() {
-        if (mediaPlayer != null) {
-            if (mediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
-                mediaPlayer.pause();
-                AppLogger.log("ProjectionController: Video paused.");
+        if (itemMediaPlayer != null) { // Use itemMediaPlayer
+            if (itemMediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+                itemMediaPlayer.pause();
+                AppLogger.log("ProjectionController: Item video paused.");
             } else {
-                mediaPlayer.play();
-                AppLogger.log("ProjectionController: Video played.");
+                itemMediaPlayer.play();
+                AppLogger.log("ProjectionController: Item video played.");
             }
         } else {
-            AppLogger.log("ProjectionController: No media player available to play/pause.");
+            AppLogger.log("ProjectionController: No item media player available to play/pause.");
         }
     }
 
@@ -307,13 +429,13 @@ public class ProjectionController {
      * @param seconds The number of seconds to seek. Positive for forward, negative for backward.
      */
     public void seekVideo(double seconds) {
-        if (mediaPlayer != null && mediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
-            Duration currentTime = mediaPlayer.getCurrentTime();
+        if (itemMediaPlayer != null && itemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) { // Use itemMediaPlayer
+            Duration currentTime = itemMediaPlayer.getCurrentTime();
             Duration newTime = currentTime.add(Duration.seconds(seconds));
-            mediaPlayer.seek(newTime);
-            AppLogger.log("ProjectionController: Video seeked by " + seconds + " seconds to " + newTime);
+            itemMediaPlayer.seek(newTime);
+            AppLogger.log("ProjectionController: Item video seeked by " + seconds + " seconds to " + newTime);
         } else {
-            AppLogger.log("ProjectionController: No media player available or video stopped for seeking.");
+            AppLogger.log("ProjectionController: No item media player available or video stopped for seeking.");
         }
     }
 
@@ -326,15 +448,20 @@ public class ProjectionController {
             AppLogger.log("ProjectionController: Attempted to apply a null theme.");
             return;
         }
+        this.activeTheme = theme; // Store the active theme
         AppLogger.log("ProjectionController: Applying theme: " + theme.getName());
 
         // Apply font, size, color, line spacing, and alignment to lyricsFlow
         lyricsFlow.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-fill: %s; -fx-line-spacing: %.1fpx;",
                 theme.getFontFamily(), theme.getFontSize(), theme.getTextColor(), theme.getLineSpacing()));
-        
+
         // Apply font, size, and color to titleLabel
         titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
-                theme.getFontFamily(), theme.getFontSize() * 0.7, theme.getTextColor())); // Title font size slightly smaller
+                theme.getTitleFontFamily(), theme.getTitleFontSize(), theme.getTitleTextColor())); // Use title-specific properties
+
+        // Set title visibility based on the theme's showTitle property
+        titleLabel.setVisible(theme.isShowTitle());
+        titleLabel.setManaged(theme.isShowTitle());
 
         // Apply text alignment
         switch (theme.getTextAlignment().toUpperCase()) {
@@ -351,17 +478,23 @@ public class ProjectionController {
         }
 
         // Handle background: color, image, or video
-        // First, clear any existing background media
-        projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Default to color
-        imageView.setVisible(false);
-        imageView.setManaged(false);
-        imageView.setImage(null);
-        mediaView.setVisible(false);
-        mediaView.setManaged(false);
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.dispose();
-            mediaPlayer = null;
+        // First, clear any existing theme background media
+        if (themeBackgroundMediaPlayer != null) {
+            themeBackgroundMediaPlayer.stop();
+            themeBackgroundMediaPlayer.dispose();
+            themeBackgroundMediaPlayer = null;
+        }
+        themeBackgroundImageView.setVisible(false);
+        themeBackgroundImageView.setManaged(false);
+        themeBackgroundImageView.setImage(null);
+        themeBackgroundMediaView.setVisible(false);
+        themeBackgroundMediaView.setManaged(false);
+        themeBackgroundMediaView.setMediaPlayer(null);
+
+        // Hide logo if a specific background is set
+        if (logoImageView != null) {
+            logoImageView.setVisible(false);
+            logoImageView.setManaged(false);
         }
 
         if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
@@ -369,40 +502,49 @@ public class ProjectionController {
             if (imageFile.exists()) {
                 try {
                     Image image = new Image(imageFile.toURI().toString());
-                    imageView.setImage(image);
-                    imageView.setPreserveRatio(true);
-                    imageView.setFitWidth(projectionRoot.getWidth());
-                    imageView.setFitHeight(projectionRoot.getHeight());
-                    imageView.setVisible(true);
-                    imageView.setManaged(true);
+                    themeBackgroundImageView.setImage(image);
+                    themeBackgroundImageView.setPreserveRatio(true);
+                    themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.widthProperty()); // Should be heightProperty()
+                    themeBackgroundImageView.setVisible(true);
+                    themeBackgroundImageView.setManaged(true);
+                    projectionRoot.setStyle(""); // Clear background color if image is present
                     AppLogger.log("ProjectionController: Applied background image: " + theme.getBackgroundImagePath());
                 } catch (Exception e) {
                     AppLogger.log("ProjectionController: Error applying background image: " + e.getMessage());
+                    projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
                 }
             } else {
                 AppLogger.log("ProjectionController: Background image file not found: " + theme.getBackgroundImagePath());
+                projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
             }
         } else if (theme.getBackgroundVideoPath() != null && !theme.getBackgroundVideoPath().isEmpty()) {
             File videoFile = new File(theme.getBackgroundVideoPath());
             if (videoFile.exists()) {
                 try {
                     Media media = new Media(videoFile.toURI().toString());
-                    mediaPlayer = new MediaPlayer(media);
-                    mediaView.setMediaPlayer(mediaPlayer);
-                    mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-                    mediaPlayer.play();
-                    mediaView.setPreserveRatio(true);
-                    mediaView.setFitWidth(projectionRoot.getWidth());
-                    mediaView.setFitHeight(projectionRoot.getHeight());
-                    mediaView.setVisible(true);
-                    mediaView.setManaged(true);
+                    themeBackgroundMediaPlayer = new MediaPlayer(media);
+                    themeBackgroundMediaView.setMediaPlayer(themeBackgroundMediaPlayer);
+                    themeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                    themeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
+                    themeBackgroundMediaPlayer.play();
+                    themeBackgroundMediaView.setPreserveRatio(true);
+                    themeBackgroundMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                    themeBackgroundMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
+                    themeBackgroundMediaView.setVisible(true);
+                    themeBackgroundMediaView.setManaged(true);
+                    projectionRoot.setStyle(""); // Clear background color if video is present
                     AppLogger.log("ProjectionController: Applied background video: " + theme.getBackgroundVideoPath());
                 } catch (Exception e) {
                     AppLogger.log("ProjectionController: Error applying background video: " + e.getMessage());
+                    projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
                 }
             } else {
                 AppLogger.log("ProjectionController: Background video file not found: " + theme.getBackgroundVideoPath());
+                projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
             }
+        } else {
+            projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Apply background color
         }
 
         // Update currentFontSize for pagination calculations
@@ -486,7 +628,8 @@ public class ProjectionController {
 
 
     public String getCurrentDisplayedTitle() {
-        return titleLabel != null ? titleLabel.getText() : "";
+        // Only return title text if it's currently visible
+        return (titleLabel != null && titleLabel.isVisible()) ? titleLabel.getText() : "";
     }
 
     public Projectable getCurrentProjectedItem() {
@@ -498,25 +641,122 @@ public class ProjectionController {
     }
 
     public void blackout() {
-        projectionRoot.setStyle("-fx-background-color: black;");
-        // Stop media playback on blackout
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-        }
-        clear(); // Clear content, but keep background black
+        _clearAllContentAndMedia(); // Clear all content and media, including logo
+        projectionRoot.setStyle("-fx-background-color: black;"); // Set background to black
+        AppLogger.log("ProjectionController: Screen blacked out.");
     }
 
     public void clear() {
+        _clearAllContentAndMedia(); // Clear all content and media
         projectionRoot.setStyle("-fx-background-color: #0f0f0f;"); // Reset to default background
-        hideAllMediaViews(); // Hide all specific content views
-        titleLabel.setText("");
-        currentProjectedItem = null; // Clear current item state
-        currentSubItemIndex = 0;
-        currentProjectedItemPages = null; // Clear cached pages
-        lastPaginationFontSize = -1; // Reset pagination state
-        lastPaginationWidth = -1;
-        lastPaginationHeight = -1;
+        showLogo(); // Show logo after clearing
+        AppLogger.log("ProjectionController: Screen cleared to logo.");
     }
+
+    public void showLogo() {
+        // Clear content-specific views, but keep theme background
+        textContentContainer.setVisible(false);
+        textContentContainer.setManaged(false);
+        lyricsFlow.getChildren().clear();
+        itemImageView.setVisible(false); // Changed from imageView
+        itemImageView.setManaged(false); // Changed from imageView
+        itemImageView.setImage(null); // Changed from imageView
+        itemMediaView.setVisible(false); // Changed from mediaView
+        itemMediaView.setManaged(false); // Changed from mediaView
+        pptPlaceholderContainer.setVisible(false);
+        pptPlaceholderContainer.setManaged(false);
+        if (itemMediaPlayer != null) {
+            itemMediaPlayer.stop();
+            itemMediaPlayer.dispose();
+            itemMediaPlayer = null;
+        }
+
+        projectionRoot.setStyle("-fx-background-color: #0f0f0f;"); // Ensure default background
+        if (logoImageView != null) {
+            logoImageView.setVisible(true);
+            logoImageView.setManaged(true);
+            AppLogger.log("ProjectionController: Displaying logo.");
+        }
+        titleLabel.setText(""); // Clear title when showing logo
+        titleLabel.setVisible(false); // Explicitly hide title when showing logo
+        titleLabel.setManaged(false);
+
+        // Re-apply theme background if active
+        if (activeTheme != null) {
+            applyThemeBackgroundToProjection(activeTheme);
+        }
+    }
+
+    /**
+     * Helper method to apply theme background to the projection root.
+     * Separated to be reusable for showLogo.
+     */
+    private void applyThemeBackgroundToProjection(Theme theme) {
+        // Stop and hide any existing theme background media
+        if (themeBackgroundMediaPlayer != null) {
+            themeBackgroundMediaPlayer.stop();
+            themeBackgroundMediaPlayer.dispose();
+            themeBackgroundMediaPlayer = null;
+        }
+        themeBackgroundImageView.setVisible(false);
+        themeBackgroundImageView.setManaged(false);
+        themeBackgroundImageView.setImage(null);
+        themeBackgroundMediaView.setVisible(false);
+        themeBackgroundMediaView.setManaged(false);
+        themeBackgroundMediaView.setMediaPlayer(null);
+
+        // Apply new background based on theme
+        if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
+            File imageFile = new File(theme.getBackgroundImagePath());
+            if (imageFile.exists()) {
+                try {
+                    Image image = new Image(imageFile.toURI().toString());
+                    themeBackgroundImageView.setImage(image);
+                    themeBackgroundImageView.setPreserveRatio(true);
+                    themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Corrected from widthProperty()
+                    themeBackgroundImageView.setVisible(true);
+                    themeBackgroundImageView.setManaged(true);
+                    projectionRoot.setStyle(""); // Clear background color if image is present
+                    AppLogger.log("ProjectionController: Applied background image: " + theme.getBackgroundImagePath());
+                } catch (Exception e) {
+                    AppLogger.log("ProjectionController: Error applying background image: " + e.getMessage());
+                    projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
+                }
+            } else {
+                AppLogger.log("ProjectionController: Background image file not found: " + theme.getBackgroundImagePath());
+                projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
+            }
+        } else if (theme.getBackgroundVideoPath() != null && !theme.getBackgroundVideoPath().isEmpty()) {
+            File videoFile = new File(theme.getBackgroundVideoPath());
+            if (videoFile.exists()) {
+                try {
+                    Media media = new Media(videoFile.toURI().toString());
+                    themeBackgroundMediaPlayer = new MediaPlayer(media);
+                    themeBackgroundMediaView.setMediaPlayer(themeBackgroundMediaPlayer);
+                    themeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                    themeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
+                    themeBackgroundMediaPlayer.play();
+                    themeBackgroundMediaView.setPreserveRatio(true);
+                    themeBackgroundMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                    themeBackgroundMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
+                    themeBackgroundMediaView.setVisible(true);
+                    themeBackgroundMediaView.setManaged(true);
+                    projectionRoot.setStyle(""); // Clear background color if video is present
+                    AppLogger.log("ProjectionController: Applied background video: " + theme.getBackgroundVideoPath());
+                } catch (Exception e) {
+                    AppLogger.log("ProjectionController: Error applying background video: " + e.getMessage());
+                    projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
+                }
+            } else {
+                AppLogger.log("ProjectionController: Background video file not found: " + theme.getBackgroundVideoPath());
+                projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
+            }
+        } else {
+            projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Apply background color
+        }
+    }
+
 
     public void setFontSize(double size) {
         currentFontSize = size;

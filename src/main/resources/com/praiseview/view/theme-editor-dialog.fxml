@@ -3,29 +3,28 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
 
 <DialogPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.praiseview.controller.ThemeEditorController"
-            prefWidth="800" prefHeight="600">
+            prefWidth="700" prefHeight="600">
     <headerText>Theme Editor</headerText>
     <content>
-        <HBox spacing="10" VBox.vgrow="ALWAYS">
-            <VBox spacing="5" prefWidth="200">
-                <Label text="Available Themes" styleClass="header"/>
+        <HBox spacing="15">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+            <VBox spacing="10" HBox.hgrow="ALWAYS">
+                <Label text="Available Themes" style="-fx-font-weight: bold;"/>
                 <ListView fx:id="themeListView" VBox.vgrow="ALWAYS"/>
                 <HBox spacing="5">
-                    <Button fx:id="newThemeButton" text="New" onAction="#handleNewTheme"/>
-                    <Button fx:id="deleteThemeButton" text="Delete" onAction="#handleDeleteTheme"/>
+                    <Button fx:id="newThemeButton" text="New Theme" onAction="#handleNewTheme"/>
+                    <Button fx:id="deleteThemeButton" text="Delete Theme" onAction="#handleDeleteTheme"/>
                 </HBox>
             </VBox>
 
             <VBox spacing="10" HBox.hgrow="ALWAYS">
-                <Label text="Theme Details" styleClass="header"/>
+                <Label text="Theme Properties" style="-fx-font-weight: bold;"/>
                 <GridPane hgap="10" vgap="10">
-                    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-
                     <Label text="Theme Name:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                     <TextField fx:id="themeNameField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
@@ -44,32 +43,49 @@
                     <Label text="Background Image:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
                     <HBox spacing="5" GridPane.rowIndex="5" GridPane.columnIndex="1">
                         <TextField fx:id="backgroundImagePathField" HBox.hgrow="ALWAYS" promptText="Path to image file"/>
-                        <Button text="Browse..." onAction="#handleBrowseImage"/>
-                        <Button text="Clear" onAction="#handleClearImage"/>
+                        <Button text="..." onAction="#handleSelectBackgroundImage"/>
+                        <Button text="Clear" onAction="#handleClearBackgroundImage"/>
                     </HBox>
 
                     <Label text="Background Video:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
                     <HBox spacing="5" GridPane.rowIndex="6" GridPane.columnIndex="1">
                         <TextField fx:id="backgroundVideoPathField" HBox.hgrow="ALWAYS" promptText="Path to video file"/>
-                        <Button text="Browse..." onAction="#handleBrowseVideo"/>
-                        <Button text="Clear" onAction="#handleClearVideo"/>
+                        <Button text="..." onAction="#handleSelectBackgroundVideo"/>
+                        <Button text="Clear" onAction="#handleClearBackgroundVideo"/>
                     </HBox>
 
                     <Label text="Text Alignment:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
                     <ComboBox fx:id="textAlignmentComboBox" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
 
                     <Label text="Line Spacing:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-                    <Slider fx:id="lineSpacingSlider" min="0" max="50" value="8" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+                    <Slider fx:id="lineSpacingSlider" min="0" max="20" value="8" showTickLabels="true" showTickMarks="true" majorTickUnit="5" minorTickCount="1" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
 
+                    <CheckBox fx:id="showTitleCheckBox" text="Show Title on Projection" GridPane.rowIndex="9" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
                 </GridPane>
-                <HBox spacing="10" alignment="CENTER_RIGHT">
-                    <Button fx:id="applyThemeButton" text="Apply Theme" onAction="#handleApplyTheme"/>
+
+                <!-- Title Font Settings (visible only if showTitleCheckBox is selected) -->
+                <VBox fx:id="titleSettingsContainer" spacing="10" visible="false" managed="false">
+                    <Label text="Title Font Settings" style="-fx-font-weight: bold;"/>
+                    <GridPane hgap="10" vgap="10">
+                        <Label text="Title Font Family:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <ComboBox fx:id="titleFontFamilyComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                        <Label text="Title Font Size:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <Slider fx:id="titleFontSizeSlider" min="10" max="100" value="42" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                        <Label text="Title Text Color:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <ColorPicker fx:id="titleTextColorPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    </GridPane>
+                </VBox>
+
+                <HBox alignment="CENTER_RIGHT" spacing="10">
                     <Button fx:id="saveThemeButton" text="Save Theme" onAction="#handleSaveTheme"/>
+                    <Button fx:id="applyThemeButton" text="Apply Theme" onAction="#handleApplyTheme"/>
                 </HBox>
             </VBox>
         </HBox>
     </content>
     <buttonTypes>
-        <ButtonType fx:constant="CLOSE"/>
+        <ButtonType buttonData="CANCEL_CLOSE" text="Close"/>
     </buttonTypes>
 </DialogPane>

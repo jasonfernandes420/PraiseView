@@ -23,12 +23,16 @@
                 <MenuItem text="Save Service" onAction="#saveService"/>
                 <MenuItem text="Load Service" onAction="#importService"/>
                 <SeparatorMenuItem/>
+                <MenuItem text="Import Songs..." onAction="#importSongs"/>
+                <MenuItem text="Import Prayers..." onAction="#importPrayers"/>
+                <SeparatorMenuItem/>
                 <MenuItem text="Export Songs..." onAction="#exportSongs"/>
                 <MenuItem text="Export Prayers..." onAction="#exportPrayers"/>
                 <SeparatorMenuItem/>
-                <MenuItem text="Theme Editor..." onAction="#openThemeEditor"/>
-                <SeparatorMenuItem/>
                 <MenuItem text="Exit" onAction="#exitApp"/>
+            </Menu>
+            <Menu text="Themes">
+                <MenuItem text="Theme Editor" onAction="#openThemeEditor"/>
             </Menu>
             <Menu text="Help">
                 <MenuItem text="About" onAction="#showAbout"/>
@@ -55,18 +59,24 @@
                 <Label text="Stage View (Current Projection)" styleClass="header"/>
                 <!-- The livePreviewPane will now contain its own title and textflow -->
                 <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefHeight="500" prefWidth="800">
+                    <!-- Theme Background Image/Video (placed at the bottom) -->
+                    <ImageView fx:id="liveThemeBackgroundImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
+                               preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
+                    <MediaView fx:id="liveThemeBackgroundMediaView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
+                               visible="false" managed="false" StackPane.alignment="CENTER"/>
+
                     <!-- Container for text-based content (Song, Prayer, Announcement) -->
                     <VBox fx:id="liveTextContentContainer" alignment="CENTER" spacing="10" StackPane.alignment="CENTER">
                         <Label fx:id="stageViewTitle" style="-fx-text-fill: #ffd700; -fx-font-size: 24px;"/>
                         <TextFlow fx:id="livePreviewText" textAlignment="CENTER" style="-fx-padding: 10px;"/>
                     </VBox>
 
-                    <!-- ImageView for displaying image previews -->
-                    <ImageView fx:id="liveImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
+                    <!-- ImageView for displaying image previews (content item) -->
+                    <ImageView fx:id="liveItemImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
                                preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
 
-                    <!-- MediaView for displaying video previews -->
-                    <MediaView fx:id="liveMediaView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
+                    <!-- MediaView for displaying video previews (content item) -->
+                    <MediaView fx:id="liveItemMediaView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
                                visible="false" managed="false" StackPane.alignment="CENTER"/>
 
                     <!-- Placeholder for PPT previews (text-based for now) -->
@@ -74,6 +84,14 @@
                         <Label text="PPT Preview (Placeholder)" style="-fx-font-size: 24px; -fx-text-fill: #ffd700;"/>
                         <Text fx:id="livePptPlaceholderText" style="-fx-font-size: 16px; -fx-text-fill: white;" textAlignment="CENTER"/>
                     </VBox>
+
+                    <!-- Logo ImageView for Live Preview -->
+                    <ImageView fx:id="liveLogoImageView" fitWidth="150" fitHeight="150" preserveRatio="true"
+                               visible="false" managed="false" StackPane.alignment="CENTER">
+                        <image>
+                            <Image url="@../../../images/logo-transparent.png"/>
+                        </image>
+                    </ImageView>
                 </StackPane>
 
                 <!-- Projection Controls -->
@@ -168,15 +186,12 @@
     <!-- Right: Theme Editor (repurposed from old controls) -->
     <right>
         <TabPane prefWidth="280" tabClosingPolicy="UNAVAILABLE">
-            <Tab text="Theme Editor">
+            <Tab text="Themes">
                 <VBox spacing="10">
                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                    <Label text="Theme Settings (Placeholder)" styleClass="header"/>
-                    <Label text="Font Size:"/>
-                    <Slider min="10" max="100" value="62" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5"/>
-                    <Label text="Background Color:"/>
-                    <ColorPicker/>
-                    <Button text="Save Theme"/>
+                    <Label text="Available Themes" styleClass="header"/>
+                    <ListView fx:id="themeListView" VBox.vgrow="ALWAYS" onMouseClicked="#handleThemeSelection"/>
+                    <CheckBox fx:id="showTitleCheckBox" text="Show Title on Projection" onAction="#handleShowTitleToggle"/>
                 </VBox>
             </Tab>
             <!-- Add other tabs if needed in the future -->
@@ -203,7 +218,7 @@
                         <Button fx:id="addPrayerButton" text="➕ Add New Prayer" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="editPrayerButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS" onAction="#editSelectedPrayer"/>
                     </HBox>
-                    <ListView fx:id="prayerList" prefHeight="220"/>
+                    <ListView fx:id="prayerList" VBox.vgrow="ALWAYS" prefHeight="220"/>
                 </VBox>
             </Tab>
             <Tab text="Bible"/>

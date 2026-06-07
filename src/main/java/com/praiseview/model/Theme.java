@@ -15,10 +15,16 @@ public class Theme {
     private String backgroundVideoPath; // Path to video file
     private String textAlignment; // e.g., "CENTER", "LEFT"
     private double lineSpacing;
+    private boolean showTitle; // Whether to show the title on projection and stage view
+
+    // New properties for title font settings
+    private String titleFontFamily;
+    private double titleFontSize;
+    private String titleTextColor;
 
     // Default constructor for Jackson
     public Theme() {
-        // Set sensible defaults
+        // Set sensible defaults for main text
         this.name = "Default Theme";
         this.fontFamily = "Arial";
         this.fontSize = 62.0;
@@ -28,6 +34,12 @@ public class Theme {
         this.backgroundVideoPath = null;
         this.textAlignment = "CENTER";
         this.lineSpacing = 8.0;
+        this.showTitle = true; // Default to showing title
+
+        // Set sensible defaults for title
+        this.titleFontFamily = "Arial";
+        this.titleFontSize = 42.0; // Slightly smaller than main text
+        this.titleTextColor = "#FFD700"; // Gold color for title
     }
 
     @JsonCreator
@@ -39,7 +51,11 @@ public class Theme {
                  @JsonProperty("backgroundImagePath") String backgroundImagePath,
                  @JsonProperty("backgroundVideoPath") String backgroundVideoPath,
                  @JsonProperty("textAlignment") String textAlignment,
-                 @JsonProperty("lineSpacing") double lineSpacing) {
+                 @JsonProperty("lineSpacing") double lineSpacing,
+                 @JsonProperty("showTitle") boolean showTitle,
+                 @JsonProperty("titleFontFamily") String titleFontFamily,
+                 @JsonProperty("titleFontSize") double titleFontSize,
+                 @JsonProperty("titleTextColor") String titleTextColor) {
         this.name = name;
         this.fontFamily = fontFamily;
         this.fontSize = fontSize;
@@ -49,6 +65,10 @@ public class Theme {
         this.backgroundVideoPath = backgroundVideoPath;
         this.textAlignment = textAlignment;
         this.lineSpacing = lineSpacing;
+        this.showTitle = showTitle;
+        this.titleFontFamily = titleFontFamily;
+        this.titleFontSize = titleFontSize;
+        this.titleTextColor = titleTextColor;
     }
 
     // Getters
@@ -88,6 +108,22 @@ public class Theme {
         return lineSpacing;
     }
 
+    public boolean isShowTitle() {
+        return showTitle;
+    }
+
+    public String getTitleFontFamily() {
+        return titleFontFamily;
+    }
+
+    public double getTitleFontSize() {
+        return titleFontSize;
+    }
+
+    public String getTitleTextColor() {
+        return titleTextColor;
+    }
+
     // Setters
     public void setName(String name) {
         this.name = name;
@@ -125,6 +161,22 @@ public class Theme {
         this.lineSpacing = lineSpacing;
     }
 
+    public void setShowTitle(boolean showTitle) {
+        this.showTitle = showTitle;
+    }
+
+    public void setTitleFontFamily(String titleFontFamily) {
+        this.titleFontFamily = titleFontFamily;
+    }
+
+    public void setTitleFontSize(double titleFontSize) {
+        this.titleFontSize = titleFontSize;
+    }
+
+    public void setTitleTextColor(String titleTextColor) {
+        this.titleTextColor = titleTextColor;
+    }
+
     @Override
     public String toString() {
         return name;
@@ -137,17 +189,21 @@ public class Theme {
         Theme theme = (Theme) o;
         return Double.compare(fontSize, theme.fontSize) == 0 &&
                Double.compare(lineSpacing, theme.lineSpacing) == 0 &&
+               showTitle == theme.showTitle &&
+               Double.compare(titleFontSize, theme.titleFontSize) == 0 &&
                Objects.equals(name, theme.name) &&
                Objects.equals(fontFamily, theme.fontFamily) &&
                Objects.equals(textColor, theme.textColor) &&
                Objects.equals(backgroundColor, theme.backgroundColor) &&
                Objects.equals(backgroundImagePath, theme.backgroundImagePath) &&
                Objects.equals(backgroundVideoPath, theme.backgroundVideoPath) &&
-               Objects.equals(textAlignment, theme.textAlignment);
+               Objects.equals(textAlignment, theme.textAlignment) &&
+               Objects.equals(titleFontFamily, theme.titleFontFamily) &&
+               Objects.equals(titleTextColor, theme.titleTextColor);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, fontFamily, fontSize, textColor, backgroundColor, backgroundImagePath, backgroundVideoPath, textAlignment, lineSpacing);
+        return Objects.hash(name, fontFamily, fontSize, textColor, backgroundColor, backgroundImagePath, backgroundVideoPath, textAlignment, lineSpacing, showTitle, titleFontFamily, titleFontSize, titleTextColor);
     }
 }

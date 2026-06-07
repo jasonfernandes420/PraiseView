@@ -9,7 +9,9 @@ import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle; // Import StageStyle
+import javafx.scene.image.Image; // Import Image
 import java.io.IOException;
+import java.util.Objects;
 
 public class PraiseViewApp extends Application {
 
@@ -25,6 +27,15 @@ public class PraiseViewApp extends Application {
         primaryStage.setMinWidth(1300);
         primaryStage.setMinHeight(780);
         primaryStage.show();
+
+        // Set application icon for the primary stage
+        try {
+            Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/logo-transparent.png")));
+            primaryStage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.err.println("Error loading application icon: " + e.getMessage());
+        }
+
 
         MainController controller = mainLoader.getController();
         controller.setScene(mainScene);
@@ -52,6 +63,14 @@ public class PraiseViewApp extends Application {
         Stage projStage = new Stage();
         projStage.setTitle("PraiseView - Live Projection");
         projStage.setScene(projScene);
+
+        // Set application icon for the projection stage
+        try {
+            Image icon = new Image(getClass().getResourceAsStream("/com/praiseview/images/logo-transparent.png"));
+            projStage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.err.println("Error loading projection stage icon: " + e.getMessage());
+        }
 
         var screens = Screen.getScreens();
 

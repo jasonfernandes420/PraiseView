@@ -6,6 +6,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.media.MediaView?>
 <?import javafx.scene.text.Text?>
+<?import javafx.scene.image.Image?>
 
 <StackPane
 fx:id="projectionRoot"
@@ -14,18 +15,24 @@ xmlns="http://javafx.com/javafx"
            fx:controller="com.praiseview.controller.ProjectionController"
            style="-fx-background-color: #1e1e1e;">
 
+    <!-- Theme Background Image/Video (placed at the bottom) -->
+    <ImageView fx:id="themeBackgroundImageView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
+               preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
+    <MediaView fx:id="themeBackgroundMediaView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
+               visible="false" managed="false" StackPane.alignment="CENTER"/>
+
     <!-- Container for text-based content (Song, Prayer, Announcement) -->
     <VBox fx:id="textContentContainer" alignment="CENTER" spacing="30" StackPane.alignment="CENTER">
         <Label fx:id="titleLabel" style="-fx-font-size: 42px; -fx-text-fill: white;"/>
         <TextFlow fx:id="lyricsFlow" textAlignment="CENTER"/>
     </VBox>
 
-    <!-- ImageView for displaying images -->
-    <ImageView fx:id="imageView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
+    <!-- ImageView for displaying images (content item) -->
+    <ImageView fx:id="itemImageView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
                preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
 
-    <!-- MediaView for displaying videos -->
-    <MediaView fx:id="mediaView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
+    <!-- MediaView for displaying videos (content item) -->
+    <MediaView fx:id="itemMediaView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
                visible="false" managed="false" StackPane.alignment="CENTER"/>
 
     <!-- Placeholder for PPTs (text-based for now) -->
@@ -33,5 +40,13 @@ xmlns="http://javafx.com/javafx"
         <Label text="PPT Projection (Placeholder)" style="-fx-font-size: 36px; -fx-text-fill: #ffd700;"/>
         <Text fx:id="pptPlaceholderText" style="-fx-font-size: 24px; -fx-text-fill: white;" textAlignment="CENTER"/>
     </VBox>
+
+    <!-- Logo ImageView -->
+    <ImageView fx:id="logoImageView" fitWidth="1000" fitHeight="1000" preserveRatio="true"
+               visible="false" managed="false" StackPane.alignment="CENTER">
+        <image>
+            <Image url="@../../../images/logo-transparent.png"/>
+        </image>
+    </ImageView>
 
 </StackPane>

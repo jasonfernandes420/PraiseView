@@ -42,6 +42,18 @@ public class JsonService {
         }
     }
 
+    public List<Prayer> importPrayers(File file) {
+        try {
+            List<Prayer> prayers = mapper.readValue(file,
+                    mapper.getTypeFactory().constructCollectionType(List.class, Prayer.class));
+            System.out.println("✅ Imported " + prayers.size() + " prayers");
+            return prayers;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public void exportThemes(List<Theme> themes, File file) {
         try {
             mapper.writerWithDefaultPrettyPrinter().writeValue(file, themes);
