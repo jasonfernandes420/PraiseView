@@ -53,6 +53,12 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.18.2</version>
         </dependency>
+        <!-- org.json for general JSON parsing (used in UpdateChecker) -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20240303</version>
+        </dependency>
 
         <!-- ControlsFX -->
         <dependency>
