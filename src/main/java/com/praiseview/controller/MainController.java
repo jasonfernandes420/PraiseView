@@ -1327,6 +1327,7 @@ public class MainController {
                 for (Song newSong : importedSongs) {
                     if (allSongs.stream().noneMatch(existingSong -> existingSong.getId().equals(newSong.getId()))) {
                         allSongs.add(newSong);
+                        dbService.saveSong(newSong); // Save imported song to DB
                     } else {
                         AppLogger.log("Skipping duplicate song on import: " + newSong.getTitle());
                     }
@@ -1368,6 +1369,7 @@ public class MainController {
                 for (Prayer newPrayer : importedPrayers) {
                     if (allPrayers.stream().noneMatch(existingPrayer -> existingPrayer.getId().equals(newPrayer.getId()))) {
                         allPrayers.add(newPrayer);
+                        dbService.savePrayer(newPrayer); // Save imported prayer to DB
                     } else {
                         AppLogger.log("Skipping duplicate prayer on import: " + newPrayer.getTitle());
                     }
