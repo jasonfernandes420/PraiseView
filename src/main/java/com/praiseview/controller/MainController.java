@@ -4,6 +4,7 @@ import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.*;
 import com.praiseview.service.JsonService;
+import com.praiseview.service.UpdateService; // Import UpdateService
 import com.praiseview.util.AppLogger;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -81,6 +82,9 @@ public class MainController {
     @FXML private ListView<Theme> themeListView; // New FXML element for theme list
     @FXML private CheckBox showTitleCheckBox; // New FXML element for show title checkbox
 
+    // Menu Items
+    @FXML private MenuItem updateApplicationMenuItem;
+
 
     // Bottom: Library
     @FXML private ListView<Song> songLibraryList;
@@ -109,6 +113,7 @@ public class MainController {
 
     private DatabaseService dbService = new DatabaseService();
     private JsonService jsonService = new JsonService();
+    private UpdateService updateService; // Declare UpdateService
 
     private ObservableList<Song> allSongs = FXCollections.observableArrayList();
     private FilteredList<Song> filteredSongs;
@@ -174,6 +179,9 @@ public class MainController {
         loadSongs();
         loadPrayers();
         loadThemes(); // Load themes on startup
+
+        // Initialize UpdateService
+        updateService = new UpdateService(PraiseViewApp.getStaticHostServices());
 
         // Show logo on projected screen on startup
         ProjectionController proj = PraiseViewApp.getProjectionController();
@@ -796,8 +804,8 @@ public class MainController {
     // This method now mirrors the projection screen
     private void updateCenterPreview() {
         AppLogger.log("MainController: updateCenterPreview called.");
-        // Do NOT call hideAllLiveMediaViews() here, as theme background should persist
-        // Instead, hide only content-specific views
+        
+        // --- Start: Clear and reset all content views and media players ---
         liveTextContentContainer.setVisible(false);
         liveTextContentContainer.setManaged(false);
         liveItemImageView.setVisible(false);
@@ -809,6 +817,7 @@ public class MainController {
             liveItemMediaPlayer.stop();
             liveItemMediaPlayer.dispose();
             liveItemMediaPlayer = null;
+            AppLogger.log("MainController: Stopped and disposed live item media player before showing new item.");
         }
         liveItemMediaView.setMediaPlayer(null);
         livePptPlaceholderContainer.setVisible(false);
@@ -818,6 +827,7 @@ public class MainController {
         if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
         if (videoRewindButton != null) videoRewindButton.setDisable(true);
         if (videoForwardButton != null) videoPlayPauseButton.setDisable(true);
+        // --- End: Clear and reset all content views and media players ---
 
 
         // Add null check here
@@ -955,14 +965,11 @@ public class MainController {
                     AppLogger.log("MainController: Preparing video preview for: " + videoFile.getAbsolutePath());
                     if (videoFile.exists()) {
                         Media media = new Media(videoFile.toURI().toString());
-                        if (liveItemMediaPlayer != null) {
-                            liveItemMediaPlayer.stop();
-                            liveItemMediaPlayer.dispose();
-                        }
+                        // liveItemMediaPlayer is already stopped/disposed at the start of updateCenterPreview
                         liveItemMediaPlayer = new MediaPlayer(media);
                         liveItemMediaView.setMediaPlayer(liveItemMediaPlayer);
                         liveItemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
-                        liveItemMediaPlayer.play();
+                        liveItemMediaPlayer.play(); // Explicitly play the video
                         liveItemMediaView.fitWidthProperty().bind(livePreviewPane.widthProperty());
                         liveItemMediaView.fitHeightProperty().bind(livePreviewPane.heightProperty());
                         liveItemMediaView.setPreserveRatio(true);
@@ -1891,5 +1898,20 @@ public class MainController {
     private void loadPrayers() {
         allPrayers.setAll(dbService.loadAllPrayers());
         prayerList.refresh(); // Explicitly refresh the ListView
+    }
+
+    @FXML
+    private void checkForApplicationUpdate() {
+        AppLogger.log("MainController: Checking for application updates...");
+        if (updateService != null) {
+            updateService.checkForUpdate(true); // Pass true to show message even if no update
+        } else {
+            AppLogger.log("MainController: UpdateService not initialized.");
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Update Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Update service is not available. Please restart the application.");
+            alert.showAndWait();
+        }
     }
 }

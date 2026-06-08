@@ -3,24 +3,24 @@ package com.praiseview;
 import com.praiseview.controller.MainController;
 import com.praiseview.controller.ProjectionController;
 import com.praiseview.service.UpdateService;
-import com.praiseview.updater.UpdateChecker; // Import the UpdateChecker
+import com.praiseview.updater.UpdateChecker;
 import javafx.application.Application;
-import javafx.application.Platform; // Import Platform for UI updates
+import javafx.application.HostServices;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.image.Image;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.scene.image.Image;
-import javafx.scene.control.Alert; // Import Alert
-import javafx.scene.control.ButtonType; // Import ButtonType
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class PraiseViewApp extends Application {
 
@@ -29,9 +29,12 @@ public class PraiseViewApp extends Application {
     private Stage primaryStage; // Keep a reference to the primary stage
     private Stage projStage; // Keep a reference to the projection stage
 
+    private static HostServices staticHostServices; // Static field to hold HostServices
+
     @Override
     public void start(Stage primaryStage) throws IOException {
         this.primaryStage = primaryStage; // Store primary stage reference
+        staticHostServices = getHostServices(); // Assign HostServices to the static field
 
         // 1. Setup projection screen
         setupProjectionScreen();
@@ -206,6 +209,11 @@ public class PraiseViewApp extends Application {
 
     public static ProjectionController getProjectionController() {
         return projectionController;
+    }
+
+    // New static method to provide HostServices
+    public static HostServices getStaticHostServices() {
+        return staticHostServices;
     }
 
     public static void main(String[] args) {

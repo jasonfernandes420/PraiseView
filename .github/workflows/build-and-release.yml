@@ -41,6 +41,13 @@ jobs:
         run: |
           jlink --add-modules ALL-MODULE-PATH --output runtime
 
+      - name: Get Project Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
       - name: Create MSI Installer
         shell: pwsh
         run: |
@@ -57,7 +64,7 @@ jobs:
             --icon src/main/resources/images/logo-transparent.ico `
             --main-class com.praiseview.Launcher `
             --runtime-image runtime `
-            --app-version "1.0.${{ github.run_number }}" `
+            --app-version "${{ steps.version.outputs.VERSION }}" `
             --vendor "PraiseView Team" `
             --copyright "Copyright 2025 PraiseView Team" `
             --description "Church projection software" `
@@ -79,13 +86,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.0.${{ github.run_number }} # Use GitHub run number as part of the tag
-          release_name: PraiseView Build v1.0.${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.VERSION }} # Use GitHub run number as part of the tag
+          release_name: PraiseView Build ${{ steps.version.outputs.VERSION }}
           body: |
             Automated build of PraiseView.
             Commit: ${{ github.sha }}
           draft: false
-          prerelease: true # Mark as prerelease for development builds
+          prerelease: false # Mark as prerelease for development builds
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1

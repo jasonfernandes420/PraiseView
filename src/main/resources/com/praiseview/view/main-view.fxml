@@ -35,6 +35,7 @@
                 <MenuItem text="Theme Editor" onAction="#openThemeEditor"/>
             </Menu>
             <Menu text="Help">
+                <MenuItem fx:id="updateApplicationMenuItem" text="Update application" onAction="#checkForApplicationUpdate"/> <!-- New menu item -->
                 <MenuItem text="About" onAction="#showAbout"/>
             </Menu>
         </MenuBar>

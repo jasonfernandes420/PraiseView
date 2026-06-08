@@ -2,6 +2,8 @@ package com.praiseview.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.praiseview.util.AppLogger;
+import com.praiseview.util.VersionUtil;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -13,7 +15,7 @@ import java.net.http.HttpResponse;
 
 public class UpdateService {
 
-    private final String CURRENT_VERSION = "1.0.0";  // Update this with every release
+    private final String CURRENT_VERSION = VersionUtil.getVersion();  // Update this with every release
     private final String GITHUB_REPO = "https://api.github.com/repos/jasonfernandes420/PraiseView/releases/latest";
     private final HostServices hostServices;
 
@@ -24,6 +26,7 @@ public class UpdateService {
     public void checkForUpdate(boolean showNoUpdateMessage) {
         new Thread(() -> {
             try {
+                AppLogger.log("Checking for update..");
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(GITHUB_REPO))
@@ -32,8 +35,9 @@ public class UpdateService {
                         .build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
+                AppLogger.log("Checking for update. response.:"+response.statusCode());
                 if (response.statusCode() == 200) {
+                    AppLogger.log("Got something");
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode root = mapper.readTree(response.body());
 
@@ -42,6 +46,7 @@ public class UpdateService {
                     String downloadUrl = root.get("assets").get(0).get("browser_download_url").asText();
 
                     if (isNewerVersion(latestVersion)) {
+                        AppLogger.log("If update present something");
                         Platform.runLater(() -> showUpdateAvailable(latestVersion, releaseNotes, downloadUrl));
                     } else if (showNoUpdateMessage) {
                         Platform.runLater(() -> {
