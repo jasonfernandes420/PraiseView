@@ -80,6 +80,7 @@ public class UpdateChecker {
             HttpResponse<String> response =
                     client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
+                System.out.println("Update Available");
 
                     JsonNode rootNode =  objectMapper.readTree(response.body());
 
@@ -103,6 +104,8 @@ public class UpdateChecker {
                     }
                 }
             } catch (InterruptedException | IOException e) {
+            System.out.println("Error fetching latest release info:");
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
         return Optional.empty();
