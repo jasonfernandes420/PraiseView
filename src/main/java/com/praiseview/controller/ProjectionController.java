@@ -19,7 +19,9 @@ import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ProjectionController {
 
@@ -29,8 +31,8 @@ public class ProjectionController {
 
     // FXML elements for content items
     @FXML private VBox textContentContainer;
-    @FXML private ImageView itemImageView; // Renamed from imageView to match FXML fx:id
-    @FXML private MediaView itemMediaView; // Renamed from mediaView to match FXML fx:id
+    @FXML private ImageView itemImageView;
+    @FXML private MediaView itemMediaView;
     @FXML private VBox pptPlaceholderContainer;
     @FXML private Text pptPlaceholderText;
     @FXML private ImageView logoImageView;
@@ -47,11 +49,14 @@ public class ProjectionController {
     private Projectable currentProjectedItem; // Stores the currently projected item
     private int currentSubItemIndex = 0; // Stores the current verse/page index
     private List<String> currentProjectedItemPages; // Cached paginated content for the current item
-    private double lastPaginationFontSize = -1; // Track font size used for last pagination
-    private double lastPaginationWidth = -1;    // Track width used for last pagination
-    private double lastPaginationHeight = -1;   // Track height used for last pagination
 
     private Theme activeTheme; // Store the currently active theme to check showTitle property
+
+    // Fields to cache pagination parameters to prevent unnecessary re-pagination
+    private Projectable lastPaginatedItem = null;
+    private double lastPaginatedFontSize = -1;
+    private double lastPaginatedWidth = -1;
+    private double lastPaginatedHeight = -1;
 
 
     @FXML
@@ -71,11 +76,11 @@ public class ProjectionController {
         textContentContainer.setVisible(false);
         textContentContainer.setManaged(false);
         lyricsFlow.getChildren().clear(); // Explicitly clear TextFlow content
-        itemImageView.setVisible(false); // Changed from imageView
-        itemImageView.setManaged(false); // Changed from imageView
+        itemImageView.setVisible(false);
+        itemImageView.setManaged(false);
         itemImageView.setImage(null); // Explicitly clear image
-        itemMediaView.setVisible(false); // Changed from mediaView
-        itemMediaView.setManaged(false); // Changed from mediaView
+        itemMediaView.setVisible(false);
+        itemMediaView.setManaged(false);
         pptPlaceholderContainer.setVisible(false); // Hide PPT placeholder
         pptPlaceholderContainer.setManaged(false);
         if (itemMediaPlayer != null) {
@@ -84,33 +89,39 @@ public class ProjectionController {
             itemMediaPlayer = null;
             AppLogger.log("ProjectionController: Stopped and disposed item media player.");
         }
-        if (logoImageView != null) {
-            logoImageView.setVisible(false);
-            logoImageView.setManaged(false);
-        }
+        // Do NOT hide logo here, showLogo() will handle its visibility
+        // if (logoImageView != null) {
+        //     logoImageView.setVisible(false);
+        //     logoImageView.setManaged(false);
+        // }
         titleLabel.setText(""); // Clear title
         titleLabel.setVisible(false); // Ensure title is hidden
         titleLabel.setManaged(false); // Ensure title is not taking up space
 
         // Theme background views
-        themeBackgroundImageView.setVisible(false);
-        themeBackgroundImageView.setManaged(false);
-        themeBackgroundImageView.setImage(null);
-        themeBackgroundMediaView.setVisible(false);
-        themeBackgroundMediaView.setManaged(false);
         if (themeBackgroundMediaPlayer != null) {
             themeBackgroundMediaPlayer.stop();
             themeBackgroundMediaPlayer.dispose();
             themeBackgroundMediaPlayer = null;
             AppLogger.log("ProjectionController: Stopped and disposed theme background media player.");
         }
+        themeBackgroundImageView.setVisible(false);
+        themeBackgroundImageView.setManaged(false);
+        themeBackgroundImageView.setImage(null);
+        themeBackgroundMediaView.setVisible(false);
+        themeBackgroundMediaView.setManaged(false);
+        themeBackgroundMediaView.setMediaPlayer(null);
+
 
         currentProjectedItem = null; // Clear current item state
         currentSubItemIndex = 0;
         currentProjectedItemPages = null; // Clear cached pages
-        lastPaginationFontSize = -1; // Reset pagination state
-        lastPaginationWidth = -1;
-        lastPaginationHeight = -1;
+
+        // Invalidate pagination cache
+        lastPaginatedItem = null;
+        lastPaginatedFontSize = -1;
+        lastPaginatedWidth = -1;
+        lastPaginatedHeight = -1;
     }
 
     /**
@@ -127,22 +138,35 @@ public class ProjectionController {
             return;
         }
 
-        // Clear only content-specific views, theme background should persist
+        // Defensive check for activeTheme
+        if (activeTheme == null) {
+            AppLogger.log("ProjectionController: activeTheme is null, initializing with default theme.");
+            activeTheme = new Theme(); // Initialize with default theme
+            applyTheme(activeTheme); // Apply to set initial styles
+        }
+
+        // --- Start: Clear and reset all content views and media players ---
         textContentContainer.setVisible(false);
         textContentContainer.setManaged(false);
         lyricsFlow.getChildren().clear();
-        itemImageView.setVisible(false); // Changed from imageView
-        itemImageView.setManaged(false); // Changed from imageView
-        itemImageView.setImage(null); // Changed from imageView
-        itemMediaView.setVisible(false); // Changed from mediaView
-        itemMediaView.setManaged(false); // Changed from mediaView
+        itemImageView.setVisible(false);
+        itemImageView.setManaged(false);
+        itemImageView.setImage(null);
+        itemMediaView.setVisible(false);
+        itemMediaView.setManaged(false);
         pptPlaceholderContainer.setVisible(false);
         pptPlaceholderContainer.setManaged(false);
+        
+        // Stop and dispose of any existing item media player to prevent audio overlap
         if (itemMediaPlayer != null) {
             itemMediaPlayer.stop();
             itemMediaPlayer.dispose();
             itemMediaPlayer = null;
+            AppLogger.log("ProjectionController: Stopped and disposed item media player before showing new item.");
         }
+        itemMediaView.setMediaPlayer(null); // Clear media player from view
+
+        // Hide logo when content is being displayed
         if (logoImageView != null) {
             logoImageView.setVisible(false);
             logoImageView.setManaged(false);
@@ -150,6 +174,7 @@ public class ProjectionController {
         titleLabel.setText("");
         titleLabel.setVisible(false);
         titleLabel.setManaged(false);
+        // --- End: Clear and reset all content views and media players ---
 
 
         this.currentProjectedItem = item;
@@ -177,23 +202,44 @@ public class ProjectionController {
                 textContentContainer.setVisible(true);
                 textContentContainer.setManaged(true);
 
-                // --- FORCE RECALCULATION FOR TEXT-BASED ITEMS ---
-                AppLogger.log("ProjectionController: Forcing re-pagination for text content.");
-                if (item instanceof Song) {
-                    currentProjectedItemPages = new java.util.ArrayList<>();
-                    for (int i = 0; i < item.getSubItemCount(currentFontSize, availableWidth, availableHeight); i++) {
-                        currentProjectedItemPages.add(item.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
-                    }
-                } else { // For dynamic content (Prayer, Announcement)
-                    currentProjectedItemPages = TextPaginationUtil.paginateText(item.getFullContent(), currentFontSize, availableWidth, availableHeight);
+                // Check if re-pagination is needed for the current item and dimensions
+                boolean needsRepagination = false;
+                if (currentProjectedItemPages == null ||
+                    !Objects.equals(item, lastPaginatedItem) || // Check if item itself changed
+                    currentFontSize != lastPaginatedFontSize ||
+                    availableWidth != lastPaginatedWidth ||
+                    availableHeight != lastPaginatedHeight) {
+                    needsRepagination = true;
+                    AppLogger.log("ProjectionController: Re-paginating text content due to change in item, font size, or dimensions.");
                 }
-                this.lastPaginationFontSize = currentFontSize;
-                this.lastPaginationWidth = availableWidth;
-                this.lastPaginationHeight = availableHeight;
-                // --- END FORCE RECALCULATION ---
 
-                AppLogger.log("ProjectionController: currentProjectedItemPages after update (first page): " + (currentProjectedItemPages != null && !currentProjectedItemPages.isEmpty() ? (currentProjectedItemPages.get(0).length() > 50 ? currentProjectedItemPages.get(0).substring(0, 50) + "..." : currentProjectedItemPages.get(0)) : "EMPTY"));
+                if (needsRepagination) {
+                    currentProjectedItemPages = new ArrayList<>();
+                    // For Prayer, use the new stateless paginateForDimensions method
+                    if (item instanceof Prayer) {
+                        currentProjectedItemPages.addAll(((Prayer) item).paginateForDimensions(currentFontSize, availableWidth, availableHeight));
+                    } else if (item instanceof Announcement) {
+                        // For Announcement, rePaginate is still used as its implementation hasn't changed
+                        ((Announcement) item).rePaginate(currentFontSize, availableWidth, availableHeight);
+                        totalSubItems = item.getSubItemCount(currentFontSize, availableWidth, availableHeight);
+                        for (int i = 0; i < totalSubItems; i++) {
+                            currentProjectedItemPages.add(item.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
+                        }
+                    } else { // For Song and other text-based items
+                        totalSubItems = item.getSubItemCount(currentFontSize, availableWidth, availableHeight);
+                        for (int i = 0; i < totalSubItems; i++) {
+                            currentProjectedItemPages.add(item.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
+                        }
+                    }
 
+                    // Update cached pagination parameters
+                    lastPaginatedItem = item;
+                    lastPaginatedFontSize = currentFontSize;
+                    lastPaginatedWidth = availableWidth;
+                    lastPaginatedHeight = availableHeight;
+                }
+                
+                totalSubItems = currentProjectedItemPages.size();
 
                 // Ensure subItemIndex is within bounds of the newly calculated pages
                 if (currentProjectedItemPages != null && subItemIndex >= currentProjectedItemPages.size()) {
@@ -204,8 +250,7 @@ public class ProjectionController {
                 if (currentProjectedItemPages != null && !currentProjectedItemPages.isEmpty()) {
                     contentToDisplay = currentProjectedItemPages.get(this.currentSubItemIndex);
                 }
-                totalSubItems = currentProjectedItemPages != null ? currentProjectedItemPages.size() : 0;
-
+                
                 // Only show (X/Y) if there's more than one sub-item/page AND it's not a Song
                 if (totalSubItems > 1 && !(item instanceof Song)) {
                     titleText += " (" + (this.currentSubItemIndex + 1) + "/" + totalSubItems + ")";
@@ -234,24 +279,26 @@ public class ProjectionController {
                     AppLogger.log("Invalid or null text color in active theme: '" + activeTheme.getTextColor() + "'. Falling back to WHITE. Error: " + e.getMessage());
                     mainText.setFill(Color.WHITE); // Fallback
                 }
-                mainText.setStyle("-fx-font-size: " + currentFontSize + "px; -fx-line-spacing: 8px;"); // Default, will be overridden by applyTheme
+                // Apply font settings from activeTheme
+                mainText.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-line-spacing: %.1fpx;",
+                        activeTheme.getFontFamily(), activeTheme.getFontSize(), activeTheme.getLineSpacing()));
                 lyricsFlow.getChildren().add(mainText);
-                lyricsFlow.setTextAlignment(TextAlignment.CENTER); // Default, will be overridden by applyTheme
+                lyricsFlow.setTextAlignment(TextAlignment.valueOf(activeTheme.getTextAlignment().toUpperCase()));
                 break;
 
             case "IMAGE":
                 AppLogger.log("ProjectionController: Displaying image.");
-                itemImageView.setVisible(true); // Changed from imageView
-                itemImageView.setManaged(true); // Changed from imageView
-                imageFile = new File(((MediaItem)item).getFilePath()); // Assignment here
+                itemImageView.setVisible(true);
+                itemImageView.setManaged(true);
+                imageFile = new File(((MediaItem)item).getFilePath());
                 AppLogger.log("ProjectionController: Image file path: " + imageFile.getAbsolutePath());
                 if (imageFile.exists()) {
                     try {
                         Image image = new Image(imageFile.toURI().toString());
-                        itemImageView.setImage(image); // Changed from imageView
-                        itemImageView.setPreserveRatio(true); // Maintain aspect ratio // Changed from imageView
-                        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty()); // Changed from imageView
-                        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Changed from imageView
+                        itemImageView.setImage(image);
+                        itemImageView.setPreserveRatio(true);
+                        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                         AppLogger.log("ProjectionController: Image loaded successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading image: " + e.getMessage());
@@ -285,24 +332,21 @@ public class ProjectionController {
 
             case "VIDEO":
                 AppLogger.log("ProjectionController: Displaying video.");
-                itemMediaView.setVisible(true); // Changed from mediaView
-                itemMediaView.setManaged(true); // Changed from mediaView
+                itemMediaView.setVisible(true);
+                itemMediaView.setManaged(true);
                 File videoFile = new File(((MediaItem)item).getFilePath());
                 AppLogger.log("ProjectionController: Video file path: " + videoFile.getAbsolutePath());
                 if (videoFile.exists()) {
                     try {
                         Media media = new Media(videoFile.toURI().toString());
-                        if (itemMediaPlayer != null) { // Use itemMediaPlayer
-                            itemMediaPlayer.stop();
-                            itemMediaPlayer.dispose();
-                        }
-                        itemMediaPlayer = new MediaPlayer(media); // Use itemMediaPlayer
-                        itemMediaView.setMediaPlayer(itemMediaPlayer); // Changed from mediaView
+                        // No need to stop/dispose here, already done at the start of showItem
+                        itemMediaPlayer = new MediaPlayer(media);
+                        itemMediaView.setMediaPlayer(itemMediaPlayer);
                         itemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
-                        itemMediaPlayer.play();
-                        itemMediaView.setPreserveRatio(true); // Changed from mediaView
-                        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty()); // Changed from mediaView
-                        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Changed from mediaView
+                        itemMediaPlayer.play(); // Explicitly play the video
+                        itemMediaView.setPreserveRatio(true);
+                        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                         AppLogger.log("ProjectionController: Video started successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading video: " + e.getMessage());
@@ -336,21 +380,21 @@ public class ProjectionController {
 
             case "PPT": // Now handles PptItem by displaying rendered slide image
                 AppLogger.log("ProjectionController: Displaying PPT slide.");
-                itemImageView.setVisible(true); // Changed from imageView
-                itemImageView.setManaged(true); // Changed from imageView
+                itemImageView.setVisible(true);
+                itemImageView.setManaged(true);
                 PptItem pptItem = (PptItem) item;
                 if (pptItem.getRenderedSlideImagePaths() != null && !pptItem.getRenderedSlideImagePaths().isEmpty()) {
                     String slideImagePath = pptItem.getSubItemContent(subItemIndex, currentFontSize, availableWidth, availableHeight);
-                    slideImageFile = new File(slideImagePath); // Assignment here
+                    slideImageFile = new File(slideImagePath);
                     AppLogger.log("ProjectionController: PPT slide image path: " + slideImageFile.getAbsolutePath());
 
                     if (slideImageFile.exists()) {
                         try {
                             Image slideImage = new Image(slideImageFile.toURI().toString());
-                            itemImageView.setImage(slideImage); // Changed from imageView
-                            itemImageView.setPreserveRatio(true); // Changed from imageView
-                            itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty()); // Changed from imageView
-                            itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Changed from imageView
+                            itemImageView.setImage(slideImage);
+                            itemImageView.setPreserveRatio(true);
+                            itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
+                            itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                             // Update title with slide number
                             titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, availableWidth, availableHeight) + ")";
                             AppLogger.log("ProjectionController: PPT slide image loaded successfully.");
@@ -370,7 +414,7 @@ public class ProjectionController {
                         textContentContainer.setManaged(true);
                         titleLabel.setText("Error Loading PPT Slide");
                         lyricsFlow.getChildren().clear();
-                        lyricsFlow.getChildren().add(new Text("Slide image not found: " + slideImageFile.getName()));
+                        lyricsFlow.getChildren().add(new Text("File not found: " + slideImageFile.getName()));
                     }
                 } else {
                     AppLogger.log("ProjectionController: No rendered slides found for PPT: " + pptItem.getTitle());
@@ -411,7 +455,7 @@ public class ProjectionController {
      * Toggles play/pause for the currently playing video.
      */
     public void playPauseVideo() {
-        if (itemMediaPlayer != null) { // Use itemMediaPlayer
+        if (itemMediaPlayer != null) {
             if (itemMediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
                 itemMediaPlayer.pause();
                 AppLogger.log("ProjectionController: Item video paused.");
@@ -429,7 +473,7 @@ public class ProjectionController {
      * @param seconds The number of seconds to seek. Positive for forward, negative for backward.
      */
     public void seekVideo(double seconds) {
-        if (itemMediaPlayer != null && itemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) { // Use itemMediaPlayer
+        if (itemMediaPlayer != null && itemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
             Duration currentTime = itemMediaPlayer.getCurrentTime();
             Duration newTime = currentTime.add(Duration.seconds(seconds));
             itemMediaPlayer.seek(newTime);
@@ -491,11 +535,12 @@ public class ProjectionController {
         themeBackgroundMediaView.setManaged(false);
         themeBackgroundMediaView.setMediaPlayer(null);
 
-        // Hide logo if a specific background is set
-        if (logoImageView != null) {
-            logoImageView.setVisible(false);
-            logoImageView.setManaged(false);
-        }
+        // The logo should not be hidden by background application.
+        // Its visibility is managed by showLogo() and showItem().
+        // if (logoImageView != null) {
+        //     logoImageView.setVisible(false);
+        //     logoImageView.setManaged(false);
+        // }
 
         if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
             File imageFile = new File(theme.getBackgroundImagePath());
@@ -505,7 +550,7 @@ public class ProjectionController {
                     themeBackgroundImageView.setImage(image);
                     themeBackgroundImageView.setPreserveRatio(true);
                     themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.widthProperty()); // Should be heightProperty()
+                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundImageView.setVisible(true);
                     themeBackgroundImageView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if image is present
@@ -550,6 +595,12 @@ public class ProjectionController {
         // Update currentFontSize for pagination calculations
         this.currentFontSize = theme.getFontSize();
 
+        // Invalidate pagination cache to force re-pagination with new theme settings
+        lastPaginatedItem = null;
+        lastPaginatedFontSize = -1;
+        lastPaginatedWidth = -1;
+        lastPaginatedHeight = -1;
+
         // Re-render the current projected item to ensure new styles are applied
         if (currentProjectedItem != null) {
             showItem(currentProjectedItem, currentSubItemIndex);
@@ -563,14 +614,8 @@ public class ProjectionController {
      * @return The total count of sub-items.
      */
     public int getCurrentProjectedItemSubItemCount() {
-        if (currentProjectedItem != null) {
-            // Use arbitrary reasonable dimensions for sub-item count calculation
-            // The actual content for projection will use projection-specific dimensions.
-            double calcWidth = 1000.0; // Matches default in showItem
-            double calcHeight = 700.0; // Matches default in showItem
-            double calcFontSize = currentFontSize; // Use current projection font size
-
-            return currentProjectedItem.getSubItemCount(calcFontSize, calcWidth, calcHeight);
+        if (currentProjectedItemPages != null) {
+            return currentProjectedItemPages.size();
         }
         return 0;
     }
@@ -609,11 +654,11 @@ public class ProjectionController {
                 // Return the path to the current slide image
                 if (currentProjectedItem instanceof PptItem) {
                     PptItem ppt = (PptItem) currentProjectedItem;
-                    if (ppt.getRenderedSlideImagePaths() != null && currentSubItemIndex >= 0 && currentSubItemIndex < ppt.getRenderedSlideImagePaths().size()) {
-                        content = ppt.getRenderedSlideImagePaths().get(currentSubItemIndex);
-                    } else {
-                        AppLogger.log("ProjectionController.getCurrentDisplayedContent: PPT renderedSlideImagePaths is null or index out of bounds.");
-                    }
+                    // Need to ensure the PPT item is paginated for the current projection dimensions
+                    // to get the correct slide image path.
+                    double availableWidth = lyricsFlow.getWidth() > 0 ? lyricsFlow.getWidth() : 1000;
+                    double availableHeight = lyricsFlow.getHeight() > 0 ? lyricsFlow.getHeight() : 700;
+                    content = ppt.getSubItemContent(currentSubItemIndex, currentFontSize, availableWidth, availableHeight);
                 } else {
                     AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItem is not PptItem for PPT type.");
                 }
@@ -622,10 +667,13 @@ public class ProjectionController {
                 AppLogger.log("ProjectionController.getCurrentDisplayedContent: Unhandled item type: " + currentProjectedItem.getType());
                 break;
         }
-        AppLogger.log("ProjectionController.getCurrentDisplayedContent: Returning content (first 50 chars): " + (content.length() > 50 ? content.substring(0, 50) + "..." : content));
+        AppLogger.log("ProjectionController.getCurrentDisplayedContent: Returning content: " +content);
         return content;
     }
 
+    public TextFlow getLyricsFlow() {
+        return lyricsFlow;
+    }
 
     public String getCurrentDisplayedTitle() {
         // Only return title text if it's currently visible
@@ -654,15 +702,22 @@ public class ProjectionController {
     }
 
     public void showLogo() {
+        // Defensive check for activeTheme
+        if (activeTheme == null) {
+            AppLogger.log("ProjectionController: activeTheme is null in showLogo, initializing with default theme.");
+            activeTheme = new Theme(); // Initialize with default theme
+            // No need to call applyTheme here, applyThemeBackgroundToProjection will use it
+        }
+
         // Clear content-specific views, but keep theme background
         textContentContainer.setVisible(false);
         textContentContainer.setManaged(false);
         lyricsFlow.getChildren().clear();
-        itemImageView.setVisible(false); // Changed from imageView
-        itemImageView.setManaged(false); // Changed from imageView
-        itemImageView.setImage(null); // Changed from imageView
-        itemMediaView.setVisible(false); // Changed from mediaView
-        itemMediaView.setManaged(false); // Changed from mediaView
+        itemImageView.setVisible(false);
+        itemImageView.setManaged(false);
+        itemImageView.setImage(null);
+        itemMediaView.setVisible(false);
+        itemMediaView.setManaged(false);
         pptPlaceholderContainer.setVisible(false);
         pptPlaceholderContainer.setManaged(false);
         if (itemMediaPlayer != null) {
@@ -673,6 +728,20 @@ public class ProjectionController {
 
         projectionRoot.setStyle("-fx-background-color: #0f0f0f;"); // Ensure default background
         if (logoImageView != null) {
+            // Load default logo if not already set
+            if (logoImageView.getImage() == null) {
+                try {
+                    // Assuming a default logo image exists in resources
+                    Image defaultLogo = new Image(getClass().getResourceAsStream("/com/praiseview/images/default_logo.png"));
+                    logoImageView.setImage(defaultLogo);
+                    logoImageView.setPreserveRatio(true);
+                    logoImageView.setFitWidth(200); // Set a reasonable size for the logo
+                    logoImageView.setFitHeight(200);
+                    AppLogger.log("ProjectionController: Loaded default logo image.");
+                } catch (Exception e) {
+                    AppLogger.log("ProjectionController: Error loading default logo: " + e.getMessage());
+                }
+            }
             logoImageView.setVisible(true);
             logoImageView.setManaged(true);
             AppLogger.log("ProjectionController: Displaying logo.");
@@ -705,7 +774,13 @@ public class ProjectionController {
         themeBackgroundMediaView.setManaged(false);
         themeBackgroundMediaView.setMediaPlayer(null);
 
-        // Apply new background based on theme
+        // The logo should not be hidden by background application.
+        // Its visibility is managed by showLogo() and showItem().
+        // if (logoImageView != null) {
+        //     logoImageView.setVisible(false);
+        //     logoImageView.setManaged(false);
+        // }
+
         if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
             File imageFile = new File(theme.getBackgroundImagePath());
             if (imageFile.exists()) {
@@ -714,7 +789,7 @@ public class ProjectionController {
                     themeBackgroundImageView.setImage(image);
                     themeBackgroundImageView.setPreserveRatio(true);
                     themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty()); // Corrected from widthProperty()
+                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundImageView.setVisible(true);
                     themeBackgroundImageView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if image is present
@@ -755,11 +830,30 @@ public class ProjectionController {
         } else {
             projectionRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Apply background color
         }
+
+        // Update currentFontSize for pagination calculations
+        this.currentFontSize = theme.getFontSize();
+
+        // Invalidate pagination cache to force re-pagination with new theme settings
+        lastPaginatedItem = null;
+        lastPaginatedFontSize = -1;
+        lastPaginatedWidth = -1;
+        lastPaginatedHeight = -1;
+
+        // Re-render the current projected item to ensure new styles are applied
+        if (currentProjectedItem != null) {
+            showItem(currentProjectedItem, currentSubItemIndex);
+        }
     }
 
 
     public void setFontSize(double size) {
         currentFontSize = size;
+        // Invalidate pagination cache to force re-pagination with new font size
+        lastPaginatedItem = null;
+        lastPaginatedFontSize = -1;
+        lastPaginatedWidth = -1;
+        lastPaginatedHeight = -1;
         // Re-render the current item with the new font size, which will trigger re-pagination
         if (currentProjectedItem != null) {
             showItem(currentProjectedItem, currentSubItemIndex);

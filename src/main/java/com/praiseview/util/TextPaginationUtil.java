@@ -39,17 +39,25 @@ public class TextPaginationUtil {
             helperText.setText(testContent);
 
             if (helperText.getLayoutBounds().getHeight() > maxHeight) {
-                // If current page is not empty, save it and start new page
+                // The current line, when added to currentPageContent, exceeds maxHeight.
+                // So, currentPageContent (without the current line) forms a complete page.
                 if (currentPageContent.length() > 0) {
                     pages.add(currentPageContent.toString().trim());
-                    currentPageContent = new StringBuilder(line);
-                } else {
-                    // A single line is too long. We need to split it by words.
+                }
+                // Now, the 'line' itself needs to be processed.
+                // Check if this single 'line' is too long to fit on a page by itself.
+                helperText.setText(line); // Measure the single line
+                if (helperText.getLayoutBounds().getHeight() > maxHeight) {
+                    // The single line is too long, split it by words into sub-pages.
                     List<String> subPages = splitLongLineByWords(line, fontSize, maxWidth, maxHeight);
                     pages.addAll(subPages);
-                    currentPageContent = new StringBuilder(); // Reset for next line
+                    currentPageContent = new StringBuilder(); // Start fresh for the next line
+                } else {
+                    // The single line fits on a page by itself. Start a new page with it.
+                    currentPageContent = new StringBuilder(line);
                 }
             } else {
+                // The line fits on the current page.
                 if (currentPageContent.length() > 0) {
                     currentPageContent.append("\n");
                 }

@@ -1,22 +1,27 @@
 package com.praiseview.model;
 
-import com.praiseview.util.TextPaginationUtil; // Import the utility class
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.praiseview.util.AppLogger; // Added for logging
+import com.praiseview.util.TextPaginationUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Prayer implements Projectable { // Implement Projectable interface
+public class Prayer implements Projectable {
 
     private String id = UUID.randomUUID().toString();
     private String title;
     private String content;
-    private String category;        // e.g., "Ordinary", "Lenten", "Eucharistic", "Seasonal"
+    private String category;
 
     public Prayer(String title, String content, String category) {
         this.title = title;
@@ -24,11 +29,14 @@ public class Prayer implements Projectable { // Implement Projectable interface
         this.category = category;
     }
 
+    public void setContent(String content) {
+        this.content = content;
+    }
+
     public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
 
@@ -36,8 +44,6 @@ public class Prayer implements Projectable { // Implement Projectable interface
     public String toString() {
         return title;
     }
-
-    // --- Projectable Interface Implementations ---
 
     @Override
     public String getType() {
@@ -49,29 +55,31 @@ public class Prayer implements Projectable { // Implement Projectable interface
         return content;
     }
 
+    /**
+     * For now, prayers are treated as a single page.
+     * This method returns a list containing the entire prayer content as one element.
+     */
+    public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
+        // Log the call to confirm this simplified logic is being used
+        AppLogger.log("Prayer: Using simplified single-page pagination for '" + this.title + "'");
+        return Collections.singletonList(this.content);
+    }
+
     @Override
     public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
-        List<String> pages = TextPaginationUtil.paginateText(this.content, fontSize, maxWidth, maxHeight);
-        if (index >= 0 && index < pages.size()) {
-            return pages.get(index);
+        if (index == 0) {
+            return this.content; // Return full content for the first (and only) page
         }
-        return ""; // Return empty string if index is out of bounds
+        return ""; // Only one page for prayers
     }
 
     @Override
     public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
-        return TextPaginationUtil.paginateText(this.content, fontSize, maxWidth, maxHeight).size();
+        return 1; // Prayers are always one page for now
     }
+
     @Override
     public String getSubItemLabel(int index) {
-        // For prayers, sub-items are pages.
-        // We need to re-paginate to get the total count for accurate labeling.
-        // This might be inefficient if called frequently, but for UI labels, it's acceptable.
-        // Use arbitrary reasonable dimensions for label calculation, as it's just for the label text.
-        int totalPages = TextPaginationUtil.paginateText(this.content, 16.0, 400.0, 300.0).size(); // Use preview-like dimensions
-        if (index >= 0 && index < totalPages) {
-            return "Page " + (index + 1);
-        }
-        return "Page (N/A)";
+        return "Page " + (index + 1); // Will always be "Page 1"
     }
 }

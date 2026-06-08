@@ -8,10 +8,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.Provider;
+import java.security.Security;
 import java.util.Optional;
 import java.util.jar.Manifest;
 import java.util.jar.Attributes;
@@ -22,7 +28,7 @@ public class UpdateChecker {
     // Example: If your repo is https://github.com/myuser/PraiseView-Full-Project
     // GITHUB_REPO_OWNER = "myuser"
     // GITHUB_REPO_NAME = "PraiseView-Full-Project"
-    private static final String GITHUB_REPO_OWNER = "https://github.com/jasonfernandes420/PraiseView";
+    private static final String GITHUB_REPO_OWNER = "jasonfernandes420";
     private static final String GITHUB_REPO_NAME = "PraiseView"; // This should match your repo name
 
     private static final String GITHUB_API_LATEST_RELEASE = String.format(
@@ -62,16 +68,23 @@ public class UpdateChecker {
      */
     public static Optional<ReleaseInfo> getLatestReleaseInfo() {
         try {
-            URL url = new URL(GITHUB_API_LATEST_RELEASE);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
-            connection.setRequestProperty("User-Agent", "PraiseView-Updater"); // GitHub API requires User-Agent
+            HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    JsonNode rootNode = objectMapper.readTree(in);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GITHUB_API_LATEST_RELEASE))
+                    .header("Accept", "application/vnd.github+json")
+                    .header("User-Agent", "PraiseView-Updater")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                System.out.println("Update Available");
+
+                    JsonNode rootNode =  objectMapper.readTree(response.body());
 
                     String latestVersion = rootNode.path("tag_name").asText(); // e.g., v1.0.1
                     String downloadUrl = null;
@@ -92,19 +105,10 @@ public class UpdateChecker {
                         return Optional.of(new ReleaseInfo(latestVersion, downloadUrl));
                     }
                 }
-            } else {
-                System.err.println("GitHub API request failed with response code: " + responseCode);
-                try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
-                    String errorLine;
-                    StringBuilder errorResponse = new StringBuilder();
-                    while ((errorLine = errorReader.readLine()) != null) {
-                        errorResponse.append(errorLine);
-                    }
-                    System.err.println("Error response: " + errorResponse.toString());
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error checking for updates from GitHub: " + e.getMessage());
+            } catch (InterruptedException | IOException e) {
+            System.out.println("Error fetching latest release info:");
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return Optional.empty();
     }
@@ -142,19 +146,42 @@ public class UpdateChecker {
      */
     public static Optional<Path> downloadInstaller(String downloadUrl, String fileName) {
         try {
-            URL url = new URL(downloadUrl);
             Path tempDir = Files.createTempDirectory("PraiseView_Updater_");
             Path destination = tempDir.resolve(fileName);
 
-            System.out.println("Downloading update from: " + downloadUrl + " to " + destination);
-            try (java.io.InputStream in = url.openStream()) {
-                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Downloading update from: " + downloadUrl);
+            System.out.println("Saving to: " + destination);
+
+            HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(downloadUrl))
+                    .header("User-Agent", "PraiseView-Updater")
+                    .GET()
+                    .build();
+
+            HttpResponse<Path> response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofFile(destination)
+            );
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                System.out.println("Installer downloaded successfully.");
+                return Optional.of(destination);
             }
-            return Optional.of(destination);
-        } catch (IOException e) {
-            System.err.println("Error downloading installer: " + e.getMessage());
-            return Optional.empty();
+
+            System.err.println(
+                    "Failed to download installer. HTTP Status: "
+                            + response.statusCode());
+
+        } catch (Exception e) {
+            System.err.println("Error downloading installer:");
+            e.printStackTrace();
         }
+
+        return Optional.empty();
     }
 
     /**

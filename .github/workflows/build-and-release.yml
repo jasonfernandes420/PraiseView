@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest # jpackage for MSI requires a Windows runner
+    permissions:
+      contents: write # Grant write permission for contents to allow creating releases and uploading assets
 
     steps:
       - name: Checkout code
@@ -21,37 +23,54 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven and create fat JAR
-        run: mvn clean install assembly:single
+        run: mvn clean package
 
-      - name: Find the fat JAR
+      - name: Find shaded JAR
         id: find_jar
-        run: |
-          $jarPath = Get-ChildItem -Path target -Filter "praiseview-*-jar-with-dependencies.jar" | Select-Object -ExpandProperty FullName
-          echo "FAT_JAR_PATH=$jarPath" >> $env:GITHUB_OUTPUT
         shell: pwsh
+        run: |
+          $jarPath = Get-ChildItem -Path target -Filter "*-all.jar" |
+            Select-Object -First 1 -ExpandProperty FullName
 
-      - name: Create MSI installer with jpackage
-        run: |
-          $jarName = Split-Path -Path "${{ steps.find_jar.outputs.FAT_JAR_PATH }}" -Leaf
-          $version = "${{ github.ref_name }}" -replace "development", "${{ github.sha }}" # Use commit SHA for version if on development branch
-          if ($version.Length -gt 7) { $version = $version.Substring(0, 7) } # Shorten SHA for version
-          $appVersion = "${{ github.event.repository.name }}-${version}"
-          
-          $jpackageCommand = "jpackage --input target " + `
-                             "--name `"PraiseView`" " + `
-                             "--main-jar `"$jarName`" " + `
-                             "--main-class com.praiseview.PraiseViewApp " + `
-                             "--type msi " + `
-                             "--dest build/installer " + `
-                             "--app-version `"1.0.${{ github.run_number }}`" " + `
-                             "--vendor `"PraiseView Team`" " + `
-                             "--copyright `"Copyright 2023 PraiseView Team`" " + `
-                             "--description `"PraiseView Application`" " + `
-                             "--win-menu " + `
-                             "--win-shortcut"
-          
-          Invoke-Expression $jpackageCommand
+          echo "FAT_JAR_PATH=$jarPath" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Found JAR: $jarPath"
+
+      - name: Create Runtime Image
         shell: pwsh
+        run: |
+          jlink --add-modules ALL-MODULE-PATH --output runtime
+
+      - name: Get Project Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Create MSI Installer
+        shell: pwsh
+        run: |
+
+          $jarName = Split-Path `
+            -Path "${{ steps.find_jar.outputs.FAT_JAR_PATH }}" `
+            -Leaf
+
+          jpackage `
+            --type msi `
+            --name PraiseView `
+            --input target `
+            --main-jar $jarName `
+            --icon src/main/resources/images/logo-transparent.ico `
+            --main-class com.praiseview.Launcher `
+            --runtime-image runtime `
+            --app-version "${{ steps.version.outputs.VERSION }}" `
+            --vendor "PraiseView Team" `
+            --copyright "Copyright 2025 PraiseView Team" `
+            --description "Church projection software" `
+            --win-menu `
+            --win-shortcut `
+            --dest build/installer
 
       - name: Find generated MSI
         id: find_msi
@@ -67,13 +86,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.0.${{ github.run_number }} # Use GitHub run number as part of the tag
-          release_name: PraiseView Build v1.0.${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.VERSION }} # Use GitHub run number as part of the tag
+          release_name: PraiseView Build ${{ steps.version.outputs.VERSION }}
           body: |
             Automated build of PraiseView.
             Commit: ${{ github.sha }}
           draft: false
-          prerelease: true # Mark as prerelease for development builds
+          prerelease: false # Mark as prerelease for development builds
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1

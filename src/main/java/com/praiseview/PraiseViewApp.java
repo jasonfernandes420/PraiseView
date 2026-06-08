@@ -3,34 +3,77 @@ package com.praiseview;
 import com.praiseview.controller.MainController;
 import com.praiseview.controller.ProjectionController;
 import com.praiseview.service.UpdateService;
-import com.praiseview.updater.UpdateChecker; // Import the UpdateChecker
+import com.praiseview.updater.UpdateChecker;
 import javafx.application.Application;
-import javafx.application.Platform; // Import Platform for UI updates
+import javafx.application.HostServices;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.image.Image;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.scene.image.Image;
-import javafx.scene.control.Alert; // Import Alert
-import javafx.scene.control.ButtonType; // Import ButtonType
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class PraiseViewApp extends Application {
 
     private static ProjectionController projectionController;
     private UpdateService updateService;
     private Stage primaryStage; // Keep a reference to the primary stage
+    private Stage projStage; // Keep a reference to the projection stage
+
+    private static HostServices staticHostServices; // Static field to hold HostServices
 
     @Override
     public void start(Stage primaryStage) throws IOException {
         this.primaryStage = primaryStage; // Store primary stage reference
+        staticHostServices = getHostServices(); // Assign HostServices to the static field
+
+        // 1. Setup projection screen
+        setupProjectionScreen();
+
+        // Add handler to close projection stage when primary stage closes
+        primaryStage.setOnCloseRequest(event -> {
+            if (projStage != null) {
+                projStage.close();
+            }
+            // Also ensure the application exits cleanly, especially if there are background threads
+            Platform.exit();
+            System.exit(0);
+        });
+
+
+        // Load main UI only after update check is initiated, and potentially shown later
+        FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
+        Scene mainScene = new Scene(mainLoader.load(), 1480, 920);
+
+        primaryStage.setTitle("PraiseView - Operator Control");
+        primaryStage.setScene(mainScene);
+        primaryStage.setMinWidth(1300);
+        primaryStage.setMinHeight(780);
+        // primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
+
+        // Set application icon for the primary stage
+        try {
+            Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/logo-transparent.png")));
+            primaryStage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.err.println("Error loading application icon: " + e.getMessage());
+        }
+
+        MainController controller = mainLoader.getController();
+        controller.setScene(mainScene);
+        controller.setupSceneKeyHandler();
+
+        // Initialize Update Service
+        updateService = new UpdateService(getHostServices());
 
         // --- Update Check Logic ---
         Optional<String> currentVersionOpt = UpdateChecker.getCurrentAppVersion();
@@ -94,32 +137,6 @@ public class PraiseViewApp extends Application {
             }
         });
         // --- End Update Check Logic ---
-
-        // Load main UI only after update check is initiated, and potentially shown later
-        FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
-        Scene mainScene = new Scene(mainLoader.load(), 1480, 920);
-
-        primaryStage.setTitle("PraiseView - Operator Control");
-        primaryStage.setScene(mainScene);
-        primaryStage.setMinWidth(1300);
-        primaryStage.setMinHeight(780);
-        // primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
-
-        // Set application icon for the primary stage
-        try {
-            Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/logo-transparent.png")));
-            primaryStage.getIcons().add(icon);
-        } catch (Exception e) {
-            System.err.println("Error loading application icon: " + e.getMessage());
-        }
-
-        MainController controller = mainLoader.getController();
-        controller.setScene(mainScene);
-        controller.setupSceneKeyHandler();
-
-        // Initialize Update Service
-        updateService = new UpdateService(getHostServices());
-        setupProjectionScreen();
     }
 
     private void setupProjectionScreen() {
@@ -131,7 +148,7 @@ public class PraiseViewApp extends Application {
 
             Scene projScene = new Scene(projLoader.load());
 
-            Stage projStage = new Stage();
+            projStage = new Stage(); // Assign to class field
             projStage.setTitle("PraiseView - Live Projection");
             projStage.setScene(projScene);
 
@@ -192,6 +209,11 @@ public class PraiseViewApp extends Application {
 
     public static ProjectionController getProjectionController() {
         return projectionController;
+    }
+
+    // New static method to provide HostServices
+    public static HostServices getStaticHostServices() {
+        return staticHostServices;
     }
 
     public static void main(String[] args) {
