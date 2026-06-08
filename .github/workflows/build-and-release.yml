@@ -45,8 +45,10 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $version = mvn help:evaluate -Dexpression=project.version -q -DforceStdout
+          [xml]$pom = Get-Content pom.xml
+          $version = $pom.project.version
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $version"
 
       - name: Create MSI Installer
         shell: pwsh
