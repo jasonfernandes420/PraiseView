@@ -37,19 +37,20 @@ jobs:
           if ($version.Length -gt 7) { $version = $version.Substring(0, 7) } # Shorten SHA for version
           $appVersion = "${{ github.event.repository.name }}-${version}"
           
-          jpackage --% `
-            --input target `
-            --name "PraiseView" `
-            --main-jar "$jarName" `
-            --main-class com.praiseview.PraiseViewApp `
-            --type msi `
-            --dest build/installer `
-            --app-version "1.0.${{ github.run_number }}" ` # Use GitHub run number for unique build version
-            --vendor "PraiseView Team" `
-            --copyright "Copyright 2023 PraiseView Team" `
-            --description "PraiseView Application" `
-            --win-menu `
-            --win-shortcut
+          $jpackageCommand = "jpackage --input target " + `
+                             "--name `"PraiseView`" " + `
+                             "--main-jar `"$jarName`" " + `
+                             "--main-class com.praiseview.PraiseViewApp " + `
+                             "--type msi " + `
+                             "--dest build/installer " + `
+                             "--app-version `"1.0.${{ github.run_number }}`" " + `
+                             "--vendor `"PraiseView Team`" " + `
+                             "--copyright `"Copyright 2023 PraiseView Team`" " + `
+                             "--description `"PraiseView Application`" " + `
+                             "--win-menu " + `
+                             "--win-shortcut"
+          
+          Invoke-Expression $jpackageCommand
         shell: pwsh
 
       - name: Find generated MSI
