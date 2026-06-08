@@ -39,7 +39,7 @@ jobs:
       - name: Create Runtime Image
         shell: pwsh
         run: |
-          jlink --add-modules java.base,java.desktop,java.net.http,java.logging,java.naming,java.scripting,java.security.jgss,java.security.sasl,java.sql,java.xml.crypto,jdk.jfr,jdk.unsupported --output runtime
+          jlink --add-modules ALL-MODULE-PATH --output runtime
 
       - name: Create MSI Installer
         shell: pwsh

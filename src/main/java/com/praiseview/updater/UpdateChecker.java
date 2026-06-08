@@ -16,6 +16,8 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.Provider;
+import java.security.Security;
 import java.util.Optional;
 import java.util.jar.Manifest;
 import java.util.jar.Attributes;
@@ -65,21 +67,10 @@ public class UpdateChecker {
      * @return An Optional containing ReleaseInfo, or empty if no release found or error occurred.
      */
     public static Optional<ReleaseInfo> getLatestReleaseInfo() {
-        try {
-            HttpClient client = HttpClient.newHttpClient();
+        System.out.println("Java Home: " + System.getProperty("java.home"));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com"))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response =
-                    client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            System.out.println("GitHub Test Status = " + response.statusCode());
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        for (Provider p : Security.getProviders()) {
+            System.out.println(p.getName());
         }
         try {
             HttpClient client = HttpClient.newBuilder()
