@@ -54,6 +54,7 @@ jobs:
             --name PraiseView `
             --input target `
             --main-jar $jarName `
+            --icon src/main/resources/images/logo-transparent.ico `
             --main-class com.praiseview.Launcher `
             --runtime-image runtime `
             --app-version "1.0.${{ github.run_number }}" `

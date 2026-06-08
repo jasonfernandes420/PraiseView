@@ -1,5 +1,6 @@
 package com.praiseview.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.praiseview.util.TextPaginationUtil; // Import the utility class
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
