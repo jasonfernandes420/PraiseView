@@ -691,6 +691,10 @@ public class ProjectionController {
     public void blackout() {
         _clearAllContentAndMedia(); // Clear all content and media, including logo
         projectionRoot.setStyle("-fx-background-color: black;"); // Set background to black
+        if (projectionRoot.getScene() != null) {
+            projectionRoot.getScene().setFill(Color.BLACK); // Also set scene fill to black
+        }
+        currentProjectedItem = null; // Clear the current item state
         AppLogger.log("ProjectionController: Screen blacked out.");
     }
 

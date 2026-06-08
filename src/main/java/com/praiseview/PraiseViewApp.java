@@ -46,13 +46,13 @@ public class PraiseViewApp extends Application {
 
         // Load main UI only after update check is initiated, and potentially shown later
         FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
-        Scene mainScene = new Scene(mainLoader.load(), 1480, 920);
+        Scene mainScene = new Scene(mainLoader.load(), 1280, 720);
 
         primaryStage.setTitle("PraiseView - Operator Control");
         primaryStage.setScene(mainScene);
         primaryStage.setMinWidth(1300);
         primaryStage.setMinHeight(780);
-        // primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
+        primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
 
         // Set application icon for the primary stage
         try {
@@ -86,7 +86,7 @@ public class PraiseViewApp extends Application {
 
             // Set application icon for the projection stage
             try {
-                Image icon = new Image(getClass().getResourceAsStream("/com/praiseview/images/logo-transparent.png"));
+                Image icon = new Image(getClass().getResourceAsStream("/images/logo-transparent.png"));
                 projStage.getIcons().add(icon);
             } catch (Exception e) {
                 System.err.println("Error loading projection stage icon: " + e.getMessage());
