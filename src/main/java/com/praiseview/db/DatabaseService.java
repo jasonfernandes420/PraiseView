@@ -3,15 +3,49 @@ package com.praiseview.db;
 import com.praiseview.model.Prayer;
 import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
+import com.praiseview.util.AppLogger; // Import AppLogger
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 
 public class DatabaseService {
 
-    private static final String DB_URL = "jdbc:sqlite:praiseview.db";
+    private static final String DB_FILE_NAME = "praiseview.db";
+    private static String DB_URL;
 
     public DatabaseService() {
+        initializeDbPath();
         createTables();
+    }
+
+    private void initializeDbPath() {
+        try {
+            // Get user's home directory
+            String userHome = System.getProperty("user.home");
+            // Construct path to AppData/Local (Windows specific, but generally works cross-platform for app data)
+            Path appDataDir = Paths.get(userHome, "AppData", "Local", "PraiseView");
+
+            // Create the directory if it doesn't exist
+            if (!Files.exists(appDataDir)) {
+                Files.createDirectories(appDataDir);
+                AppLogger.log("Created application data directory: " + appDataDir.toAbsolutePath());
+            }
+
+            // Construct the full database URL
+            Path dbPath = appDataDir.resolve(DB_FILE_NAME);
+            DB_URL = "jdbc:sqlite:" + dbPath.toAbsolutePath().toString();
+            AppLogger.log("Database URL: " + DB_URL);
+
+        } catch (Exception e) {
+            AppLogger.log("Error initializing database path: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to current directory if app data path fails
+            DB_URL = "jdbc:sqlite:" + DB_FILE_NAME;
+            AppLogger.log("Falling back to current directory for database: " + DB_URL);
+        }
     }
 
     private void createTables() {
@@ -39,8 +73,8 @@ public class DatabaseService {
                     content TEXT,
                     type TEXT,
                     position INTEGER,
-                    FOREIGN KEY(song_id) REFERENCES songs(id)
-                )""");
+                    FOREIGN KEY(song_id) REFERENCES songs(id) ON DELETE CASCADE
+                )"""); // Added ON DELETE CASCADE
 
             stmt.execute("""
             CREATE TABLE IF NOT EXISTS prayers (
@@ -50,13 +84,17 @@ public class DatabaseService {
                 category TEXT
             )""");
 
+            AppLogger.log("Database tables created or already exist.");
+
         } catch (Exception e) {
+            AppLogger.log("Error creating database tables: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     public void saveSong(Song song) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            conn.setAutoCommit(false); // Start transaction
 
             // Convert verseOrder to comma-separated string
             String verseOrderStr = song.getVerseOrder().isEmpty() ? "" : 
@@ -79,12 +117,13 @@ public class DatabaseService {
                 pstmt.executeUpdate();
             }
 
-            // Save verses
+            // Delete existing verses for this song before inserting new ones
             try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM verses WHERE song_id = ?")) {
                 pstmt.setString(1, song.getId());
                 pstmt.executeUpdate();
             }
 
+            // Save new verses
             String verseSql = "INSERT INTO verses (song_id, label, content, type, position) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement pstmt = conn.prepareStatement(verseSql)) {
                 for (int i = 0; i < song.getVerses().size(); i++) {
@@ -97,8 +136,11 @@ public class DatabaseService {
                     pstmt.executeUpdate();
                 }
             }
+            conn.commit(); // Commit transaction
+            AppLogger.log("Song saved: " + song.getTitle());
 
         } catch (Exception e) {
+            AppLogger.log("Error saving song " + song.getTitle() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -117,6 +159,7 @@ public class DatabaseService {
                 song.setCategory(rs.getString("category"));
                 song.setAuthor(rs.getString("author"));
                 song.setComposer(rs.getString("composer"));
+                song.setCopyright(rs.getString("copyright")); // Ensure copyright is loaded
                 
                 // Load verses for this song
                 List<Verse> verses = new ArrayList<>();
@@ -139,7 +182,11 @@ public class DatabaseService {
                 if (verseOrderStr != null && !verseOrderStr.isEmpty()) {
                     List<Integer> verseOrder = new ArrayList<>();
                     for (String num : verseOrderStr.split(",")) {
-                        verseOrder.add(Integer.parseInt(num));
+                        try {
+                            verseOrder.add(Integer.parseInt(num));
+                        } catch (NumberFormatException e) {
+                            AppLogger.log("Invalid number in verse_order for song " + song.getTitle() + ": " + num);
+                        }
                     }
                     song.getVerseOrder().clear();
                     song.getVerseOrder().addAll(verseOrder);
@@ -147,11 +194,14 @@ public class DatabaseService {
                 
                 songs.add(song);
             }
+            AppLogger.log("Loaded " + songs.size() + " songs from database.");
         } catch (Exception e) {
+            AppLogger.log("Error loading all songs: " + e.getMessage());
             e.printStackTrace();
         }
         return songs;
     }
+
     public void savePrayer(Prayer prayer) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
             String sql = """
@@ -165,7 +215,9 @@ public class DatabaseService {
                 pstmt.setString(4, prayer.getCategory());
                 pstmt.executeUpdate();
             }
+            AppLogger.log("Prayer saved: " + prayer.getTitle());
         } catch (Exception e) {
+            AppLogger.log("Error saving prayer " + prayer.getTitle() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -184,9 +236,47 @@ public class DatabaseService {
                 p.setCategory(rs.getString("category"));
                 prayers.add(p);
             }
+            AppLogger.log("Loaded " + prayers.size() + " prayers from database.");
         } catch (Exception e) {
+            AppLogger.log("Error loading all prayers: " + e.getMessage());
             e.printStackTrace();
         }
         return prayers;
+    }
+
+    public void deleteSong(String songId) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            conn.setAutoCommit(false); // Start transaction
+
+            // Delete associated verses (ON DELETE CASCADE in table definition handles this automatically)
+            // try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM verses WHERE song_id = ?")) {
+            //     pstmt.setString(1, songId);
+            //     pstmt.executeUpdate();
+            // }
+
+            // Delete the song
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM songs WHERE id = ?")) {
+                pstmt.setString(1, songId);
+                pstmt.executeUpdate();
+            }
+            conn.commit(); // Commit transaction
+            AppLogger.log("Song deleted: " + songId);
+        } catch (Exception e) {
+            AppLogger.log("Error deleting song " + songId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void deletePrayer(String prayerId) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM prayers WHERE id = ?")) {
+                pstmt.setString(1, prayerId);
+                pstmt.executeUpdate();
+            }
+            AppLogger.log("Prayer deleted: " + prayerId);
+        } catch (Exception e) {
+            AppLogger.log("Error deleting prayer " + prayerId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

@@ -38,6 +38,9 @@ import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -117,7 +120,7 @@ public class MainController {
 
     // Theme Management
     private ObservableList<Theme> availableThemes = FXCollections.observableArrayList();
-    private static final String THEMES_FILE_PATH = "themes.json"; // File to store themes
+    private static Path THEMES_FILE_PATH; // Changed to Path
     private Theme currentActiveTheme; // The theme currently applied to projection and preview
 
 
@@ -140,11 +143,34 @@ public class MainController {
     public void setScene(javafx.scene.Scene scene) {
         this.scene = scene;
     }
+
+    // New method to initialize themes file path
+    private void initializeThemesPath() {
+        try {
+            String userHome = System.getProperty("user.home");
+            Path appDataDir = Paths.get(userHome, "AppData", "Local", "PraiseView");
+
+            if (!Files.exists(appDataDir)) {
+                Files.createDirectories(appDataDir);
+                AppLogger.log("Created application data directory for themes: " + appDataDir.toAbsolutePath());
+            }
+            THEMES_FILE_PATH = appDataDir.resolve("themes.json");
+            AppLogger.log("Themes file path: " + THEMES_FILE_PATH.toAbsolutePath());
+        } catch (IOException e) {
+            AppLogger.log("Error initializing themes file path: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to current directory if app data path fails
+            THEMES_FILE_PATH = Paths.get("themes.json");
+            AppLogger.log("Falling back to current directory for themes file: " + THEMES_FILE_PATH.toAbsolutePath());
+        }
+    }
+
     @FXML
     public void initialize() {
         AppLogger.log("MainController: Initializing...");
         AppLogger.log("MainController: currentSubItemList (before setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
 
+        initializeThemesPath(); // Initialize themes path first
         loadSongs();
         loadPrayers();
         loadThemes(); // Load themes on startup
@@ -1424,19 +1450,20 @@ public class MainController {
     }
 
     private void loadThemes() {
-        File themesFile = new File(THEMES_FILE_PATH);
+        // Use the initialized THEMES_FILE_PATH
+        File themesFile = THEMES_FILE_PATH.toFile();
         List<Theme> loadedThemes = null;
 
         if (themesFile.exists()) {
             loadedThemes = jsonService.importThemes(themesFile);
             if (loadedThemes != null && !loadedThemes.isEmpty()) {
                 availableThemes.setAll(loadedThemes);
-                AppLogger.log("Themes loaded from " + THEMES_FILE_PATH);
+                AppLogger.log("Themes loaded from " + THEMES_FILE_PATH.toAbsolutePath());
             } else {
-                AppLogger.log("No themes found in " + THEMES_FILE_PATH + ". Will create default.");
+                AppLogger.log("No themes found in " + THEMES_FILE_PATH.toAbsolutePath() + ". Will create default.");
             }
         } else {
-            AppLogger.log(THEMES_FILE_PATH + " not found. Will create default.");
+            AppLogger.log(THEMES_FILE_PATH.toAbsolutePath() + " not found. Will create default.");
         }
 
         // If no themes were loaded or found, create a default one
@@ -1466,9 +1493,10 @@ public class MainController {
     }
 
     public void saveThemes() { // Made public so ThemeEditorController can call it
-        File themesFile = new File(THEMES_FILE_PATH);
+        // Use the initialized THEMES_FILE_PATH
+        File themesFile = THEMES_FILE_PATH.toFile();
         jsonService.exportThemes(new ArrayList<>(availableThemes), themesFile);
-        AppLogger.log("Themes saved to " + THEMES_FILE_PATH);
+        AppLogger.log("Themes saved to " + THEMES_FILE_PATH.toAbsolutePath());
     }
 
     /**
