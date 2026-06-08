@@ -3,24 +3,18 @@ package com.praiseview;
 import com.praiseview.controller.MainController;
 import com.praiseview.controller.ProjectionController;
 import com.praiseview.service.UpdateService;
-import com.praiseview.updater.UpdateChecker;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.Executors;
 
 public class PraiseViewApp extends Application {
 
@@ -75,68 +69,6 @@ public class PraiseViewApp extends Application {
         // Initialize Update Service
         updateService = new UpdateService(getHostServices());
 
-        // --- Update Check Logic ---
-        Optional<String> currentVersionOpt = UpdateChecker.getCurrentAppVersion();
-        String currentVersion = currentVersionOpt.orElse("0.0.0"); // Default if not found
-
-        System.out.println("Current Application Version: " + currentVersion);
-
-        // Perform update check in a background thread to not block UI startup
-        Executors.newSingleThreadExecutor().execute(() -> {
-            Optional<UpdateChecker.ReleaseInfo> latestReleaseOpt = UpdateChecker.getLatestReleaseInfo();
-
-            if (latestReleaseOpt.isPresent()) {
-                UpdateChecker.ReleaseInfo latestRelease = latestReleaseOpt.get();
-                System.out.println("Latest Release Version: " + latestRelease.version);
-
-                if (UpdateChecker.isNewerVersion(latestRelease.version, currentVersion)) {
-                    Platform.runLater(() -> {
-                        // Show update dialog on the JavaFX Application Thread
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-                        alert.setTitle("Update Available");
-                        alert.setHeaderText("A new version of PraiseView is available!");
-                        alert.setContentText("Current version: " + currentVersion + "\n" +
-                                           "New version: " + latestRelease.version + "\n\n" +
-                                           "Would you like to download and install the update now?");
-
-                        Optional<ButtonType> result = alert.showAndWait();
-                        if (result.isPresent() && result.get() == ButtonType.OK) {
-                            // User wants to update, proceed with download and install
-                            primaryStage.hide(); // Hide main window during update
-                            Optional<Path> downloadedInstaller = UpdateChecker.downloadInstaller(
-                                latestRelease.downloadUrl, "PraiseView_Installer_" + latestRelease.version + ".msi");
-
-                            if (downloadedInstaller.isPresent()) {
-                                UpdateChecker.launchInstallerAndExit(downloadedInstaller.get());
-                            } else {
-                                // Handle download failure
-                                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-                                errorAlert.setTitle("Update Failed");
-                                errorAlert.setHeaderText("Failed to download update.");
-                                errorAlert.setContentText("Please try again later or download manually from GitHub.");
-                                errorAlert.showAndWait();
-                                primaryStage.show(); // Show main window again if update failed
-                            }
-                        } else {
-                            // User declined update or closed dialog, continue with current version
-                            System.out.println("User declined update.");
-                            primaryStage.show(); // Ensure primary stage is shown if update check happened before it was shown
-                        }
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        System.out.println("You are running the latest version.");
-                        primaryStage.show(); // Ensure primary stage is shown
-                    });
-                }
-            } else {
-                Platform.runLater(() -> {
-                    System.err.println("Could not check for updates. Continuing with current version.");
-                    primaryStage.show(); // Ensure primary stage is shown
-                });
-            }
-        });
-        // --- End Update Check Logic ---
     }
 
     private void setupProjectionScreen() {
