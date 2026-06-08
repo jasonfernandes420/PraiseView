@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest # jpackage for MSI requires a Windows runner
+    permissions:
+      contents: write # Grant write permission for contents to allow creating releases and uploading assets
 
     steps:
       - name: Checkout code
