@@ -827,9 +827,15 @@ public class MainController {
                     Text mainText = new Text(displayedContent);
                     // Set fill color using theme's text color
                     try {
-                        mainText.setFill(Color.web(currentActiveTheme.getTextColor()));
-                    } catch (IllegalArgumentException | NullPointerException e) {
-                        AppLogger.log("Invalid or null text color in active theme: '" + currentActiveTheme.getTextColor() + "'. Falling back to WHITE. Error: " + e.getMessage());
+                        // Ensure currentActiveTheme is not null here
+                        if (currentActiveTheme != null) {
+                            mainText.setFill(Color.web(currentActiveTheme.getTextColor()));
+                        } else {
+                            AppLogger.log("CRITICAL: currentActiveTheme is NULL in updateCenterPreview. Falling back to WHITE.");
+                            mainText.setFill(Color.WHITE); // Fallback
+                        }
+                    } catch (IllegalArgumentException e) {
+                        AppLogger.log("Invalid text color in active theme: '" + (currentActiveTheme != null ? currentActiveTheme.getTextColor() : "NULL THEME") + "'. Falling back to WHITE. Error: " + e.getMessage());
                         mainText.setFill(Color.WHITE); // Fallback
                     }
                     mainText.setStyle("-fx-font-family: '" + currentActiveTheme.getFontFamily() + "'; -fx-font-size: " + PREVIEW_FONT_SIZE + "px; -fx-line-spacing: 8px;");
@@ -1419,32 +1425,44 @@ public class MainController {
 
     private void loadThemes() {
         File themesFile = new File(THEMES_FILE_PATH);
+        List<Theme> loadedThemes = null;
+
         if (themesFile.exists()) {
-            List<Theme> loaded = jsonService.importThemes(themesFile);
-            if (loaded != null && !loaded.isEmpty()) {
-                availableThemes.setAll(loaded);
+            loadedThemes = jsonService.importThemes(themesFile);
+            if (loadedThemes != null && !loadedThemes.isEmpty()) {
+                availableThemes.setAll(loadedThemes);
                 AppLogger.log("Themes loaded from " + THEMES_FILE_PATH);
             } else {
-                AppLogger.log("No themes found in " + THEMES_FILE_PATH + ". Creating default theme.");
-                createDefaultTheme();
+                AppLogger.log("No themes found in " + THEMES_FILE_PATH + ". Will create default.");
             }
         } else {
-            AppLogger.log(THEMES_FILE_PATH + " not found. Creating default theme.");
-            createDefaultTheme();
+            AppLogger.log(THEMES_FILE_PATH + " not found. Will create default.");
         }
 
-        // Set the first theme as active if available, otherwise use the default
-        if (!availableThemes.isEmpty()) {
-            currentActiveTheme = availableThemes.get(0);
-            applyTheme(currentActiveTheme);
+        // If no themes were loaded or found, create a default one
+        if (availableThemes.isEmpty()) {
+            Theme defaultTheme = new Theme(); // Uses default constructor with sensible defaults
+            availableThemes.add(defaultTheme);
+            saveThemes(); // Save the newly created default theme
+            AppLogger.log("Default theme created and saved.");
         }
+
+        // Ensure currentActiveTheme is set to the first available theme
+        // This block is guaranteed to execute after availableThemes has at least one item.
+        currentActiveTheme = availableThemes.get(0);
+        applyTheme(currentActiveTheme); // Apply the theme immediately
     }
 
     private void createDefaultTheme() {
-        Theme defaultTheme = new Theme(); // Uses default constructor with sensible defaults
-        availableThemes.add(defaultTheme);
-        saveThemes(); // Save the default theme
-        AppLogger.log("Default theme created and saved.");
+        // This method is now effectively replaced by the logic in loadThemes()
+        // but kept for clarity if other parts of the code still call it.
+        // The robust initialization is now handled in loadThemes().
+        AppLogger.log("createDefaultTheme() called, but primary default creation is in loadThemes().");
+        if (availableThemes.isEmpty()) {
+            Theme defaultTheme = new Theme();
+            availableThemes.add(defaultTheme);
+            saveThemes();
+        }
     }
 
     public void saveThemes() { // Made public so ThemeEditorController can call it

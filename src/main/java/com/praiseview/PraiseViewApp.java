@@ -32,6 +32,34 @@ public class PraiseViewApp extends Application {
     public void start(Stage primaryStage) throws IOException {
         this.primaryStage = primaryStage; // Store primary stage reference
 
+        // 1. Setup projection screen
+        setupProjectionScreen();
+
+        // Load main UI only after update check is initiated, and potentially shown later
+        FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
+        Scene mainScene = new Scene(mainLoader.load(), 1480, 920);
+
+        primaryStage.setTitle("PraiseView - Operator Control");
+        primaryStage.setScene(mainScene);
+        primaryStage.setMinWidth(1300);
+        primaryStage.setMinHeight(780);
+        // primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
+
+        // Set application icon for the primary stage
+        try {
+            Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/logo-transparent.png")));
+            primaryStage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.err.println("Error loading application icon: " + e.getMessage());
+        }
+
+        MainController controller = mainLoader.getController();
+        controller.setScene(mainScene);
+        controller.setupSceneKeyHandler();
+
+        // Initialize Update Service
+        updateService = new UpdateService(getHostServices());
+
         // --- Update Check Logic ---
         Optional<String> currentVersionOpt = UpdateChecker.getCurrentAppVersion();
         String currentVersion = currentVersionOpt.orElse("0.0.0"); // Default if not found
@@ -94,32 +122,6 @@ public class PraiseViewApp extends Application {
             }
         });
         // --- End Update Check Logic ---
-
-        // Load main UI only after update check is initiated, and potentially shown later
-        FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
-        Scene mainScene = new Scene(mainLoader.load(), 1480, 920);
-
-        primaryStage.setTitle("PraiseView - Operator Control");
-        primaryStage.setScene(mainScene);
-        primaryStage.setMinWidth(1300);
-        primaryStage.setMinHeight(780);
-        // primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
-
-        // Set application icon for the primary stage
-        try {
-            Image icon = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/logo-transparent.png")));
-            primaryStage.getIcons().add(icon);
-        } catch (Exception e) {
-            System.err.println("Error loading application icon: " + e.getMessage());
-        }
-
-        MainController controller = mainLoader.getController();
-        controller.setScene(mainScene);
-        controller.setupSceneKeyHandler();
-
-        // Initialize Update Service
-        updateService = new UpdateService(getHostServices());
-        setupProjectionScreen();
     }
 
     private void setupProjectionScreen() {

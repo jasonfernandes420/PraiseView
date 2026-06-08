@@ -23,37 +23,48 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven and create fat JAR
-        run: mvn clean install assembly:single
+        run: mvn clean package
 
-      - name: Find the fat JAR
+      - name: Find shaded JAR
         id: find_jar
-        run: |
-          $jarPath = Get-ChildItem -Path target -Filter "praiseview-*-jar-with-dependencies.jar" | Select-Object -ExpandProperty FullName
-          echo "FAT_JAR_PATH=$jarPath" >> $env:GITHUB_OUTPUT
         shell: pwsh
+        run: |
+          $jarPath = Get-ChildItem -Path target -Filter "*-all.jar" |
+            Select-Object -First 1 -ExpandProperty FullName
 
-      - name: Create MSI installer with jpackage
-        run: |
-          $jarName = Split-Path -Path "${{ steps.find_jar.outputs.FAT_JAR_PATH }}" -Leaf
-          $version = "${{ github.ref_name }}" -replace "development", "${{ github.sha }}" # Use commit SHA for version if on development branch
-          if ($version.Length -gt 7) { $version = $version.Substring(0, 7) } # Shorten SHA for version
-          $appVersion = "${{ github.event.repository.name }}-${version}"
-          
-          $jpackageCommand = "jpackage --input target " + `
-                             "--name `"PraiseView`" " + `
-                             "--main-jar `"$jarName`" " + `
-                             "--main-class com.praiseview.PraiseViewApp " + `
-                             "--type msi " + `
-                             "--dest build/installer " + `
-                             "--app-version `"1.0.${{ github.run_number }}`" " + `
-                             "--vendor `"PraiseView Team`" " + `
-                             "--copyright `"Copyright 2023 PraiseView Team`" " + `
-                             "--description `"PraiseView Application`" " + `
-                             "--win-menu " + `
-                             "--win-shortcut"
-          
-          Invoke-Expression $jpackageCommand
+          echo "FAT_JAR_PATH=$jarPath" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Found JAR: $jarPath"
+
+      - name: Create Runtime Image
         shell: pwsh
+        run: |
+          jlink `
+            --add-modules java.base,java.desktop,java.sql `
+            --output runtime
+
+      - name: Create MSI Installer
+        shell: pwsh
+        run: |
+
+          $jarName = Split-Path `
+            -Path "${{ steps.find_jar.outputs.FAT_JAR_PATH }}" `
+            -Leaf
+
+          jpackage `
+            --type msi `
+            --name PraiseView `
+            --input target `
+            --main-jar $jarName `
+            --main-class com.praiseview.Launcher `
+            --runtime-image runtime `
+            --app-version "1.0.${{ github.run_number }}" `
+            --vendor "PraiseView Team" `
+            --copyright "Copyright 2025 PraiseView Team" `
+            --description "Church projection software" `
+            --win-menu `
+            --win-shortcut `
+            --dest build/installer
 
       - name: Find generated MSI
         id: find_msi

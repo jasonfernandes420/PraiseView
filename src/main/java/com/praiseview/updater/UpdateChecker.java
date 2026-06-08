@@ -22,7 +22,7 @@ public class UpdateChecker {
     // Example: If your repo is https://github.com/myuser/PraiseView-Full-Project
     // GITHUB_REPO_OWNER = "myuser"
     // GITHUB_REPO_NAME = "PraiseView-Full-Project"
-    private static final String GITHUB_REPO_OWNER = "https://github.com/jasonfernandes420/PraiseView";
+    private static final String GITHUB_REPO_OWNER = "jasonfernandes420";
     private static final String GITHUB_REPO_NAME = "PraiseView"; // This should match your repo name
 
     private static final String GITHUB_API_LATEST_RELEASE = String.format(
