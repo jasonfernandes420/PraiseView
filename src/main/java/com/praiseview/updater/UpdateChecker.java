@@ -66,6 +66,22 @@ public class UpdateChecker {
      */
     public static Optional<ReleaseInfo> getLatestReleaseInfo() {
         try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.github.com"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("GitHub Test Status = " + response.statusCode());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
             HttpClient client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build();
