@@ -201,29 +201,29 @@ public class MainController {
         servicePlannerList.setItems(serviceQueue);
         servicePlannerList.setCellFactory(lv -> new ListCell<ServiceItem>() {
             @Override
-            protected void updateItem(ServiceItem item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
+            protected void updateItem(ServiceItem serviceItem, boolean empty) { // Renamed 'item' to 'serviceItem'
+                super.updateItem(serviceItem, empty);
+                if (empty || serviceItem == null) {
                     setText(null);
                 } else {
                     String prefix = "";
-                    if (item.getContent() instanceof Song) {
+                    if (serviceItem.getContent() instanceof Song) {
                         prefix = "HYM";
-                    } else if (item.getContent() instanceof Prayer) {
+                    } else if (serviceItem.getContent() instanceof Prayer) {
                         prefix = "PRY";
-                    } else if (item.getContent() instanceof Announcement) {
+                    } else if (serviceItem.getContent() instanceof Announcement) {
                         prefix = "ANN";
-                    } else if (item.getContent() instanceof MediaItem) {
-                        MediaItem media = (MediaItem) item.getContent();
+                    } else if (serviceItem.getContent() instanceof MediaItem) {
+                        MediaItem media = (MediaItem) serviceItem.getContent();
                         if (media.getMediaType() == MediaItem.MediaType.IMAGE) {
                             prefix = "IMG";
                         } else if (media.getMediaType() == MediaItem.MediaType.VIDEO) {
                             prefix = "VID";
                         }
-                    } else if (item.getContent() instanceof PptItem) {
+                    } else if (serviceItem.getContent() instanceof PptItem) {
                         prefix = "PPT";
                     }
-                    setText(prefix + " - " + item.getContent().getTitle());
+                    setText(prefix + " - " + serviceItem.getContent().getTitle());
                 }
             }
         });
@@ -536,6 +536,17 @@ public class MainController {
                         newItem = new ServiceItem(prayer);
                     }
                 }
+                else if (data.startsWith("ANNOUNCEMENT:")) { // Assuming Announcement can also be dragged
+                    String announcementId = data.substring("ANNOUNCEMENT:".length());
+                    // You'll need a way to retrieve announcements from a library similar to songs/prayers
+                    // For now, assuming you have an allAnnouncements list or similar
+                    // Announcement announcement = allAnnouncements.stream().filter(a -> a.getId().equals(announcementId)).findFirst().orElse(null);
+                    // if (announcement != null) {
+                    //     announcement.rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+                    //     newItem = new ServiceItem(announcement);
+                    // }
+                    AppLogger.log("MainController: Dragged Announcement not yet fully implemented.");
+                }
                 else if (data.startsWith("IMAGE:")) {
                     String filePath = data.substring("IMAGE:".length());
                     File file = new File(filePath);
@@ -691,6 +702,13 @@ public class MainController {
 
         // Update projection first, then mirror in preview
         ServiceItem item = serviceQueue.get(currentQueueIndex);
+        Projectable projectable = item.getContent();
+
+        // For Announcement, rePaginate is still used as its implementation hasn't changed
+        if (projectable instanceof Announcement) {
+            ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+        }
+
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.showItem(item.getContent(), currentSubItemIndex);
@@ -707,6 +725,11 @@ public class MainController {
 
         ServiceItem item = serviceQueue.get(currentQueueIndex);
         Projectable projectable = item.getContent();
+
+        // For Announcement, rePaginate is still used as its implementation hasn't changed
+        if (projectable instanceof Announcement) {
+            ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+        }
 
         // Update projection first, then mirror in preview
         ProjectionController proj = PraiseViewApp.getProjectionController();
@@ -742,11 +765,11 @@ public class MainController {
             livePptPlaceholderContainer.setVisible(false);
             livePptPlaceholderContainer.setManaged(false);
         }
-        // Hide the live preview logo when other content is shown
-        if (liveLogoImageView != null) {
-            liveLogoImageView.setVisible(false);
-            liveLogoImageView.setManaged(false);
-        }
+        // Do NOT hide the live preview logo here, showLivePreviewLogo() will handle its visibility
+        // if (liveLogoImageView != null) {
+        //     liveLogoImageView.setVisible(false);
+        //     liveLogoImageView.setManaged(false);
+        // }
         // Disable video controls when not showing video
         if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
         if (videoRewindButton != null) videoRewindButton.setDisable(true);
@@ -790,11 +813,11 @@ public class MainController {
         liveItemMediaView.setMediaPlayer(null);
         livePptPlaceholderContainer.setVisible(false);
         livePptPlaceholderContainer.setManaged(false);
-        liveLogoImageView.setVisible(false);
-        liveLogoImageView.setManaged(false);
+        liveLogoImageView.setVisible(false); // Hide logo when other content is displayed
+        liveLogoImageView.setManaged(false); // Hide logo when other content is displayed
         if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
         if (videoRewindButton != null) videoRewindButton.setDisable(true);
-        if (videoForwardButton != null) videoForwardButton.setDisable(true);
+        if (videoForwardButton != null) videoPlayPauseButton.setDisable(true);
 
 
         // Add null check here
@@ -1021,7 +1044,7 @@ public class MainController {
                             stageViewTitle.setText("Error Loading PPT Slide");
                             if (livePreviewText != null) {
                                 livePreviewText.getChildren().clear();
-                                livePreviewText.getChildren().add(new Text("Slide image not found: " + slideImageFile.getName()));
+                                livePreviewText.getChildren().add(new Text("File not found: " + slideImageFile.getName()));
                             }
                         }
                     } else {
@@ -1161,11 +1184,13 @@ public class MainController {
                 ServiceItem prevItem = serviceQueue.get(currentQueueIndex);
                 Projectable prevProjectable = prevItem.getContent();
 
-                // Temporarily show the previous item on projection to get its correct sub-item count
-                // This is a bit of a workaround to get the correct pagination for the *previous* item
-                // without fully displaying it yet.
-                proj.showItem(prevProjectable, 0); // Show first sub-item to trigger pagination calculation
-                currentSubItemIndex = proj.getCurrentProjectedItemSubItemCount() - 1;
+                // For Announcement, rePaginate is still used as its implementation hasn't changed
+                if (prevProjectable instanceof Announcement) {
+                    ((Announcement) prevProjectable).rePaginate(proj.currentFontSize, proj.getLyricsFlow().getWidth(), proj.getLyricsFlow().getHeight());
+                }
+
+                // currentSubItemIndex will be set to the last sub-item of the previous item
+                currentSubItemIndex = prevProjectable.getSubItemCount(proj.currentFontSize, proj.getLyricsFlow().getWidth(), proj.getLyricsFlow().getHeight()) - 1;
 
                 showCurrentItem(); // Now display the previous item at its last sub-item
             }
@@ -1192,6 +1217,20 @@ public class MainController {
     private void showLivePreviewLogo() {
         hideAllLiveMediaViews(); // Hide all other preview elements
         if (liveLogoImageView != null) {
+            // Load default logo if not already set
+            if (liveLogoImageView.getImage() == null) {
+                try {
+                    // Assuming a default logo image exists in resources
+                    Image defaultLogo = new Image(getClass().getResourceAsStream("/com/praiseview/images/default_logo.png"));
+                    liveLogoImageView.setImage(defaultLogo);
+                    liveLogoImageView.setPreserveRatio(true);
+                    liveLogoImageView.setFitWidth(200); // Set a reasonable size for the logo
+                    liveLogoImageView.setFitHeight(200);
+                    AppLogger.log("MainController: Loaded default logo image for live preview.");
+                } catch (Exception e) {
+                    AppLogger.log("MainController: Error loading default logo for live preview: " + e.getMessage());
+                }
+            }
             liveLogoImageView.setVisible(true);
             liveLogoImageView.setManaged(true);
             AppLogger.log("MainController: Displaying logo in live preview.");
@@ -1252,6 +1291,13 @@ public class MainController {
             if (loadedService != null && !loadedService.isEmpty()) {
                 serviceQueue.clear();
                 serviceQueue.addAll(loadedService);
+                // For Announcement, rePaginate is still used as its implementation hasn't changed
+                for (ServiceItem item : serviceQueue) {
+                    Projectable projectable = item.getContent();
+                    if (projectable instanceof Announcement) {
+                        ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+                    }
+                }
                 servicePlannerList.refresh();
                 currentQueueIndex = -1;
                 currentSubItemIndex = 0;
@@ -1584,6 +1630,13 @@ public class MainController {
         liveThemeBackgroundMediaView.setManaged(false);
         liveThemeBackgroundMediaView.setMediaPlayer(null);
 
+        // The logo should not be hidden by background application.
+        // Its visibility is managed by showLivePreviewLogo() and updateCenterPreview().
+        // if (liveLogoImageView != null) {
+        //     liveLogoImageView.setVisible(false);
+        //     liveLogoImageView.setManaged(false);
+        // }
+
         // Apply new background based on theme
         if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
             File imageFile = new File(theme.getBackgroundImagePath());
@@ -1766,6 +1819,11 @@ public class MainController {
             double labelCalcWidth = 400.0;
             double labelCalcHeight = 300.0;
             double labelCalcFontSize = 16.0;
+
+            // For Announcement, rePaginate is still used as its implementation hasn't changed
+            if (item instanceof Announcement) {
+                ((Announcement) item).rePaginate(labelCalcFontSize, labelCalcWidth, labelCalcHeight);
+            }
 
             int totalSubItems = item.getSubItemCount(labelCalcFontSize, labelCalcWidth, labelCalcHeight);
             for (int i = 0; i < totalSubItems; i++) {

@@ -27,6 +27,7 @@ public class PraiseViewApp extends Application {
     private static ProjectionController projectionController;
     private UpdateService updateService;
     private Stage primaryStage; // Keep a reference to the primary stage
+    private Stage projStage; // Keep a reference to the projection stage
 
     @Override
     public void start(Stage primaryStage) throws IOException {
@@ -34,6 +35,17 @@ public class PraiseViewApp extends Application {
 
         // 1. Setup projection screen
         setupProjectionScreen();
+
+        // Add handler to close projection stage when primary stage closes
+        primaryStage.setOnCloseRequest(event -> {
+            if (projStage != null) {
+                projStage.close();
+            }
+            // Also ensure the application exits cleanly, especially if there are background threads
+            Platform.exit();
+            System.exit(0);
+        });
+
 
         // Load main UI only after update check is initiated, and potentially shown later
         FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
@@ -133,7 +145,7 @@ public class PraiseViewApp extends Application {
 
             Scene projScene = new Scene(projLoader.load());
 
-            Stage projStage = new Stage();
+            projStage = new Stage(); // Assign to class field
             projStage.setTitle("PraiseView - Live Projection");
             projStage.setScene(projScene);
 

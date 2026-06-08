@@ -67,11 +67,6 @@ public class UpdateChecker {
      * @return An Optional containing ReleaseInfo, or empty if no release found or error occurred.
      */
     public static Optional<ReleaseInfo> getLatestReleaseInfo() {
-        System.out.println("Java Home: " + System.getProperty("java.home"));
-
-        for (Provider p : Security.getProviders()) {
-            System.out.println(p.getName());
-        }
         try {
             HttpClient client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NORMAL)

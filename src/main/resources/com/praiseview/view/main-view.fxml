@@ -221,7 +221,6 @@
                     <ListView fx:id="prayerList" VBox.vgrow="ALWAYS" prefHeight="220"/>
                 </VBox>
             </Tab>
-            <Tab text="Bible"/>
             <Tab text="Images">
                 <VBox>
                     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
