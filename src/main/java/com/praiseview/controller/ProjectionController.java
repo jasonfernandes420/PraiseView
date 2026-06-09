@@ -25,7 +25,8 @@ import java.util.Objects;
 
 public class ProjectionController {
 
-    @FXML private StackPane projectionRoot;
+    @FXML
+    public StackPane projectionRoot;
     @FXML private Label titleLabel;
     @FXML public TextFlow lyricsFlow; // Made public for MainController to access dimensions
 
@@ -58,6 +59,11 @@ public class ProjectionController {
     private double lastPaginatedWidth = -1;
     private double lastPaginatedHeight = -1;
 
+    // Constants for text content area padding and title margin
+    private static final double TEXT_HORIZONTAL_PADDING = 50.0; // Padding on left and right
+    private static final double TEXT_VERTICAL_PADDING = 50.0;   // Padding on top and bottom
+    private static final double TITLE_LYRICS_MARGIN = 20.0;     // Space between title and lyrics
+
 
     @FXML
     public void initialize() {
@@ -65,6 +71,15 @@ public class ProjectionController {
         // Ensure media views are initially hidden
         _clearAllContentAndMedia(); // Clear everything first
         showLogo(); // Show logo on initialization
+
+        // Also bind item image/media views to projectionRoot dimensions once
+        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
+        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
+        itemImageView.setPreserveRatio(true);
+
+        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
+        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
+        itemMediaView.setPreserveRatio(true);
     }
 
     /**
@@ -180,10 +195,13 @@ public class ProjectionController {
         this.currentProjectedItem = item;
         this.currentSubItemIndex = subItemIndex;
 
-        // Get actual dimensions of the lyricsFlow for accurate pagination
-        // Fallback to reasonable defaults if not yet laid out
-        double availableWidth = lyricsFlow.getWidth() > 0 ? lyricsFlow.getWidth() : 1000; // Default if not laid out
-        double availableHeight = lyricsFlow.getHeight() > 0 ? lyricsFlow.getHeight() : 700; // Default if not laid out
+        // Calculate available dimensions for text content based on projectionRoot
+        double availableWidth = projectionRoot.getWidth() - (2 * TEXT_HORIZONTAL_PADDING);
+        double availableHeight = projectionRoot.getHeight() - (2 * TEXT_VERTICAL_PADDING);
+
+        // Ensure dimensions are positive
+        if (availableWidth <= 0) availableWidth = 100; // Fallback
+        if (availableHeight <= 0) availableHeight = 100; // Fallback
 
         String titleText = item.getTitle();
         String contentToDisplay = "";
@@ -201,6 +219,28 @@ public class ProjectionController {
                 AppLogger.log("ProjectionController: Displaying text content.");
                 textContentContainer.setVisible(true);
                 textContentContainer.setManaged(true);
+
+                // Set title visibility and calculate its height for pagination
+                if (activeTheme != null && activeTheme.isShowTitle()) {
+                    titleLabel.setText(titleText);
+                    // Temporarily apply style to measure height accurately
+                    titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
+                            activeTheme.getTitleFontFamily(), activeTheme.getTitleFontSize(), activeTheme.getTitleTextColor()));
+                    // Force layout pass to get accurate preferred height
+                    titleLabel.applyCss();
+                    titleLabel.layout();
+                    double titleHeight = titleLabel.prefHeight(availableWidth); // Measure title height given available width
+                    availableHeight -= (titleHeight + TITLE_LYRICS_MARGIN);
+                    titleLabel.setVisible(true);
+                    titleLabel.setManaged(true);
+                } else {
+                    titleLabel.setText("");
+                    titleLabel.setVisible(false);
+                    titleLabel.setManaged(false);
+                }
+
+                // Ensure availableHeight remains positive after title deduction
+                if (availableHeight <= 0) availableHeight = 100; // Fallback
 
                 // Check if re-pagination is needed for the current item and dimensions
                 boolean needsRepagination = false;
@@ -251,24 +291,16 @@ public class ProjectionController {
                     contentToDisplay = currentProjectedItemPages.get(this.currentSubItemIndex);
                 }
                 
-                // Only show (X/Y) if there's more than one sub-item/page AND it's not a Song
-                if (totalSubItems > 1 && !(item instanceof Song)) {
-                    titleText += " (" + (this.currentSubItemIndex + 1) + "/" + totalSubItems + ")";
-                }
+                // Removed X/Y indicator from title for text-based items
+                // if (totalSubItems > 1 && !(item instanceof Song)) {
+                //     titleText += " (" + (this.currentSubItemIndex + 1) + "/" + totalSubItems + ")";
+                // }
 
-                // Set title visibility based on activeTheme
+                // Re-set title text after pagination count is known
                 if (activeTheme != null && activeTheme.isShowTitle()) {
                     titleLabel.setText(titleText);
-                    titleLabel.setVisible(true);
-                    titleLabel.setManaged(true);
-                    // Apply title-specific font settings
-                    titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
-                            activeTheme.getTitleFontFamily(), activeTheme.getTitleFontSize(), activeTheme.getTitleTextColor()));
-                } else {
-                    titleLabel.setText("");
-                    titleLabel.setVisible(false);
-                    titleLabel.setManaged(false);
                 }
+
 
                 lyricsFlow.getChildren().clear(); // Ensure cleared before adding new text
                 Text mainText = new Text(contentToDisplay);
@@ -296,9 +328,6 @@ public class ProjectionController {
                     try {
                         Image image = new Image(imageFile.toURI().toString());
                         itemImageView.setImage(image);
-                        itemImageView.setPreserveRatio(true);
-                        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                         AppLogger.log("ProjectionController: Image loaded successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading image: " + e.getMessage());
@@ -344,9 +373,6 @@ public class ProjectionController {
                         itemMediaView.setMediaPlayer(itemMediaPlayer);
                         itemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
                         itemMediaPlayer.play(); // Explicitly play the video
-                        itemMediaView.setPreserveRatio(true);
-                        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                         AppLogger.log("ProjectionController: Video started successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading video: " + e.getMessage());
@@ -384,7 +410,8 @@ public class ProjectionController {
                 itemImageView.setManaged(true);
                 PptItem pptItem = (PptItem) item;
                 if (pptItem.getRenderedSlideImagePaths() != null && !pptItem.getRenderedSlideImagePaths().isEmpty()) {
-                    String slideImagePath = pptItem.getSubItemContent(subItemIndex, currentFontSize, availableWidth, availableHeight);
+                    // Use projectionRoot dimensions for PPT pagination as well
+                    String slideImagePath = pptItem.getSubItemContent(subItemIndex, currentFontSize, projectionRoot.getWidth(), projectionRoot.getHeight());
                     slideImageFile = new File(slideImagePath);
                     AppLogger.log("ProjectionController: PPT slide image path: " + slideImageFile.getAbsolutePath());
 
@@ -392,11 +419,8 @@ public class ProjectionController {
                         try {
                             Image slideImage = new Image(slideImageFile.toURI().toString());
                             itemImageView.setImage(slideImage);
-                            itemImageView.setPreserveRatio(true);
-                            itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                            itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                             // Update title with slide number
-                            titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, availableWidth, availableHeight) + ")";
+                            titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, projectionRoot.getWidth(), projectionRoot.getHeight()) + ")";
                             AppLogger.log("ProjectionController: PPT slide image loaded successfully.");
                         } catch (Exception e) {
                             AppLogger.log("ProjectionController: Error loading PPT slide image: " + e.getMessage());
@@ -548,9 +572,6 @@ public class ProjectionController {
                 try {
                     Image image = new Image(imageFile.toURI().toString());
                     themeBackgroundImageView.setImage(image);
-                    themeBackgroundImageView.setPreserveRatio(true);
-                    themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundImageView.setVisible(true);
                     themeBackgroundImageView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if image is present
@@ -573,9 +594,6 @@ public class ProjectionController {
                     themeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     themeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
                     themeBackgroundMediaPlayer.play();
-                    themeBackgroundMediaView.setPreserveRatio(true);
-                    themeBackgroundMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundMediaView.setVisible(true);
                     themeBackgroundMediaView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if video is present
@@ -614,6 +632,57 @@ public class ProjectionController {
      * @return The total count of sub-items.
      */
     public int getCurrentProjectedItemSubItemCount() {
+        // Ensure pagination is up-to-date before returning count
+        // This might trigger a re-pagination if dimensions changed since last showItem call
+        if (currentProjectedItem != null && currentProjectedItemPages == null) {
+            // Recalculate dimensions similar to showItem for consistency
+            double availableWidth = projectionRoot.getWidth() - (2 * TEXT_HORIZONTAL_PADDING);
+            double availableHeight = projectionRoot.getHeight() - (2 * TEXT_VERTICAL_PADDING);
+
+            if (availableWidth <= 0) availableWidth = 100;
+            if (availableHeight <= 0) availableHeight = 100;
+
+            if (activeTheme != null && activeTheme.isShowTitle()) {
+                // Temporarily set title text and style to measure height
+                String tempTitleText = currentProjectedItem.getTitle();
+                // Removed X/Y indicator from title for text-based items
+                // if (currentProjectedItem.getSubItemCount(currentFontSize, availableWidth, availableHeight) > 1 && !(currentProjectedItem instanceof Song)) {
+                //     tempTitleText += " (99/99)"; // Max length for (X/Y)
+                // }
+                titleLabel.setText(tempTitleText);
+                titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
+                        activeTheme.getTitleFontFamily(), activeTheme.getTitleFontSize(), activeTheme.getTitleTextColor()));
+                titleLabel.applyCss();
+                titleLabel.layout();
+                double titleHeight = titleLabel.prefHeight(availableWidth);
+                availableHeight -= (titleHeight + TITLE_LYRICS_MARGIN);
+            }
+            if (availableHeight <= 0) availableHeight = 100;
+
+            // Trigger pagination for the current item with these dimensions
+            currentProjectedItemPages = new ArrayList<>();
+            if (currentProjectedItem instanceof Prayer) {
+                currentProjectedItemPages.addAll(((Prayer) currentProjectedItem).paginateForDimensions(currentFontSize, availableWidth, availableHeight));
+            } else if (currentProjectedItem instanceof Announcement) {
+                ((Announcement) currentProjectedItem).rePaginate(currentFontSize, availableWidth, availableHeight);
+                int total = currentProjectedItem.getSubItemCount(currentFontSize, availableWidth, availableHeight);
+                for (int i = 0; i < total; i++) {
+                    currentProjectedItemPages.add(currentProjectedItem.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
+                }
+            } else { // For Song and other text-based items
+                int total = currentProjectedItem.getSubItemCount(currentFontSize, availableWidth, availableHeight);
+                for (int i = 0; i < total; i++) {
+                    currentProjectedItemPages.add(currentProjectedItem.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
+                }
+            }
+
+            // Update cached pagination parameters
+            lastPaginatedItem = currentProjectedItem;
+            lastPaginatedFontSize = currentFontSize;
+            lastPaginatedWidth = availableWidth;
+            lastPaginatedHeight = availableHeight;
+        }
+
         if (currentProjectedItemPages != null) {
             return currentProjectedItemPages.size();
         }
@@ -654,11 +723,8 @@ public class ProjectionController {
                 // Return the path to the current slide image
                 if (currentProjectedItem instanceof PptItem) {
                     PptItem ppt = (PptItem) currentProjectedItem;
-                    // Need to ensure the PPT item is paginated for the current projection dimensions
-                    // to get the correct slide image path.
-                    double availableWidth = lyricsFlow.getWidth() > 0 ? lyricsFlow.getWidth() : 1000;
-                    double availableHeight = lyricsFlow.getHeight() > 0 ? lyricsFlow.getHeight() : 700;
-                    content = ppt.getSubItemContent(currentSubItemIndex, currentFontSize, availableWidth, availableHeight);
+                    // Use projectionRoot dimensions for PPT pagination as well
+                    content = ppt.getSubItemContent(currentSubItemIndex, currentFontSize, projectionRoot.getWidth(), projectionRoot.getHeight());
                 } else {
                     AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItem is not PptItem for PPT type.");
                 }
@@ -669,6 +735,10 @@ public class ProjectionController {
         }
         AppLogger.log("ProjectionController.getCurrentDisplayedContent: Returning content: " +content);
         return content;
+    }
+
+    public List<String> getCurrentProjectedItemPages() {
+        return currentProjectedItemPages;
     }
 
     public TextFlow getLyricsFlow() {
@@ -791,9 +861,6 @@ public class ProjectionController {
                 try {
                     Image image = new Image(imageFile.toURI().toString());
                     themeBackgroundImageView.setImage(image);
-                    themeBackgroundImageView.setPreserveRatio(true);
-                    themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundImageView.setVisible(true);
                     themeBackgroundImageView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if image is present
@@ -816,9 +883,6 @@ public class ProjectionController {
                     themeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     themeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
                     themeBackgroundMediaPlayer.play();
-                    themeBackgroundMediaView.setPreserveRatio(true);
-                    themeBackgroundMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundMediaView.setVisible(true);
                     themeBackgroundMediaView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if video is present

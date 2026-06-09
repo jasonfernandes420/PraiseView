@@ -50,6 +50,11 @@ public class MediaItem implements Projectable {
     }
 
     @Override
+    public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
+        return List.of();
+    }
+
+    @Override
     public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
         // For single media items, we typically only have one "sub-item" (the media itself)
         // If we were to paginate text (e.g., for a PPT converted to text), we'd use TextPaginationUtil here.

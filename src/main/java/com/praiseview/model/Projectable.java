@@ -44,6 +44,8 @@ public interface Projectable {
      */
     String getFullContent();
 
+    List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight);
+
     /**
      * Returns the content for a specific sub-item (e.g., a verse for a song, a page for a prayer, an image path for a PPT slide).
      * The interpretation of 'index' depends on the item type.

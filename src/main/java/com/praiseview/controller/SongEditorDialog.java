@@ -25,7 +25,7 @@ public class SongEditorDialog extends Dialog<Song> {
         // Basic Info
         TextField titleField = new TextField(songToEdit != null ? songToEdit.getTitle() : "");
         ComboBox<String> languageCombo = new ComboBox<>();
-        languageCombo.getItems().addAll("English", "Hindi", "Kannada", "Tamil");
+        languageCombo.getItems().addAll("English", "Hindi", "Marathi", "Konkani", "Tamil");
         languageCombo.setValue(songToEdit != null ? songToEdit.getLanguage() : "English");
 
         ComboBox<String> categoryCombo = new ComboBox<>();

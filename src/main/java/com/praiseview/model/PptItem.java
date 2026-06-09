@@ -94,6 +94,11 @@ public class PptItem implements Projectable {
     }
 
     @Override
+    public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
+        return List.of();
+    }
+
+    @Override
     public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
         if (index >= 0 && index < renderedSlideImagePaths.size()) {
             String imagePath = renderedSlideImagePaths.get(index);
