@@ -716,7 +716,8 @@ public class MainController {
 
         // For Announcement, rePaginate is still used as its implementation hasn't changed
         if (projectable instanceof Announcement) {
-            ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+            // This call is now redundant as ProjectionController will handle pagination for all text types
+            // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
         }
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
@@ -738,7 +739,8 @@ public class MainController {
 
         // For Announcement, rePaginate is still used as its implementation hasn't changed
         if (projectable instanceof Announcement) {
-            ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+            // This call is now redundant as ProjectionController will handle pagination for all text types
+            // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
         }
 
         // Update projection first, then mirror in preview
@@ -783,7 +785,7 @@ public class MainController {
         // Disable video controls when not showing video
         if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
         if (videoRewindButton != null) videoRewindButton.setDisable(true);
-        if (videoForwardButton != null) videoForwardButton.setDisable(true);
+        if (videoForwardButton != null) videoPlayPauseButton.setDisable(true);
 
         // Also hide theme background media views
         if (liveThemeBackgroundImageView != null) {
@@ -1193,13 +1195,15 @@ public class MainController {
                 ServiceItem prevItem = serviceQueue.get(currentQueueIndex);
                 Projectable prevProjectable = prevItem.getContent();
 
-                // For Announcement, rePaginate is still used as its implementation hasn't changed
-                if (prevProjectable instanceof Announcement) {
-                    ((Announcement) prevProjectable).rePaginate(proj.currentFontSize, proj.getLyricsFlow().getWidth(), proj.getLyricsFlow().getHeight());
-                }
+                // This call is now redundant as ProjectionController will handle pagination for all text types
+                // if (prevProjectable instanceof Announcement) {
+                //     ((Announcement) prevProjectable).rePaginate(proj.currentFontSize, proj.getLyricsFlow().getWidth(), proj.getLyricsFlow().getHeight());
+                // }
 
                 // currentSubItemIndex will be set to the last sub-item of the previous item
-                currentSubItemIndex = prevProjectable.getSubItemCount(proj.currentFontSize, proj.getLyricsFlow().getWidth(), proj.getLyricsFlow().getHeight()) - 1;
+                // Ensure pagination is up-to-date in ProjectionController before getting count
+                proj.showItem(prevProjectable, 0); // Temporarily show item to ensure pagination is done
+                currentSubItemIndex = proj.getCurrentProjectedItemSubItemCount() - 1;
 
                 showCurrentItem(); // Now display the previous item at its last sub-item
             }
@@ -1304,7 +1308,8 @@ public class MainController {
                 for (ServiceItem item : serviceQueue) {
                     Projectable projectable = item.getContent();
                     if (projectable instanceof Announcement) {
-                        ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
+                        // This call is now redundant as ProjectionController will handle pagination for all text types
+                        // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
                     }
                 }
                 servicePlannerList.refresh();
@@ -1817,24 +1822,21 @@ public class MainController {
     // Renamed from updateVersesList to updateSubItemList
     private void updateSubItemList(Projectable item) {
         ObservableList<SubItemDisplayItem> subItems = FXCollections.observableArrayList();
+        ProjectionController proj = PraiseViewApp.getProjectionController();
 
-        if (item != null) {
-            // Use arbitrary reasonable dimensions for label calculation, as it's just for the label text.
-            // The actual content for projection will use projection-specific dimensions.
-            double labelCalcWidth = 400.0;
-            double labelCalcHeight = 300.0;
-            double labelCalcFontSize = 16.0;
+        if (item != null && proj != null) {
+            List<String> paginatedContent = proj.getCurrentProjectedItemPages();
 
-            // For Announcement, rePaginate is still used as its implementation hasn't changed
-            if (item instanceof Announcement) {
-                ((Announcement) item).rePaginate(labelCalcFontSize, labelCalcWidth, labelCalcHeight);
-            }
-
-            int totalSubItems = item.getSubItemCount(labelCalcFontSize, labelCalcWidth, labelCalcHeight);
-            for (int i = 0; i < totalSubItems; i++) {
-                String label = item.getSubItemLabel(i);
-                String contentPreview = item.getSubItemContent(i, labelCalcFontSize, labelCalcWidth, labelCalcHeight);
-                subItems.add(new SubItemDisplayItem(i, label, contentPreview));
+            if (paginatedContent != null && !paginatedContent.isEmpty()) {
+                for (int i = 0; i < paginatedContent.size(); i++) {
+                    String label = item.getSubItemLabel(i); // Use the item's label logic
+                    String contentPreview = paginatedContent.get(i);
+                    subItems.add(new SubItemDisplayItem(i, label, contentPreview));
+                }
+            } else {
+                AppLogger.log("MainController: No paginated content available from ProjectionController for sub-item list.");
+                // Fallback to showing a single item if no pages are generated
+                subItems.add(new SubItemDisplayItem(0, item.getSubItemLabel(0), item.getFullContent()));
             }
         }
 

@@ -12,8 +12,7 @@
 fx:id="projectionRoot"
 xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
-           fx:controller="com.praiseview.controller.ProjectionController"
-           style="-fx-background-color: #1e1e1e;">
+           fx:controller="com.praiseview.controller.ProjectionController">
 
     <!-- Theme Background Image/Video (placed at the bottom) -->
     <ImageView fx:id="themeBackgroundImageView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"

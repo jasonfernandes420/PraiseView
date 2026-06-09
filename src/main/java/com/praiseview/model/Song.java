@@ -109,6 +109,11 @@ public class Song implements Projectable { // Implement Projectable interface
     }
 
     @Override
+    public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
+        return List.of();
+    }
+
+    @Override
     public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
         Verse verse = getVerseAtPosition(index);
         return (verse != null) ? verse.getContent() : "";

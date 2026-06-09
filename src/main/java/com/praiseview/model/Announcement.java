@@ -67,6 +67,11 @@ public class Announcement implements Projectable {
         return content;
     }
 
+    @Override
+    public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
+        return List.of();
+    }
+
     /**
      * Re-paginates the content if the dimensions or font size have changed, or if content itself changed.
      * Caches the result.
