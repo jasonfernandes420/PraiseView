@@ -6,6 +6,7 @@ import com.praiseview.model.*;
 import com.praiseview.service.JsonService;
 import com.praiseview.service.UpdateService; // Import UpdateService
 import com.praiseview.util.AppLogger;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -181,6 +182,16 @@ public class MainController {
         loadSongs();
         loadPrayers();
         loadThemes(); // Load themes on startup
+
+        // Force re-apply background after full layout
+        Platform.runLater(() -> {
+            Platform.runLater(() -> {  // Double runLater for safety
+                if (currentActiveTheme != null) {
+                    applyThemeBackgroundToLivePreview(currentActiveTheme);
+                }
+            });
+        });
+        debugBackgroundImage();
 
         // Initialize UpdateService
         updateService = new UpdateService(PraiseViewApp.getStaticHostServices());
@@ -374,7 +385,7 @@ public class MainController {
             showTitleCheckBox.setOnAction(this::handleShowTitleToggle);
         }
 
-        // Add listeners to livePreviewPane dimensions to re-apply theme background
+       /* // Add listeners to livePreviewPane dimensions to re-apply theme background
         // This ensures correct scaling once the pane has its actual size after layout.
         livePreviewPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.doubleValue() > 0 && currentActiveTheme != null) {
@@ -387,9 +398,7 @@ public class MainController {
                 AppLogger.log("MainController: livePreviewPane height changed to " + newVal.doubleValue() + ", re-applying theme background.");
                 applyThemeBackgroundToLivePreview(currentActiveTheme);
             }
-        });
-
-
+        });*/
         AppLogger.log("MainController: currentSubItemList (after setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
     }
 
@@ -1230,8 +1239,27 @@ public class MainController {
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.blackout();
-            updateCenterPreview(); // Mirror the blackout state in the stage view
         }
+
+        // Mirror blackout in live preview pane
+        if (livePreviewPane != null) {
+            livePreviewPane.setStyle("-fx-background-color: black;");
+
+            // Hide live preview background image
+            if (liveThemeBackgroundImageView != null) {
+                liveThemeBackgroundImageView.setVisible(false);
+                liveThemeBackgroundImageView.setManaged(false);
+                liveThemeBackgroundImageView.setImage(null);
+            }
+
+            if (liveThemeBackgroundMediaView != null) {
+                liveThemeBackgroundMediaView.setVisible(false);
+                liveThemeBackgroundMediaView.setManaged(false);
+            }
+        }
+
+        updateCenterPreview(); // or whatever method refreshes the preview
+        AppLogger.log("MainController: Blackout mirrored to preview pane.");
     }
 
     private void clearScreen() {
@@ -1540,16 +1568,15 @@ public class MainController {
 
         // If no themes were loaded or found, create a default one
         if (availableThemes.isEmpty()) {
-            Theme defaultTheme = new Theme(); // Uses default constructor with sensible defaults
+            Theme defaultTheme = new Theme();
             availableThemes.add(defaultTheme);
-            saveThemes(); // Save the newly created default theme
+            saveThemes();
             AppLogger.log("Default theme created and saved.");
         }
 
-        // Ensure currentActiveTheme is set to the first available theme
-        // This block is guaranteed to execute after availableThemes has at least one item.
-        currentActiveTheme = availableThemes.get(0);
-        applyTheme(currentActiveTheme); // Apply the theme immediately
+        // Ensure currentActiveTheme is set
+        currentActiveTheme = availableThemes.getFirst();
+        applyTheme(currentActiveTheme);   // This should still be here
     }
 
     private void createDefaultTheme() {
@@ -1656,30 +1683,30 @@ public class MainController {
         liveThemeBackgroundMediaView.setManaged(false);
         liveThemeBackgroundMediaView.setMediaPlayer(null);
 
-        // The logo should not be hidden by background application.
-        // Its visibility is managed by showLivePreviewLogo() and updateCenterPreview().
-        // if (liveLogoImageView != null) {
-        //     liveLogoImageView.setVisible(false);
-        //     liveLogoImageView.setManaged(false);
-        // }
-
         // Apply new background based on theme
         if (theme.getBackgroundImagePath() != null && !theme.getBackgroundImagePath().isEmpty()) {
             File imageFile = new File(theme.getBackgroundImagePath());
             if (imageFile.exists()) {
                 try {
-                    Image image = new Image(imageFile.toURI().toString());
+                    Image image = new Image(imageFile.toURI().toString(), true);
+
                     liveThemeBackgroundImageView.setImage(image);
-                    // Explicitly unbind before binding to prevent multiple bindings
+
+                    // Unbind before any set to avoid "bound value cannot be set" error
                     liveThemeBackgroundImageView.fitWidthProperty().unbind();
                     liveThemeBackgroundImageView.fitHeightProperty().unbind();
+
+                    // Bind to pane (this is the correct way)
                     liveThemeBackgroundImageView.fitWidthProperty().bind(livePreviewPane.widthProperty());
                     liveThemeBackgroundImageView.fitHeightProperty().bind(livePreviewPane.heightProperty());
+
                     liveThemeBackgroundImageView.setPreserveRatio(true);
+                    liveThemeBackgroundImageView.setSmooth(true);
                     liveThemeBackgroundImageView.setVisible(true);
                     liveThemeBackgroundImageView.setManaged(true);
-                    livePreviewPane.setStyle(""); // Clear background color if image is present
-                    AppLogger.log("MainController: Applied live preview background image: " + theme.getBackgroundImagePath());
+
+                    livePreviewPane.setStyle("");
+                    AppLogger.log("MainController: Successfully applied background image: " + theme.getBackgroundImagePath());
                 } catch (Exception e) {
                     AppLogger.log("MainController: Error applying live preview background image: " + e.getMessage());
                     livePreviewPane.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Fallback to color
@@ -1719,6 +1746,7 @@ public class MainController {
         } else {
             livePreviewPane.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";"); // Apply background color
         }
+        debugBackgroundImage();
     }
 
 
@@ -1977,4 +2005,17 @@ public class MainController {
             alert.showAndWait();
         }
     }
+
+    private void debugBackgroundImage() {
+        System.out.println("=== DEBUG BACKGROUND ===");
+        System.out.println("currentActiveTheme: " + (currentActiveTheme != null ? currentActiveTheme.getName() : "null"));
+        if (currentActiveTheme != null) {
+            System.out.println("Background Image Path: " + currentActiveTheme.getBackgroundImagePath());
+        }
+        System.out.println("liveThemeBackgroundImageView visible: " + liveThemeBackgroundImageView.isVisible());
+        System.out.println("liveThemeBackgroundImageView image: " + (liveThemeBackgroundImageView.getImage() != null));
+        System.out.println("livePreviewPane width/height: " + livePreviewPane.getWidth() + " x " + livePreviewPane.getHeight());
+        System.out.println("=========================");
+    }
+
 }
