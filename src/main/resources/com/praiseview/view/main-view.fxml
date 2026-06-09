@@ -59,7 +59,7 @@
             <VBox spacing="8" HBox.hgrow="ALWAYS">
                 <Label text="Stage View (Current Projection)" styleClass="header"/>
                 <!-- The livePreviewPane will now contain its own title and textflow -->
-                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefHeight="500" prefWidth="800">
+                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefWidth="720" prefHeight="450">
                     <!-- Theme Background Image/Video (placed at the bottom) -->
                     <ImageView fx:id="liveThemeBackgroundImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
                                preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
@@ -177,7 +177,7 @@
             </VBox>
 
             <!-- Current Song Verses List (moved from right) -->
-            <VBox prefWidth="280" spacing="8" HBox.hgrow="NEVER">
+            <VBox prefWidth="280" minWidth="280" spacing="8" HBox.hgrow="NEVER">
                 <Label text="Current Item Verses/Pages" styleClass="header"/>
                 <ListView fx:id="currentSubItemList" VBox.vgrow="ALWAYS"/>
             </VBox>

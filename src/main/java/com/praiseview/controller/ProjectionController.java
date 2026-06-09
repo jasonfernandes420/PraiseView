@@ -137,6 +137,23 @@ public class ProjectionController {
         lastPaginatedFontSize = -1;
         lastPaginatedWidth = -1;
         lastPaginatedHeight = -1;
+
+        // === EXTRA BLACKOUT SAFETY ===
+        // Hide logo during blackout
+        if (logoImageView != null) {
+            logoImageView.setVisible(false);
+            logoImageView.setManaged(false);
+        }
+
+        // Ensure theme background is hidden
+        if (themeBackgroundImageView != null) {
+            themeBackgroundImageView.setVisible(false);
+            themeBackgroundImageView.setManaged(false);
+        }
+        if (themeBackgroundMediaView != null) {
+            themeBackgroundMediaView.setVisible(false);
+            themeBackgroundMediaView.setManaged(false);
+        }
     }
 
     /**
@@ -759,13 +776,39 @@ public class ProjectionController {
     }
 
     public void blackout() {
-        _clearAllContentAndMedia(); // Clear all content and media, including logo
-        projectionRoot.setStyle("-fx-background-color: black;"); // Set background to black
-        if (projectionRoot.getScene() != null) {
-            projectionRoot.getScene().setFill(Color.BLACK); // Also set scene fill to black
+        _clearAllContentAndMedia();
+
+        // Force complete black screen - hide everything including logo and theme background
+        if (projectionRoot != null) {
+            projectionRoot.setStyle("-fx-background-color: black;");
+            projectionRoot.setVisible(true);
         }
-        currentProjectedItem = null; // Clear the current item state
-        AppLogger.log("ProjectionController: Screen blacked out.");
+
+        if (projectionRoot.getScene() != null) {
+            projectionRoot.getScene().setFill(Color.BLACK);
+        }
+
+        // Explicitly hide logo
+        if (logoImageView != null) {
+            logoImageView.setVisible(false);
+            logoImageView.setManaged(false);
+        }
+
+        // Make sure theme background is completely gone
+        if (themeBackgroundImageView != null) {
+            themeBackgroundImageView.setVisible(false);
+            themeBackgroundImageView.setManaged(false);
+            themeBackgroundImageView.setImage(null);
+        }
+
+        if (themeBackgroundMediaView != null) {
+            themeBackgroundMediaView.setVisible(false);
+            themeBackgroundMediaView.setManaged(false);
+            themeBackgroundMediaView.setMediaPlayer(null);
+        }
+
+        currentProjectedItem = null;
+        AppLogger.log("ProjectionController: Screen fully blacked out.");
     }
 
     public void clear() {
