@@ -16,9 +16,9 @@ xmlns="http://javafx.com/javafx"
 
     <!-- Theme Background Image/Video (placed at the bottom) -->
     <ImageView fx:id="themeBackgroundImageView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
-               preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
+               preserveRatio="true" visible="false" managed="true" StackPane.alignment="CENTER"/>
     <MediaView fx:id="themeBackgroundMediaView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
-               visible="false" managed="false" StackPane.alignment="CENTER"/>
+               preserveRatio="true" visible="false" managed="true" StackPane.alignment="CENTER"/>
 
     <!-- Container for text-based content (Song, Prayer, Announcement) -->
     <VBox fx:id="textContentContainer" alignment="CENTER" spacing="30" StackPane.alignment="CENTER">
@@ -32,7 +32,7 @@ xmlns="http://javafx.com/javafx"
 
     <!-- MediaView for displaying videos (content item) -->
     <MediaView fx:id="itemMediaView" fitWidth="${projectionRoot.width}" fitHeight="${projectionRoot.height}"
-               visible="false" managed="false" StackPane.alignment="CENTER"/>
+               preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
 
     <!-- Placeholder for PPTs (text-based for now) -->
     <VBox fx:id="pptPlaceholderContainer" alignment="CENTER" spacing="20" visible="false" managed="false" StackPane.alignment="CENTER">

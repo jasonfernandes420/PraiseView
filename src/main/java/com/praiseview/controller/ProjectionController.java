@@ -25,7 +25,8 @@ import java.util.Objects;
 
 public class ProjectionController {
 
-    @FXML private StackPane projectionRoot;
+    @FXML
+    public StackPane projectionRoot;
     @FXML private Label titleLabel;
     @FXML public TextFlow lyricsFlow; // Made public for MainController to access dimensions
 
@@ -70,6 +71,15 @@ public class ProjectionController {
         // Ensure media views are initially hidden
         _clearAllContentAndMedia(); // Clear everything first
         showLogo(); // Show logo on initialization
+
+        // Also bind item image/media views to projectionRoot dimensions once
+        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
+        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
+        itemImageView.setPreserveRatio(true);
+
+        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
+        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
+        itemMediaView.setPreserveRatio(true);
     }
 
     /**
@@ -318,9 +328,6 @@ public class ProjectionController {
                     try {
                         Image image = new Image(imageFile.toURI().toString());
                         itemImageView.setImage(image);
-                        itemImageView.setPreserveRatio(true);
-                        itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                        itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                         AppLogger.log("ProjectionController: Image loaded successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading image: " + e.getMessage());
@@ -366,9 +373,6 @@ public class ProjectionController {
                         itemMediaView.setMediaPlayer(itemMediaPlayer);
                         itemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
                         itemMediaPlayer.play(); // Explicitly play the video
-                        itemMediaView.setPreserveRatio(true);
-                        itemMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                        itemMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                         AppLogger.log("ProjectionController: Video started successfully.");
                     } catch (Exception e) {
                         AppLogger.log("ProjectionController: Error loading video: " + e.getMessage());
@@ -415,9 +419,6 @@ public class ProjectionController {
                         try {
                             Image slideImage = new Image(slideImageFile.toURI().toString());
                             itemImageView.setImage(slideImage);
-                            itemImageView.setPreserveRatio(true);
-                            itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                            itemImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                             // Update title with slide number
                             titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, projectionRoot.getWidth(), projectionRoot.getHeight()) + ")";
                             AppLogger.log("ProjectionController: PPT slide image loaded successfully.");
@@ -571,9 +572,6 @@ public class ProjectionController {
                 try {
                     Image image = new Image(imageFile.toURI().toString());
                     themeBackgroundImageView.setImage(image);
-                    themeBackgroundImageView.setPreserveRatio(true);
-                    themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundImageView.setVisible(true);
                     themeBackgroundImageView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if image is present
@@ -596,9 +594,6 @@ public class ProjectionController {
                     themeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     themeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
                     themeBackgroundMediaPlayer.play();
-                    themeBackgroundMediaView.setPreserveRatio(true);
-                    themeBackgroundMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundMediaView.setVisible(true);
                     themeBackgroundMediaView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if video is present
@@ -866,9 +861,6 @@ public class ProjectionController {
                 try {
                     Image image = new Image(imageFile.toURI().toString());
                     themeBackgroundImageView.setImage(image);
-                    themeBackgroundImageView.setPreserveRatio(true);
-                    themeBackgroundImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundImageView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundImageView.setVisible(true);
                     themeBackgroundImageView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if image is present
@@ -891,9 +883,6 @@ public class ProjectionController {
                     themeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     themeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
                     themeBackgroundMediaPlayer.play();
-                    themeBackgroundMediaView.setPreserveRatio(true);
-                    themeBackgroundMediaView.fitWidthProperty().bind(projectionRoot.widthProperty());
-                    themeBackgroundMediaView.fitHeightProperty().bind(projectionRoot.heightProperty());
                     themeBackgroundMediaView.setVisible(true);
                     themeBackgroundMediaView.setManaged(true);
                     projectionRoot.setStyle(""); // Clear background color if video is present

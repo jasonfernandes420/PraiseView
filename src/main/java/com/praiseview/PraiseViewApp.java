@@ -3,6 +3,7 @@ package com.praiseview;
 import com.praiseview.controller.MainController;
 import com.praiseview.controller.ProjectionController;
 import com.praiseview.service.UpdateService;
+import com.praiseview.util.AppLogger;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
@@ -19,6 +20,7 @@ import java.util.Objects;
 public class PraiseViewApp extends Application {
 
     private static ProjectionController projectionController;
+    private MainController mainController; // Added reference to MainController
     private UpdateService updateService;
     private Stage primaryStage; // Keep a reference to the primary stage
     private Stage projStage; // Keep a reference to the projection stage
@@ -62,9 +64,9 @@ public class PraiseViewApp extends Application {
             System.err.println("Error loading application icon: " + e.getMessage());
         }
 
-        MainController controller = mainLoader.getController();
-        controller.setScene(mainScene);
-        controller.setupSceneKeyHandler();
+        mainController = mainLoader.getController(); // Assign MainController instance
+        mainController.setScene(mainScene);
+        mainController.setupSceneKeyHandler();
 
         // Initialize Update Service
         updateService = new UpdateService(getHostServices());
@@ -130,6 +132,23 @@ public class PraiseViewApp extends Application {
             projStage.requestFocus();
 
             projectionController = projLoader.getController();
+
+            // Log projectionRoot dimensions and re-apply theme after stage is shown and controller is set
+            Platform.runLater(() -> {
+                if (projectionController != null && projectionController.projectionRoot != null) {
+                    AppLogger.log("ProjectionController: Initial projectionRoot width: " + projectionController.projectionRoot.getWidth());
+                    AppLogger.log("ProjectionController: Initial projectionRoot height: " + projectionController.projectionRoot.getHeight());
+                    // Re-apply theme to ensure it picks up correct dimensions
+                    if (mainController != null && mainController.getCurrentActiveTheme() != null) {
+                        projectionController.applyTheme(mainController.getCurrentActiveTheme());
+                        AppLogger.log("PraiseViewApp: Re-applied active theme to ProjectionController after stage show.");
+                    } else {
+                        AppLogger.log("PraiseViewApp: Cannot re-apply theme to ProjectionController: mainController or activeTheme is null.");
+                    }
+                } else {
+                    AppLogger.log("PraiseViewApp: Cannot log projectionRoot dimensions or re-apply theme: projectionController or projectionRoot is null.");
+                }
+            });
 
             System.out.println(
                     "ProjectionController = " + projectionController);

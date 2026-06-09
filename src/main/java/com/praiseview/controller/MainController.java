@@ -374,6 +374,22 @@ public class MainController {
             showTitleCheckBox.setOnAction(this::handleShowTitleToggle);
         }
 
+        // Add listeners to livePreviewPane dimensions to re-apply theme background
+        // This ensures correct scaling once the pane has its actual size after layout.
+        livePreviewPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() > 0 && currentActiveTheme != null) {
+                AppLogger.log("MainController: livePreviewPane width changed to " + newVal.doubleValue() + ", re-applying theme background.");
+                applyThemeBackgroundToLivePreview(currentActiveTheme);
+            }
+        });
+        livePreviewPane.heightProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() > 0 && currentActiveTheme != null) {
+                AppLogger.log("MainController: livePreviewPane height changed to " + newVal.doubleValue() + ", re-applying theme background.");
+                applyThemeBackgroundToLivePreview(currentActiveTheme);
+            }
+        });
+
+
         AppLogger.log("MainController: currentSubItemList (after setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
     }
 
@@ -1654,6 +1670,9 @@ public class MainController {
                 try {
                     Image image = new Image(imageFile.toURI().toString());
                     liveThemeBackgroundImageView.setImage(image);
+                    // Explicitly unbind before binding to prevent multiple bindings
+                    liveThemeBackgroundImageView.fitWidthProperty().unbind();
+                    liveThemeBackgroundImageView.fitHeightProperty().unbind();
                     liveThemeBackgroundImageView.fitWidthProperty().bind(livePreviewPane.widthProperty());
                     liveThemeBackgroundImageView.fitHeightProperty().bind(livePreviewPane.heightProperty());
                     liveThemeBackgroundImageView.setPreserveRatio(true);
@@ -1679,6 +1698,9 @@ public class MainController {
                     liveThemeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     liveThemeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
                     liveThemeBackgroundMediaPlayer.play();
+                    // Explicitly unbind before binding to prevent multiple bindings
+                    liveThemeBackgroundMediaView.fitWidthProperty().unbind();
+                    liveThemeBackgroundMediaView.fitHeightProperty().unbind();
                     liveThemeBackgroundMediaView.fitWidthProperty().bind(livePreviewPane.widthProperty());
                     liveThemeBackgroundMediaView.fitHeightProperty().bind(livePreviewPane.heightProperty());
                     liveThemeBackgroundMediaView.setPreserveRatio(true);
