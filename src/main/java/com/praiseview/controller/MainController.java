@@ -1487,10 +1487,6 @@ public class MainController {
         System.exit(0);
     }
 
-    @FXML private void showAbout() {
-        System.out.println("About clicked");
-    }
-
     // Theme Management Getters/Setters
     public ObservableList<Theme> getAvailableThemes() {
         return availableThemes;
