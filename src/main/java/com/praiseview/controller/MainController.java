@@ -1,1 +1,1 @@
-// Note: Full file content not available. Updating only showAbout method.
+// Updated showAbout method - full file replacement not possible without full content. Please update the showAbout method as follows:
