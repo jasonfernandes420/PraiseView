@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.praiseview.model.Prayer;
 import com.praiseview.model.ServiceItem;
 import com.praiseview.model.Song;
+import com.praiseview.model.TextSlide; // Import Text model
 import com.praiseview.model.Theme; // Import Theme
 import java.io.File;
 import java.util.List;
@@ -48,6 +49,27 @@ public class JsonService {
                     mapper.getTypeFactory().constructCollectionType(List.class, Prayer.class));
             System.out.println("✅ Imported " + prayers.size() + " prayers");
             return prayers;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void exportTexts(List<TextSlide> texts, File file) {
+        try {
+            mapper.writerWithDefaultPrettyPrinter().writeValue(file, texts);
+            System.out.println("✅ Texts exported successfully to: " + file.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<TextSlide> importTexts(File file) {
+        try {
+            List<TextSlide> texts = mapper.readValue(file,
+                    mapper.getTypeFactory().constructCollectionType(List.class, TextSlide.class));
+            System.out.println("✅ Imported " + texts.size() + " texts");
+            return texts;
         } catch (Exception e) {
             e.printStackTrace();
             return null;

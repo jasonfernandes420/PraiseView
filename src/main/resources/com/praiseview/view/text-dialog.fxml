@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.praiseview.controller.TextDialogController"
+            prefWidth="600" prefHeight="400">
+    <headerText>
+        Add/Edit Text
+    </headerText>
+    <content>
+        <VBox spacing="10">
+            <Label text="Title:"/>
+            <TextField fx:id="titleField" promptText="Enter text title"/>
+            <Label text="Body/Content:"/>
+            <TextArea fx:id="bodyArea" VBox.vgrow="ALWAYS" promptText="Enter text content here..."/>
+        </VBox>
+    </content>
+    <buttonTypes>
+        <ButtonType fx:constant="OK"/>
+        <ButtonType fx:constant="CANCEL"/>
+    </buttonTypes>
+</DialogPane>

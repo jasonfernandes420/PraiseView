@@ -2,14 +2,16 @@ package com.praiseview.db;
 
 import com.praiseview.model.Prayer;
 import com.praiseview.model.Song;
+import com.praiseview.model.TextSlide;
 import com.praiseview.model.Verse;
-import com.praiseview.util.AppLogger; // Import AppLogger
-import java.io.File;
+import com.praiseview.util.AppLogger;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseService {
 
@@ -82,6 +84,14 @@ public class DatabaseService {
                 title TEXT NOT NULL,
                 content TEXT,
                 category TEXT
+            )""");
+
+            // New table for texts
+            stmt.execute("""
+            CREATE TABLE IF NOT EXISTS texts (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                body TEXT
             )""");
 
             AppLogger.log("Database tables created or already exist.");
@@ -244,6 +254,46 @@ public class DatabaseService {
         return prayers;
     }
 
+    public void saveText(TextSlide text) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            String sql = """
+            INSERT OR REPLACE INTO texts (id, title, body)
+            VALUES (?, ?, ?)""";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, text.getId());
+                pstmt.setString(2, text.getTitle());
+                pstmt.setString(3, text.getContent());
+                pstmt.executeUpdate();
+            }
+            AppLogger.log("Text saved: " + text.getTitle());
+        } catch (Exception e) {
+            AppLogger.log("Error saving text " + text.getTitle() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public List<TextSlide> loadAllTexts() {
+        List<TextSlide> texts = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement()) {
+
+            ResultSet rs = stmt.executeQuery("SELECT * FROM texts ORDER BY title");
+            while (rs.next()) {
+                TextSlide t = new TextSlide();
+                t.setId(rs.getString("id"));
+                t.setTitle(rs.getString("title"));
+                t.setContent(rs.getString("body"));
+                texts.add(t);
+            }
+            AppLogger.log("Loaded " + texts.size() + " texts from database.");
+        } catch (Exception e) {
+            AppLogger.log("Error loading all texts: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return texts;
+    }
+
     public void deleteSong(String songId) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
             conn.setAutoCommit(false); // Start transaction
@@ -276,6 +326,19 @@ public class DatabaseService {
             AppLogger.log("Prayer deleted: " + prayerId);
         } catch (Exception e) {
             AppLogger.log("Error deleting prayer " + prayerId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteText(String textId) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM texts WHERE id = ?")) {
+                pstmt.setString(1, textId);
+                pstmt.executeUpdate();
+            }
+            AppLogger.log("Text deleted: " + textId);
+        } catch (Exception e) {
+            AppLogger.log("Error deleting text " + textId + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
