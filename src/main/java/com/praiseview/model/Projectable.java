@@ -17,7 +17,7 @@ import java.util.List;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Song.class, name = "SONG"),
         @JsonSubTypes.Type(value = Prayer.class, name = "PRAYER"),
-        @JsonSubTypes.Type(value = Announcement.class, name = "ANNOUNCEMENT"),
+        @JsonSubTypes.Type(value = TextSlide.class, name = "TEXT"),
         @JsonSubTypes.Type(value = MediaItem.class, name = "IMAGE"), // Add MediaItem for IMAGE
         @JsonSubTypes.Type(value = MediaItem.class, name = "VIDEO"), // Add MediaItem for VIDEO
         @JsonSubTypes.Type(value = PptItem.class, name = "PPT")    // Add PptItem for PPT

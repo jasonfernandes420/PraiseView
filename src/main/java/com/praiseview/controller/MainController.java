@@ -99,6 +99,11 @@ public class MainController {
     @FXML private Button addPrayerButton;
     @FXML private Button editPrayerButton;
 
+    // Text tab
+    @FXML private ListView<TextSlide> textLibraryList;
+    @FXML private Button addTextButton;
+    @FXML private Button editTextButton;
+
     // Media tabs
     @FXML private Button openImageButton;
     @FXML private Button clearImageButton;
@@ -122,6 +127,7 @@ public class MainController {
     private FilteredList<Song> filteredSongs;
     private ObservableList<ServiceItem> serviceQueue = FXCollections.observableArrayList();
     private ObservableList<Prayer> allPrayers = FXCollections.observableArrayList();
+    private ObservableList<TextSlide> allTexts = FXCollections.observableArrayList(); // New ObservableList for Texts
     private ObservableList<MediaItem> imageLibrary = FXCollections.observableArrayList();
     private ObservableList<MediaItem> videoLibrary = FXCollections.observableArrayList();
     private ObservableList<PptItem> pptLibrary = FXCollections.observableArrayList();
@@ -181,6 +187,7 @@ public class MainController {
         initializeThemesPath(); // Initialize themes path first
         loadSongs();
         loadPrayers();
+        loadTexts(); // Load texts on startup
         loadThemes(); // Load themes on startup
 
         // Force re-apply background after full layout
@@ -232,8 +239,8 @@ public class MainController {
                         prefix = "HYM";
                     } else if (serviceItem.getContent() instanceof Prayer) {
                         prefix = "PRY";
-                    } else if (serviceItem.getContent() instanceof Announcement) {
-                        prefix = "ANN";
+                    } else if (serviceItem.getContent() instanceof TextSlide) { // Handle TextSlide type
+                        prefix = "TXT";
                     } else if (serviceItem.getContent() instanceof MediaItem) {
                         MediaItem media = (MediaItem) serviceItem.getContent();
                         if (media.getMediaType() == MediaItem.MediaType.IMAGE) {
@@ -329,6 +336,11 @@ public class MainController {
             editPrayerButton.setOnAction(e -> editSelectedPrayer());
         }
 
+        // Texts
+        if (textLibraryList != null) textLibraryList.setItems(allTexts);
+        if (addTextButton != null) addTextButton.setOnAction(e -> addNewText());
+        if (editTextButton != null) editTextButton.setOnAction(e -> editSelectedText());
+
         // Media Tab Setup
         if (imageList != null) imageList.setItems(imageLibrary);
         if (openImageButton != null) openImageButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.IMAGE));
@@ -423,6 +435,13 @@ public class MainController {
         songLibraryList.refresh();
     }
 
+    private void loadTexts() {
+        allTexts.setAll(dbService.loadAllTexts());
+        if (textLibraryList != null) {
+            textLibraryList.refresh();
+        }
+    }
+
     private void setupDragAndDrop() {
         // === Drag from Song Library ===
         songLibraryList.setOnDragDetected(e -> {
@@ -447,6 +466,20 @@ public class MainController {
                 e.consume();
             }
         });
+
+        // === Drag from Texts ===
+        if (textLibraryList != null) {
+            textLibraryList.setOnDragDetected(e -> {
+                TextSlide selected = textLibraryList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    Dragboard db = textLibraryList.startDragAndDrop(TransferMode.COPY);
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString("TEXT:" + selected.getId()); // Use ID for lookup
+                    db.setContent(content);
+                    e.consume();
+                }
+            });
+        }
 
         // === Drag from Image List ===
         if (imageList != null) {
@@ -571,16 +604,13 @@ public class MainController {
                         newItem = new ServiceItem(prayer);
                     }
                 }
-                else if (data.startsWith("ANNOUNCEMENT:")) { // Assuming Announcement can also be dragged
-                    String announcementId = data.substring("ANNOUNCEMENT:".length());
-                    // You'll need a way to retrieve announcements from a library similar to songs/prayers
-                    // For now, assuming you have an allAnnouncements list or similar
-                    // Announcement announcement = allAnnouncements.stream().filter(a -> a.getId().equals(announcementId)).findFirst().orElse(null);
-                    // if (announcement != null) {
-                    //     announcement.rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
-                    //     newItem = new ServiceItem(announcement);
-                    // }
-                    AppLogger.log("MainController: Dragged Announcement not yet fully implemented.");
+                else if (data.startsWith("TEXT:")) { // Handle Text drag
+                    String textId = data.substring("TEXT:".length());
+                    // Retrieve the actual TextSlide object from allTexts
+                    TextSlide text = allTexts.stream().filter(t -> t.getId().equals(textId)).findFirst().orElse(null);
+                    if (text != null) {
+                        newItem = new ServiceItem(text);
+                    }
                 }
                 else if (data.startsWith("IMAGE:")) {
                     String filePath = data.substring("IMAGE:".length());
@@ -676,6 +706,58 @@ public class MainController {
         }
     }
 
+    @FXML
+    private void addNewText() {
+        openTextEditor(null);
+    }
+
+    @FXML
+    private void editSelectedText() {
+        TextSlide selected = textLibraryList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            openTextEditor(selected);
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Please select a text in the library to edit.");
+            alert.show();
+        }
+    }
+
+    private void openTextEditor(TextSlide text) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/praiseview/view/text-dialog.fxml"));
+            DialogPane dialogPane = loader.load();
+
+            TextDialogController controller = loader.getController();
+            controller.setText(text); // Pass the text object to the controller
+
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setDialogPane(dialogPane);
+            dialog.initOwner(scene.getWindow());
+            dialog.initModality(Modality.APPLICATION_MODAL);
+
+            dialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    TextSlide resultText = controller.getText();
+                    if (resultText != null) {
+                        dbService.saveText(resultText); // Save to DB
+                        loadTexts(); // Refresh list
+                        AppLogger.log("Text saved: " + resultText.getTitle());
+                    }
+                }
+            });
+
+        } catch (IOException e) {
+            AppLogger.log("Error opening text editor: " + e.getMessage());
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Could not open Text Editor");
+            alert.setContentText("An error occurred while loading the text editor: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+
     // Generic method to open media files
     private void openMediaFiles(MediaItem.MediaType type) {
         FileChooser fileChooser = new FileChooser();
@@ -739,12 +821,6 @@ public class MainController {
         ServiceItem item = serviceQueue.get(currentQueueIndex);
         Projectable projectable = item.getContent();
 
-        // For Announcement, rePaginate is still used as its implementation hasn't changed
-        if (projectable instanceof Announcement) {
-            // This call is now redundant as ProjectionController will handle pagination for all text types
-            // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
-        }
-
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.showItem(item.getContent(), currentSubItemIndex);
@@ -762,11 +838,6 @@ public class MainController {
         ServiceItem item = serviceQueue.get(currentQueueIndex);
         Projectable projectable = item.getContent();
 
-        // For Announcement, rePaginate is still used as its implementation hasn't changed
-        if (projectable instanceof Announcement) {
-            // This call is now redundant as ProjectionController will handle pagination for all text types
-            // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
-        }
 
         // Update projection first, then mirror in preview
         ProjectionController proj = PraiseViewApp.getProjectionController();
@@ -885,7 +956,7 @@ public class MainController {
 
         AppLogger.log("MainController: Projecting item type: " + currentProjectedItem.getType());
         AppLogger.log("MainController: Displayed Title: " + displayedTitle);
-        AppLogger.log("MainController: Displayed Content (first 50 chars): " + (displayedContent.length() > 50 ? displayedContent.substring(0, 50) + "..." : displayedContent));
+        AppLogger.log("MainController: Displayed Content (first 50 chars): " + (displayedContent != null && displayedContent.length() > 50 ? displayedContent.substring(0, 50) + "..." : displayedContent));
 
         // Set title visibility based on currentActiveTheme.showTitle
         if (currentActiveTheme != null && currentActiveTheme.isShowTitle()) {
@@ -905,6 +976,7 @@ public class MainController {
         switch (currentProjectedItem.getType()) {
             case "SONG":
             case "PRAYER":
+            case "TEXT": // Handle Text type
             case "ANNOUNCEMENT":
                 if (liveTextContentContainer != null) {
                     liveTextContentContainer.setVisible(true);
@@ -1349,13 +1421,13 @@ public class MainController {
                 serviceQueue.clear();
                 serviceQueue.addAll(loadedService);
                 // For Announcement, rePaginate is still used as its implementation hasn't changed
-                for (ServiceItem item : serviceQueue) {
+                /*for (ServiceItem item : serviceQueue) {
                     Projectable projectable = item.getContent();
                     if (projectable instanceof Announcement) {
                         // This call is now redundant as ProjectionController will handle pagination for all text types
                         // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
                     }
-                }
+                }*/
                 servicePlannerList.refresh();
                 currentQueueIndex = -1;
                 currentSubItemIndex = 0;
@@ -1518,6 +1590,50 @@ public class MainController {
                 }
             } else {
                 AppLogger.log("No prayers imported or file was empty: " + file.getAbsolutePath());
+            }
+        }
+    }
+
+    @FXML private void exportTexts() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Texts");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        fileChooser.setInitialFileName("texts_export.json");
+
+        File file = fileChooser.showSaveDialog(null);
+        if (file != null) {
+            jsonService.exportTexts(new ArrayList<>(allTexts), file);
+            AppLogger.log("Texts exported to: " + file.getAbsolutePath());
+        }
+    }
+
+    @FXML private void importTexts() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Import Texts");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+
+        File file = fileChooser.showOpenDialog(null);
+        if (file != null) {
+            List<TextSlide> importedTexts = jsonService.importTexts(file);
+            if (importedTexts != null && !importedTexts.isEmpty()) {
+                // Check for duplicates before adding
+                int initialSize = allTexts.size();
+                for (TextSlide newText : importedTexts) {
+                    if (allTexts.stream().noneMatch(existingText -> existingText.getId().equals(newText.getId()))) {
+                        allTexts.add(newText);
+                        dbService.saveText(newText); // Save imported text to DB
+                    } else {
+                        AppLogger.log("Skipping duplicate text on import: " + newText.getTitle());
+                    }
+                }
+                if (allTexts.size() > initialSize) {
+                    textLibraryList.refresh();
+                    AppLogger.log((allTexts.size() - initialSize) + " new texts imported from: " + file.getAbsolutePath());
+                } else {
+                    AppLogger.log("No new texts imported (all were duplicates or file was empty): " + file.getAbsolutePath());
+                }
+            } else {
+                AppLogger.log("No texts imported or file was empty: " + file.getAbsolutePath());
             }
         }
     }
@@ -1901,8 +2017,9 @@ public class MainController {
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        String preview = item.content.length() > 30 ?
-                                item.content.substring(0, 30) + "..." : item.content;
+                        // Add null check for item.content before calling length()
+                        String preview = (item.content != null && item.content.length() > 30) ?
+                                item.content.substring(0, 30) + "..." : (item.content != null ? item.content : "");
                         setText(item.label + ": " + preview);
                     }
                 }

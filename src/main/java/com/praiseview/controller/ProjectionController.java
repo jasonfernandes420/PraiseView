@@ -232,6 +232,7 @@ public class ProjectionController {
         switch (item.getType()) {
             case "SONG":
             case "PRAYER":
+            case "TEXT":
             case "ANNOUNCEMENT":
                 AppLogger.log("ProjectionController: Displaying text content.");
                 textContentContainer.setVisible(true);
@@ -275,13 +276,6 @@ public class ProjectionController {
                     // For Prayer, use the new stateless paginateForDimensions method
                     if (item instanceof Prayer) {
                         currentProjectedItemPages.addAll(((Prayer) item).paginateForDimensions(currentFontSize, availableWidth, availableHeight));
-                    } else if (item instanceof Announcement) {
-                        // For Announcement, rePaginate is still used as its implementation hasn't changed
-                        ((Announcement) item).rePaginate(currentFontSize, availableWidth, availableHeight);
-                        totalSubItems = item.getSubItemCount(currentFontSize, availableWidth, availableHeight);
-                        for (int i = 0; i < totalSubItems; i++) {
-                            currentProjectedItemPages.add(item.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
-                        }
                     } else { // For Song and other text-based items
                         totalSubItems = item.getSubItemCount(currentFontSize, availableWidth, availableHeight);
                         for (int i = 0; i < totalSubItems; i++) {
@@ -680,12 +674,6 @@ public class ProjectionController {
             currentProjectedItemPages = new ArrayList<>();
             if (currentProjectedItem instanceof Prayer) {
                 currentProjectedItemPages.addAll(((Prayer) currentProjectedItem).paginateForDimensions(currentFontSize, availableWidth, availableHeight));
-            } else if (currentProjectedItem instanceof Announcement) {
-                ((Announcement) currentProjectedItem).rePaginate(currentFontSize, availableWidth, availableHeight);
-                int total = currentProjectedItem.getSubItemCount(currentFontSize, availableWidth, availableHeight);
-                for (int i = 0; i < total; i++) {
-                    currentProjectedItemPages.add(currentProjectedItem.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
-                }
             } else { // For Song and other text-based items
                 int total = currentProjectedItem.getSubItemCount(currentFontSize, availableWidth, availableHeight);
                 for (int i = 0; i < total; i++) {
@@ -719,6 +707,7 @@ public class ProjectionController {
         switch (currentProjectedItem.getType()) {
             case "SONG":
             case "PRAYER":
+            case "TEXT":
             case "ANNOUNCEMENT":
                 // Return content from the cached pages
                 if (currentProjectedItemPages != null && currentSubItemIndex >= 0 && currentSubItemIndex < currentProjectedItemPages.size()) {

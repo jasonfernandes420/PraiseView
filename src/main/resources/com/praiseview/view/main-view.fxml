@@ -222,6 +222,16 @@
                     <ListView fx:id="prayerList" VBox.vgrow="ALWAYS" prefHeight="220"/>
                 </VBox>
             </Tab>
+            <Tab text="Texts"> <!-- New Tab for Texts -->
+                <VBox>
+                    <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                    <HBox spacing="8">
+                        <Button fx:id="addTextButton" text="➕ Add New Text" HBox.hgrow="ALWAYS" onAction="#addNewText"/>
+                        <Button fx:id="editTextButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS" onAction="#editSelectedText"/>
+                    </HBox>
+                    <ListView fx:id="textLibraryList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                </VBox>
+            </Tab>
             <Tab text="Images">
                 <VBox>
                     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
