@@ -19,6 +19,7 @@ import java.util.Objects;
 
 public class PraiseViewApp extends Application {
 
+    private static PraiseViewApp instance; // Static reference to the application instance
     private static ProjectionController projectionController;
     private MainController mainController; // Added reference to MainController
     private UpdateService updateService;
@@ -29,11 +30,9 @@ public class PraiseViewApp extends Application {
 
     @Override
     public void start(Stage primaryStage) throws IOException {
+        instance = this; // Set the static instance
         this.primaryStage = primaryStage; // Store primary stage reference
         staticHostServices = getHostServices(); // Assign HostServices to the static field
-
-        // 1. Setup projection screen
-        setupProjectionScreen();
 
         // Add handler to close projection stage when primary stage closes
         primaryStage.setOnCloseRequest(event -> {
@@ -49,6 +48,7 @@ public class PraiseViewApp extends Application {
         // Load main UI only after update check is initiated, and potentially shown later
         FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
         Scene mainScene = new Scene(mainLoader.load(), 1280, 720);
+    //    mainScene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm()); // Add this line
 
         primaryStage.setTitle("PraiseView - Operator Control");
         primaryStage.setScene(mainScene);
@@ -63,6 +63,8 @@ public class PraiseViewApp extends Application {
         } catch (Exception e) {
             System.err.println("Error loading application icon: " + e.getMessage());
         }
+        // 1. Setup projection screen
+        setupProjectionScreen();
 
         mainController = mainLoader.getController(); // Assign MainController instance
         mainController.setScene(mainScene);
@@ -81,6 +83,7 @@ public class PraiseViewApp extends Application {
                                     "/com/praiseview/view/projection-view.fxml"));
 
             Scene projScene = new Scene(projLoader.load());
+        //    projScene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm()); // Add this line
 
             projStage = new Stage(); // Assign to class field
             projStage.setTitle("PraiseView - Live Projection");
@@ -165,6 +168,20 @@ public class PraiseViewApp extends Application {
     // New static method to provide HostServices
     public static HostServices getStaticHostServices() {
         return staticHostServices;
+    }
+
+    /**
+     * Ensures the projection stage is open and visible. If it's closed or null, it attempts to recreate it.
+     */
+    public static void ensureProjectionStageOpen() {
+        if (instance != null) {
+            if (instance.projStage == null || !instance.projStage.isShowing()) {
+                AppLogger.log("Projection stage is closed or null. Attempting to recreate it.");
+                instance.setupProjectionScreen();
+            }
+        } else {
+            AppLogger.log("PraiseViewApp instance is null. Cannot ensure projection stage is open.");
+        }
     }
 
     public static void main(String[] args) {

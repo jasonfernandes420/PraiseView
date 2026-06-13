@@ -809,6 +809,9 @@ public class MainController {
 
 
     private void startProjection() {
+        // Ensure the projection stage is open before attempting to project
+        PraiseViewApp.ensureProjectionStageOpen();
+
         if (serviceQueue.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "Please add items to the service order first.");
             alert.show();
@@ -819,17 +822,21 @@ public class MainController {
 
         // Update projection first, then mirror in preview
         ServiceItem item = serviceQueue.get(currentQueueIndex);
-        Projectable projectable = item.getContent();
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.showItem(item.getContent(), currentSubItemIndex);
+        }else{
+            AppLogger.log("ProjectionController is null after ensureProjectionStageOpen. Cannot show item.");
         }
         updateCenterPreview(); // Mirror the projection
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
     }
 
     private void showCurrentItem() {
+        // Ensure the projection stage is open before attempting to project
+        PraiseViewApp.ensureProjectionStageOpen();
+
         if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
             clearScreen();
             return;
@@ -843,6 +850,8 @@ public class MainController {
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.showItem(projectable, currentSubItemIndex);
+        } else {
+            AppLogger.log("ProjectionController is null after ensureProjectionStageOpen. Cannot show item.");
         }
         updateCenterPreview(); // Mirror the projection
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
@@ -2092,6 +2101,9 @@ public class MainController {
                 • AI Helper for automatic slide advancement
                 • Improved PowerPoint integration (thumbnails + live control)
                 • More import formats (ChordPro, OpenLP, etc.)
+                
+                Made by - Jason Fernandes
+                For any issues to be raised, whatsapp at +919969965966
                 """;
     
         alert.setContentText(content);

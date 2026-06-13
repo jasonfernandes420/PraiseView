@@ -1,37 +1,164 @@
+/* =============================================
+   PraiseView - Global Dark Theme
+   Modern | Clean | Worship-friendly
+   ============================================= */
+
 .root {
-    -fx-background-color: #2b2b2b;
-    -fx-text-fill: #eeeeee;
+    -fx-base: #1e1e2e;
+    -fx-background-color: #1e1e2e;
+    -fx-text-fill: #e0e0ff;
+    -fx-font-family: "Segoe UI", system-ui, sans-serif;
 }
 
-.header {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #ffffff;
+/* ==================== Color Palette ==================== */
+* {
+    /* Primary */
+    -primary-color: #6366f1;           /* Indigo - Main accent */
+    -primary-dark: #4f46e5;
+    -primary-light: #818cf8;
+
+    /* Accent / Worship feel */
+    -accent-purple: #a855f7;
+    -accent-gold: #fbbf24;
+    -accent-teal: #14b8a6;
+
+    /* Neutral */
+    -bg-dark: #1e1e2e;
+    -bg-darker: #181824;
+    -bg-light: #2a2a3c;
+    -surface: #27293d;
+
+    /* Text */
+    -text-primary: #e0e0ff;
+    -text-secondary: #a5b4fc;
+    -text-muted: #64748b;
+
+    /* Status */
+    -success: #22c55e;
+    -warning: #eab308;
+    -danger: #ef4444;
 }
 
-.toolbar {
-    -fx-background-color: #1e1e1e;
-    -fx-padding: 8px;
+/* ==================== General Styling ==================== */
+
+.main-background {
+    -fx-background-color: -bg-dark;
 }
 
-.button, .toggle-button {
-    -fx-background-color: #404040;
+.card {
+    -fx-background-color: -surface;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0.1, 0, 4);
+}
+
+.pane {
+    -fx-background-color: transparent;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: -primary-color;
     -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16;
 }
 
 .button:hover {
-    -fx-background-color: #505050;
+    -fx-background-color: -primary-dark;
 }
 
-.list-view {
-    -fx-background-color: #363636;
+.button:pressed {
+    -fx-background-color: #4338ca;
 }
 
-.list-cell {
-    -fx-padding: 10px;
-    -fx-text-fill: #eeeeee;
+/* Toggle Button (especially for AI) */
+.toggle-button {
+    -fx-background-radius: 8;
+    -fx-padding: 8 16;
+    -fx-font-weight: bold;
 }
 
-.split-pane > .split-pane-divider {
-    -fx-background-color: #1e1e1e;
+.toggle-button:selected {
+    -fx-background-color: #22c55e;
+    -fx-text-fill: #111827;
 }
+
+/* AI Button Specific */
+#aiToggleButton {
+    -fx-font-size: 13px;
+    -fx-padding: 8 12;
+}
+
+/* Labels & Text */
+.label {
+    -fx-text-fill: -text-primary;
+}
+
+.label-muted {
+    -fx-text-fill: -text-muted;
+}
+
+.title-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -accent-purple;
+}
+
+/* List Views & Tables */
+.list-view, .table-view {
+    -fx-background-color: -bg-darker;
+    -fx-control-inner-background: -bg-darker;
+}
+
+.list-cell, .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-primary;
+}
+
+.list-cell:selected, .table-row-cell:selected {
+    -fx-background-color: -primary-color;
+    -fx-text-fill: white;
+}
+
+/* Current Verse / Active Item Highlight */
+.current-verse-pane {
+    -fx-background-color: #312e81;
+    -fx-background-radius: 12;
+    -fx-border-color: -primary-light;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+}
+
+/* Toolbar */
+.tool-bar {
+    -fx-background-color: #181824;
+    -fx-padding: 8 12;
+}
+
+/* ScrollPane */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Success / Active States */
+.success-text {
+    -fx-text-fill: -success;
+}
+
+.ai-active {
+    -fx-background-color: #166534;
+    -fx-text-fill: #86efac;
+}
+
+/* ===================== Projection Preview ===================== */
+#livePreviewPane {
+    -fx-background-color: #0f0f17;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+}
+
