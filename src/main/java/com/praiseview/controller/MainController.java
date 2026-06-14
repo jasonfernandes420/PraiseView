@@ -1,6 +1,7 @@
 package com.praiseview.controller;
 
 import com.praiseview.PraiseViewApp;
+import com.praiseview.ai.AutoAdvanceService; // Import AutoAdvanceService
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.*;
 import com.praiseview.service.JsonService;
@@ -48,7 +49,11 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MainController {
+// Import WhisperJNI to call its static loadLibrary method
+import io.github.givimad.whisperjni.WhisperJNI;
+
+
+public class MainController implements AutoAdvanceService.VerseChangeListener { // Implement the interface
 
     // Left: Service Planner
     @FXML private ListView<ServiceItem> servicePlannerList;
@@ -80,6 +85,9 @@ public class MainController {
     @FXML private Button videoPlayPauseButton;
     @FXML private Button videoRewindButton;
     @FXML private Button videoForwardButton;
+
+    // AI Toggle Button
+    @FXML private ToggleButton aiToggle; // FXML field for the AI toggle button
 
     // Right: Theme Editor
     @FXML private ListView<Theme> themeListView; // New FXML element for theme list
@@ -122,6 +130,7 @@ public class MainController {
     private DatabaseService dbService = new DatabaseService();
     private JsonService jsonService = new JsonService();
     private UpdateService updateService; // Declare UpdateService
+    private AutoAdvanceService autoAdvanceService; // Declare AutoAdvanceService
 
     private ObservableList<Song> allSongs = FXCollections.observableArrayList();
     private FilteredList<Song> filteredSongs;
@@ -202,6 +211,24 @@ public class MainController {
 
         // Initialize UpdateService
         updateService = new UpdateService(PraiseViewApp.getStaticHostServices());
+
+        // Load WhisperJNI native library
+        try {
+            WhisperJNI.loadLibrary();
+            AppLogger.log("WhisperJNI native library loaded successfully.");
+        } catch (IOException e) {
+            AppLogger.log("ERROR: Failed to load WhisperJNI native library: " + e.getMessage());
+            e.printStackTrace();
+            // Optionally disable AI toggle button if library fails to load
+            if (aiToggle != null) {
+                aiToggle.setDisable(true);
+                aiToggle.setText("AI (Unavailable)");
+            }
+        }
+
+        // Initialize AutoAdvanceService
+        autoAdvanceService = new AutoAdvanceService();
+        autoAdvanceService.setListener(this); // Set this controller as the listener
 
         // Show logo on projected screen on startup
         ProjectionController proj = PraiseViewApp.getProjectionController();
@@ -421,6 +448,13 @@ public class MainController {
     }
 
     private void handleArrowKey(KeyEvent e) {
+        // If AI is enabled, manual navigation should disable it
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null); // Stop AI
+            aiToggle.setSelected(false); // Unselect toggle
+            AppLogger.log("AI Auto Advance disabled due to manual navigation (Arrow Key).");
+        }
+
         if (e.getCode() == KeyCode.LEFT) {
             previousItemOrSubItem();
             e.consume();
@@ -795,7 +829,7 @@ public class MainController {
                         pptLibrary.add(new PptItem(file)); // Create PptItem
                     } catch (IOException e) {
                         AppLogger.log("Failed to render PPT " + file.getName() + ": " + e.getMessage());
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT " + file.getName() + ": " + e.getMessage());
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT: " + e.getMessage());
                         alert.show();
                     }
                 } else if (type == MediaItem.MediaType.IMAGE) {
@@ -1252,6 +1286,13 @@ public class MainController {
 
     @FXML
     private void nextItemOrSubItem() {
+        // If AI is enabled, manual navigation should disable it
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null); // Stop AI
+            aiToggle.setSelected(false); // Unselect toggle
+            AppLogger.log("AI Auto Advance disabled due to manual navigation (Next).");
+        }
+
         if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
             return; // No item selected or queue is empty
         }
@@ -1280,6 +1321,13 @@ public class MainController {
 
     @FXML
     private void previousItemOrSubItem() {
+        // If AI is enabled, manual navigation should disable it
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null); // Stop AI
+            aiToggle.setSelected(false); // Unselect toggle
+            AppLogger.log("AI Auto Advance disabled due to manual navigation (Previous).");
+        }
+
         if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
             return; // No item selected or queue is empty
         }
@@ -1317,6 +1365,13 @@ public class MainController {
     }
 
     private void blackout() {
+        // If AI is enabled, disable it on blackout
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null);
+            aiToggle.setSelected(false);
+            AppLogger.log("AI Auto Advance disabled due to blackout.");
+        }
+
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.blackout();
@@ -1344,6 +1399,13 @@ public class MainController {
     }
 
     private void clearScreen() {
+        // If AI is enabled, disable it on clear screen
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null);
+            aiToggle.setSelected(false);
+            AppLogger.log("AI Auto Advance disabled due to clear screen.");
+        }
+
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
             proj.clear(); // This will now call showLogo() internally
@@ -1384,6 +1446,13 @@ public class MainController {
 
     // Menu Actions
     @FXML private void newService() {
+        // If AI is enabled, disable it on new service
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null);
+            aiToggle.setSelected(false);
+            AppLogger.log("AI Auto Advance disabled due to new service.");
+        }
+
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("New Service");
         confirmAlert.setHeaderText("Create New Service?");
@@ -1419,6 +1488,13 @@ public class MainController {
     }
 
     @FXML private void importService() {
+        // If AI is enabled, disable it on import service
+        if (aiToggle != null && aiToggle.isSelected()) {
+            autoAdvanceService.toggle(false, null);
+            aiToggle.setSelected(false);
+            AppLogger.log("AI Auto Advance disabled due to import service.");
+        }
+
         FileChooser fc = new FileChooser();
         fc.setTitle("Load Service");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
@@ -1657,6 +1733,10 @@ public class MainController {
         }
         for (PptItem item : pptLibrary) {
             item.dispose();
+        }
+        // Ensure AutoAdvanceService is stopped and resources freed
+        if (autoAdvanceService != null) {
+            autoAdvanceService.toggle(false, null); // Explicitly stop AI
         }
         System.exit(0);
     }
@@ -2111,7 +2191,11 @@ public class MainController {
         alert.getDialogPane().setMinHeight(440);
     
         ButtonType githubButton = new ButtonType("Visit GitHub");
-        alert.getButtonTypes().add(githubButton);
+    
+        // Only add GitHub button if HostServices is available
+        if (PraiseViewApp.getStaticHostServices() != null) {
+            alert.getButtonTypes().add(githubButton);
+        }
     
         alert.showAndWait().ifPresent(response -> {
             if (response == githubButton) {
@@ -2147,4 +2231,73 @@ public class MainController {
         System.out.println("=========================");
     }
 
+    // --- AutoAdvanceService Integration ---
+
+    @FXML
+    private void handleAiToggle() {
+        if (aiToggle.isSelected()) {
+            // Attempt to enable AI
+            if (currentQueueIndex >= 0 && currentQueueIndex < serviceQueue.size()) {
+                ServiceItem currentServiceItem = serviceQueue.get(currentQueueIndex);
+                Projectable currentProjectable = currentServiceItem.getContent();
+
+                if (currentProjectable instanceof Song) {
+                    // AI is enabled only for Songs
+                    autoAdvanceService.toggle(true, (Song) currentProjectable);
+                    AppLogger.log("AI Auto Advance enabled for song: " + currentProjectable.getTitle());
+                } else {
+                    // Not a song, cannot enable AI
+                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    alert.setTitle("AI Auto Advance");
+                    alert.setHeaderText("Feature Not Available");
+                    alert.setContentText("AI Auto Advance is currently only available for Songs.");
+                    alert.showAndWait();
+                    aiToggle.setSelected(false); // Revert toggle state
+                    autoAdvanceService.toggle(false, null); // Ensure service is off
+                    AppLogger.log("AI Auto Advance cannot be enabled for non-song item.");
+                }
+            } else {
+                // No item currently projected
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("AI Auto Advance");
+                alert.setHeaderText("No Item Projected");
+                alert.setContentText("Please project a Song item before enabling AI Auto Advance.");
+                alert.showAndWait();
+                aiToggle.setSelected(false); // Revert toggle state
+                autoAdvanceService.toggle(false, null); // Ensure service is off
+                AppLogger.log("AI Auto Advance cannot be enabled with no item projected.");
+            }
+        } else {
+            // Disable AI
+            autoAdvanceService.toggle(false, null);
+            AppLogger.log("AI Auto Advance disabled.");
+        }
+    }
+
+    @Override
+    public void onVerseChanged(int index) {
+        // This method is called by AutoAdvanceService when a verse changes.
+        // It needs to update the UI on the JavaFX Application Thread.
+        Platform.runLater(() -> {
+            AppLogger.log("AutoAdvanceService: Verse changed to index " + index);
+            if (currentQueueIndex >= 0 && currentQueueIndex < serviceQueue.size()) {
+                ServiceItem currentServiceItem = serviceQueue.get(currentQueueIndex);
+                Projectable currentProjectable = currentServiceItem.getContent();
+
+                if (currentProjectable instanceof Song) {
+                    // Only advance if the AI is still enabled and it's the same song
+                    // Also check if the AI toggle button is still selected
+                    if (aiToggle.isSelected() && autoAdvanceService.getCurrentSong() == currentProjectable) {
+                        currentSubItemIndex = index;
+                        showCurrentItem();
+                    } else {
+                        // AI was disabled or song changed, stop auto-advance
+                        aiToggle.setSelected(false);
+                        autoAdvanceService.toggle(false, null);
+                        AppLogger.log("AutoAdvanceService: Auto-advance stopped due to AI toggle state or song change.");
+                    }
+                }
+            }
+        });
+    }
 }

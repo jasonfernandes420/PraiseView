@@ -142,6 +142,8 @@
                             </ImageView>
                         </graphic>
                     </Button>
+                    <!-- AI Toggle Button -->
+                    <ToggleButton fx:id="aiToggle" text="Enable AI" onAction="#handleAiToggle"/>
                 </HBox>
 
                 <!-- Video Controls -->
