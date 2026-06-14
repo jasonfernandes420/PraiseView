@@ -15,7 +15,7 @@ import java.util.UUID;
 public class MediaItem implements Projectable {
 
     public enum MediaType {
-        IMAGE, VIDEO, PPT
+        IMAGE, VIDEO, AUDIO, PPT
     }
 
     private String id = UUID.randomUUID().toString();
@@ -39,7 +39,7 @@ public class MediaItem implements Projectable {
 
     @Override
     public String getType() {
-        return mediaType.name(); // Returns "IMAGE", "VIDEO", "PPT"
+        return mediaType.name(); // Returns "IMAGE", "VIDEO", "AUDIO", "PPT"
     }
 
     @Override

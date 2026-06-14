@@ -111,6 +111,9 @@ public class MainController {
     @FXML private Button openVideoButton;
     @FXML private Button clearVideoButton;
     @FXML private ListView<MediaItem> videoList;
+    @FXML private Button openAudioButton; // New FXML element for audio
+    @FXML private Button clearAudioButton; // New FXML element for audio
+    @FXML private ListView<MediaItem> audioList; // New FXML element for audio
     @FXML private Button openPptButton;
     @FXML private Button clearPptButton;
     @FXML private ListView<PptItem> pptList; // Changed to PptItem
@@ -130,6 +133,7 @@ public class MainController {
     private ObservableList<TextSlide> allTexts = FXCollections.observableArrayList(); // New ObservableList for Texts
     private ObservableList<MediaItem> imageLibrary = FXCollections.observableArrayList();
     private ObservableList<MediaItem> videoLibrary = FXCollections.observableArrayList();
+    private ObservableList<MediaItem> audioLibrary = FXCollections.observableArrayList(); // New ObservableList for Audio
     private ObservableList<PptItem> pptLibrary = FXCollections.observableArrayList();
 
     // Theme Management
@@ -247,6 +251,8 @@ public class MainController {
                             prefix = "IMG";
                         } else if (media.getMediaType() == MediaItem.MediaType.VIDEO) {
                             prefix = "VID";
+                        } else if (media.getMediaType() == MediaItem.MediaType.AUDIO) { // Handle Audio type
+                            prefix = "AUD";
                         }
                     } else if (serviceItem.getContent() instanceof PptItem) {
                         prefix = "PPT";
@@ -308,9 +314,9 @@ public class MainController {
         if (prevVerseButton != null) prevVerseButton.setOnAction(e -> previousItemOrSubItem());
 
         // Video Controls
-        if (videoPlayPauseButton != null) videoPlayPauseButton.setOnAction(e -> playPauseVideo());
-        if (videoRewindButton != null) videoRewindButton.setOnAction(e -> onVideoRewind());
-        if (videoForwardButton != null) videoForwardButton.setOnAction(e -> onVideoForward());
+        if (videoPlayPauseButton != null) videoPlayPauseButton.setOnAction(e -> playPauseMedia()); // Changed to playPauseMedia
+        if (videoRewindButton != null) videoRewindButton.setOnAction(e -> onMediaRewind()); // Changed to onMediaRewind
+        if (videoForwardButton != null) videoForwardButton.setOnAction(e -> onMediaForward()); // Changed to onMediaForward
 
 
         // Context menu for song library
@@ -349,6 +355,10 @@ public class MainController {
         if (videoList != null) videoList.setItems(videoLibrary);
         if (openVideoButton != null) openVideoButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.VIDEO));
         if (clearVideoButton != null) clearVideoButton.setOnAction(e -> videoLibrary.clear());
+
+        if (audioList != null) audioList.setItems(audioLibrary); // Setup audioList
+        if (openAudioButton != null) openAudioButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.AUDIO)); // Setup openAudioButton
+        if (clearAudioButton != null) clearAudioButton.setOnAction(e -> audioLibrary.clear()); // Setup clearAudioButton
 
         if (pptList != null) pptList.setItems(pptLibrary);
         if (openPptButton != null) openPptButton.setOnAction(e -> openMediaFiles(MediaItem.MediaType.PPT));
@@ -509,6 +519,20 @@ public class MainController {
             });
         }
 
+        // === Drag from Audio List ===
+        if (audioList != null) {
+            audioList.setOnDragDetected(e -> {
+                MediaItem selected = audioList.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    Dragboard db = audioList.startDragAndDrop(TransferMode.COPY);
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString("AUDIO:" + selected.getFilePath()); // Use file path for lookup
+                    db.setContent(content);
+                    e.consume();
+                }
+            });
+        }
+
         // === Drag from PPT List ===
         if (pptList != null) {
             pptList.setOnDragDetected(e -> {
@@ -624,6 +648,13 @@ public class MainController {
                     File file = new File(filePath);
                     if (file.exists()) {
                         newItem = new ServiceItem(new MediaItem(file, MediaItem.MediaType.VIDEO));
+                    }
+                }
+                else if (data.startsWith("AUDIO:")) { // Handle Audio drag
+                    String filePath = data.substring("AUDIO:".length());
+                    File file = new File(filePath);
+                    if (file.exists()) {
+                        newItem = new ServiceItem(new MediaItem(file, MediaItem.MediaType.AUDIO));
                     }
                 }
                 else if (data.startsWith("PPT:")) {
@@ -777,6 +808,12 @@ public class MainController {
                         new FileChooser.ExtensionFilter("All Files", "*.*")
                 );
                 break;
+            case AUDIO: // New case for AUDIO
+                fileChooser.getExtensionFilters().addAll(
+                        new FileChooser.ExtensionFilter("Audio Files", "*.mp3", "*.wav", "*.aac", "*.m4a"),
+                        new FileChooser.ExtensionFilter("All Files", "*.*")
+                );
+                break;
             case PPT:
                 fileChooser.getExtensionFilters().addAll(
                         new FileChooser.ExtensionFilter("Presentation Files", "*.ppt", "*.pptx"),
@@ -802,6 +839,8 @@ public class MainController {
                     imageLibrary.add(new MediaItem(file, type)); // Create MediaItem
                 } else if (type == MediaItem.MediaType.VIDEO) {
                     videoLibrary.add(new MediaItem(file, type)); // Create MediaItem
+                } else if (type == MediaItem.MediaType.AUDIO) { // Add to audioLibrary
+                    audioLibrary.add(new MediaItem(file, type));
                 }
             }
         }
@@ -887,7 +926,7 @@ public class MainController {
         //     liveLogoImageView.setVisible(false);
         //     liveLogoImageView.setManaged(false);
         // }
-        // Disable video controls when not showing video
+        // Disable video controls when not showing video or audio
         if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
         if (videoRewindButton != null) videoRewindButton.setDisable(true);
         if (videoForwardButton != null) videoPlayPauseButton.setDisable(true);
@@ -1068,23 +1107,27 @@ public class MainController {
                 break;
 
             case "VIDEO":
+            case "AUDIO": // Handle AUDIO type similarly to VIDEO for media controls
                 if (liveItemMediaView != null) {
-                    liveItemMediaView.setVisible(true);
-                    liveItemMediaView.setManaged(true);
-                    File videoFile = new File(((MediaItem)currentProjectedItem).getFilePath());
-                    AppLogger.log("MainController: Preparing video preview for: " + videoFile.getAbsolutePath());
-                    if (videoFile.exists()) {
-                        Media media = new Media(videoFile.toURI().toString());
+                    liveItemMediaView.setVisible(currentProjectedItem.getType().equals("VIDEO")); // Only show MediaView for video
+                    liveItemMediaView.setManaged(currentProjectedItem.getType().equals("VIDEO")); // Only manage MediaView for video
+
+                    File mediaFile = new File(((MediaItem)currentProjectedItem).getFilePath());
+                    AppLogger.log("MainController: Preparing " + currentProjectedItem.getType() + " preview for: " + mediaFile.getAbsolutePath());
+                    if (mediaFile.exists()) {
+                        Media media = new Media(mediaFile.toURI().toString());
                         // liveItemMediaPlayer is already stopped/disposed at the start of updateCenterPreview
                         liveItemMediaPlayer = new MediaPlayer(media);
                         liveItemMediaView.setMediaPlayer(liveItemMediaPlayer);
-                        liveItemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
-                        liveItemMediaPlayer.play(); // Explicitly play the video
+                        liveItemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video/audio
+                        liveItemMediaPlayer.setVolume(0.0); // Always mute the preview media player
+                        liveItemMediaPlayer.play(); // Explicitly play the media
+
                         liveItemMediaView.fitWidthProperty().bind(livePreviewPane.widthProperty());
                         liveItemMediaView.fitHeightProperty().bind(livePreviewPane.heightProperty());
                         liveItemMediaView.setPreserveRatio(true);
 
-                        // Enable video controls
+                        // Enable media controls
                         if (videoPlayPauseButton != null) {
                             videoPlayPauseButton.setDisable(false);
                             videoPlayPauseButton.setText("Pause"); // Initial state
@@ -1103,16 +1146,16 @@ public class MainController {
                         });
 
                     } else {
-                        AppLogger.log("MainController: Video file not found for preview: " + videoFile.getAbsolutePath());
+                        AppLogger.log("MainController: " + currentProjectedItem.getType() + " file not found for preview: " + mediaFile.getAbsolutePath());
                         // Display error message on screen
                         if (liveTextContentContainer != null) {
                             liveTextContentContainer.setVisible(true);
                             liveTextContentContainer.setManaged(true);
                         }
-                        stageViewTitle.setText("Error Loading Video");
+                        stageViewTitle.setText("Error Loading " + currentProjectedItem.getType());
                         if (livePreviewText != null) {
                             livePreviewText.getChildren().clear();
-                            livePreviewText.getChildren().add(new Text("File not found: " + videoFile.getName()));
+                            livePreviewText.getChildren().add(new Text("File not found: " + mediaFile.getName()));
                         }
                     }
                 } else {
@@ -1205,7 +1248,7 @@ public class MainController {
     }
 
     @FXML
-    private void playPauseVideo() {
+    private void playPauseMedia() { // Renamed from playPauseVideo
         // Control local preview media player
         if (liveItemMediaPlayer != null) {
             if (liveItemMediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
@@ -1220,21 +1263,21 @@ public class MainController {
         // Control projection media player
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.playPauseVideo();
+            proj.playPauseMedia(); // Changed to playPauseMedia
         }
     }
 
     @FXML
-    private void onVideoRewind() {
-        seekVideo(-10.0);
+    private void onMediaRewind() { // Renamed from onVideoRewind
+        seekMedia(-10.0); // Changed to seekMedia
     }
 
     @FXML
-    private void onVideoForward() {
-        seekVideo(10.0);
+    private void onMediaForward() { // Renamed from onVideoForward
+        seekMedia(10.0); // Changed to seekMedia
     }
 
-    private void seekVideo(double seconds) {
+    private void seekMedia(double seconds) { // Renamed from seekVideo
         // Control local preview media player
         if (liveItemMediaPlayer != null && liveItemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
             Duration currentTime = liveItemMediaPlayer.getCurrentTime();
@@ -1245,7 +1288,7 @@ public class MainController {
         // Control projection media player
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.seekVideo(seconds);
+            proj.seekMedia(seconds); // Changed to seekMedia
         }
     }
 
@@ -1846,10 +1889,10 @@ public class MainController {
                 try {
                     Media media = new Media(videoFile.toURI().toString());
                     liveThemeBackgroundMediaPlayer = new MediaPlayer(media);
-                    liveThemeBackgroundMediaView.setMediaPlayer(liveThemeBackgroundMediaPlayer);
                     liveThemeBackgroundMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                     liveThemeBackgroundMediaPlayer.setVolume(0.0); // Mute background video
                     liveThemeBackgroundMediaPlayer.play();
+                    liveThemeBackgroundMediaView.setMediaPlayer(liveThemeBackgroundMediaPlayer);
                     // Explicitly unbind before binding to prevent multiple bindings
                     liveThemeBackgroundMediaView.fitWidthProperty().unbind();
                     liveThemeBackgroundMediaView.fitHeightProperty().unbind();
@@ -1972,6 +2015,7 @@ public class MainController {
         Text sampleText = new Text("Aa"); // Simple text to show font and color
         try {
             sampleText.setFont(Font.font(theme.getFontFamily(), FontWeight.NORMAL, theme.getFontSize() * 0.3)); // Scale font size
+            // Set font weight to normal for main text
         } catch (Exception e) {
             AppLogger.log("Error setting font family for theme preview: " + theme.getFontFamily() + " - " + e.getMessage());
             sampleText.setFont(Font.font("System", FontWeight.NORMAL, theme.getFontSize() * 0.3)); // Fallback
@@ -2111,7 +2155,6 @@ public class MainController {
         alert.getDialogPane().setMinHeight(440);
     
         ButtonType githubButton = new ButtonType("Visit GitHub");
-        alert.getButtonTypes().add(githubButton);
     
         alert.showAndWait().ifPresent(response -> {
             if (response == githubButton) {

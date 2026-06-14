@@ -42,7 +42,7 @@ public class ProjectionController {
     @FXML private ImageView themeBackgroundImageView;
     @FXML private MediaView themeBackgroundMediaView;
 
-    private MediaPlayer itemMediaPlayer; // For video playback of content items
+    private MediaPlayer itemMediaPlayer; // For video/audio playback of content items
     private MediaPlayer themeBackgroundMediaPlayer; // For video playback of theme backgrounds
 
     public double currentFontSize = 62.0; // Made public for MainController to access
@@ -149,10 +149,13 @@ public class ProjectionController {
         if (themeBackgroundImageView != null) {
             themeBackgroundImageView.setVisible(false);
             themeBackgroundImageView.setManaged(false);
+            themeBackgroundImageView.setImage(null);
         }
+
         if (themeBackgroundMediaView != null) {
             themeBackgroundMediaView.setVisible(false);
             themeBackgroundMediaView.setManaged(false);
+            themeBackgroundMediaView.setMediaPlayer(null);
         }
     }
 
@@ -371,37 +374,40 @@ public class ProjectionController {
                 break;
 
             case "VIDEO":
-                AppLogger.log("ProjectionController: Displaying video.");
-                itemMediaView.setVisible(true);
-                itemMediaView.setManaged(true);
-                File videoFile = new File(((MediaItem)item).getFilePath());
-                AppLogger.log("ProjectionController: Video file path: " + videoFile.getAbsolutePath());
-                if (videoFile.exists()) {
+            case "AUDIO": // Handle AUDIO type
+                File mediaFile = new File(((MediaItem)item).getFilePath());
+                AppLogger.log("ProjectionController: " + item.getType() + " file path: " + mediaFile.getAbsolutePath());
+                if (mediaFile.exists()) {
                     try {
-                        Media media = new Media(videoFile.toURI().toString());
-                        // No need to stop/dispose here, already done at the start of showItem
+                        Media media = new Media(mediaFile.toURI().toString());
                         itemMediaPlayer = new MediaPlayer(media);
-                        itemMediaView.setMediaPlayer(itemMediaPlayer);
-                        itemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video
-                        itemMediaPlayer.play(); // Explicitly play the video
-                        AppLogger.log("ProjectionController: Video started successfully.");
+                        itemMediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Loop video/audio
+                        itemMediaPlayer.play(); // Explicitly play the media
+                        AppLogger.log("ProjectionController: " + item.getType() + " started successfully.");
+
+                        if (item.getType().equals("VIDEO")) {
+                            itemMediaView.setMediaPlayer(itemMediaPlayer);
+                            itemMediaView.setVisible(true);
+                            itemMediaView.setManaged(true);
+                        }
+                        // For AUDIO, itemMediaView remains hidden/unmanaged
                     } catch (Exception e) {
-                        AppLogger.log("ProjectionController: Error loading video: " + e.getMessage());
+                        AppLogger.log("ProjectionController: Error loading " + item.getType() + ": " + e.getMessage());
                         // Fallback to text error
                         textContentContainer.setVisible(true);
                         textContentContainer.setManaged(true);
-                        titleLabel.setText("Error Loading Video");
+                        titleLabel.setText("Error Loading " + item.getType());
                         lyricsFlow.getChildren().clear();
-                        lyricsFlow.getChildren().add(new Text("File not found: " + videoFile.getName()));
+                        lyricsFlow.getChildren().add(new Text("File not found: " + mediaFile.getName()));
                     }
                 } else {
-                    AppLogger.log("ProjectionController: Video file not found: " + videoFile.getAbsolutePath());
+                    AppLogger.log("ProjectionController: " + item.getType() + " file not found: " + mediaFile.getAbsolutePath());
                     // Display error message on screen
                     textContentContainer.setVisible(true);
                     textContentContainer.setManaged(true);
-                    titleLabel.setText("Error Loading Video");
+                    titleLabel.setText("Error Loading " + item.getType());
                     lyricsFlow.getChildren().clear();
-                    lyricsFlow.getChildren().add(new Text("File not found: " + videoFile.getName()));
+                    lyricsFlow.getChildren().add(new Text("File not found: " + mediaFile.getName()));
                 }
                 // Set title visibility based on activeTheme
                 if (activeTheme != null && activeTheme.isShowTitle()) {
@@ -487,16 +493,16 @@ public class ProjectionController {
     }
 
     /**
-     * Toggles play/pause for the currently playing video.
+     * Toggles play/pause for the currently playing video/audio.
      */
-    public void playPauseVideo() {
+    public void playPauseMedia() { // Renamed from playPauseVideo
         if (itemMediaPlayer != null) {
             if (itemMediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
                 itemMediaPlayer.pause();
-                AppLogger.log("ProjectionController: Item video paused.");
+                AppLogger.log("ProjectionController: Item media paused."); // Updated log
             } else {
                 itemMediaPlayer.play();
-                AppLogger.log("ProjectionController: Item video played.");
+                AppLogger.log("ProjectionController: Item media played."); // Updated log
             }
         } else {
             AppLogger.log("ProjectionController: No item media player available to play/pause.");
@@ -504,17 +510,17 @@ public class ProjectionController {
     }
 
     /**
-     * Seeks the currently playing video by a given number of seconds.
+     * Seeks the currently playing video/audio by a given number of seconds.
      * @param seconds The number of seconds to seek. Positive for forward, negative for backward.
      */
-    public void seekVideo(double seconds) {
+    public void seekMedia(double seconds) { // Renamed from seekVideo
         if (itemMediaPlayer != null && itemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
             Duration currentTime = itemMediaPlayer.getCurrentTime();
             Duration newTime = currentTime.add(Duration.seconds(seconds));
             itemMediaPlayer.seek(newTime);
-            AppLogger.log("ProjectionController: Item video seeked by " + seconds + " seconds to " + newTime);
+            AppLogger.log("ProjectionController: Item media seeked by " + seconds + " seconds to " + newTime); // Updated log
         } else {
-            AppLogger.log("ProjectionController: No item media player available or video stopped for seeking.");
+            AppLogger.log("ProjectionController: No item media player available or media stopped for seeking.");
         }
     }
 
@@ -718,6 +724,7 @@ public class ProjectionController {
                 break;
             case "IMAGE":
             case "VIDEO":
+            case "AUDIO": // Return file path for audio
                 // Return file path for image/video
                 if (currentProjectedItem instanceof MediaItem) {
                     content = ((MediaItem) currentProjectedItem).getFilePath();
