@@ -59,7 +59,7 @@
             <VBox spacing="8" HBox.hgrow="ALWAYS">
                 <Label text="Stage View (Current Projection)" styleClass="header"/>
                 <!-- The livePreviewPane will now contain its own title and textflow -->
-                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefWidth="720" prefHeight="450">
+                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefWidth="640" prefHeight="360">
                     <!-- Theme Background Image/Video (placed at the bottom) -->
                     <ImageView fx:id="liveThemeBackgroundImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
                                preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
