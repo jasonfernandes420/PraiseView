@@ -4,7 +4,7 @@ import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.*;
 import com.praiseview.service.JsonService;
-import com.praiseview.service.UpdateService; // Import UpdateService
+import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -13,12 +13,10 @@ import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.SnapshotParameters;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -2007,67 +2005,83 @@ public class MainController {
      * @return A WritableImage representing the theme preview.
      */
     public Image createThemePreviewImage(Theme theme, int width, int height) {
-        StackPane previewRoot = new StackPane();
-        previewRoot.setPrefSize(width, height);
-        previewRoot.setMinSize(width, height);
-        previewRoot.setMaxSize(width, height);
-        previewRoot.setAlignment(Pos.CENTER); // Center content in preview
 
-        // Set background color
+        Canvas canvas = new Canvas(width, height);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        // Background
         try {
-            previewRoot.setStyle("-fx-background-color: " + theme.getBackgroundColor() + ";");
+            gc.setFill(Color.web(theme.getBackgroundColor()));
         } catch (Exception e) {
-            AppLogger.log("Error setting background color for theme preview: " + theme.getBackgroundColor() + " - " + e.getMessage());
-            previewRoot.setStyle("-fx-background-color: #000000;"); // Fallback
+            gc.setFill(Color.BLACK);
         }
+        gc.fillRect(0, 0, width, height);
 
-        VBox contentBox = new VBox(2); // Small spacing between title and text
-        contentBox.setAlignment(Pos.CENTER);
+        // Border
+        gc.setStroke(Color.GRAY);
+        gc.strokeRect(0, 0, width - 1, height - 1);
 
-        // Add sample title if showTitle is true
+        // Title preview
         if (theme.isShowTitle()) {
-            Text sampleTitle = new Text("Title");
+
             try {
-                sampleTitle.setFont(Font.font(theme.getTitleFontFamily(), FontWeight.BOLD, theme.getTitleFontSize() * 0.3)); // Scale title font size
+                gc.setFill(Color.web(theme.getTitleTextColor()));
             } catch (Exception e) {
-                AppLogger.log("Error setting title font family for theme preview: " + theme.getTitleFontFamily() + " - " + e.getMessage());
-                sampleTitle.setFont(Font.font("System", FontWeight.BOLD, theme.getTitleFontSize() * 0.3)); // Fallback
+                gc.setFill(Color.GOLD);
             }
+
             try {
-                sampleTitle.setFill(Color.web(theme.getTitleTextColor()));
+                gc.setFont(Font.font(
+                        theme.getTitleFontFamily(),
+                        FontWeight.BOLD,
+                        11
+                ));
             } catch (Exception e) {
-                AppLogger.log("Error setting title text color for theme preview: " + theme.getTitleTextColor() + " - " + e.getMessage());
-                sampleTitle.setFill(Color.GOLD); // Fallback
+                gc.setFont(Font.font("Arial", FontWeight.BOLD, 11));
             }
-            contentBox.getChildren().add(sampleTitle);
+
+            gc.fillText("Title", 5, 15);
         }
 
-        // Add sample main text
-        Text sampleText = new Text("Aa"); // Simple text to show font and color
+        // Main text preview
         try {
-            sampleText.setFont(Font.font(theme.getFontFamily(), FontWeight.NORMAL, theme.getFontSize() * 0.3)); // Scale font size
-            // Set font weight to normal for main text
+            gc.setFill(Color.web(theme.getTextColor()));
         } catch (Exception e) {
-            AppLogger.log("Error setting font family for theme preview: " + theme.getFontFamily() + " - " + e.getMessage());
-            sampleText.setFont(Font.font("System", FontWeight.NORMAL, theme.getFontSize() * 0.3)); // Fallback
+            gc.setFill(Color.WHITE);
         }
 
         try {
-            sampleText.setFill(Color.web(theme.getTextColor()));
+            gc.setFont(Font.font(
+                    theme.getFontFamily(),
+                    FontWeight.NORMAL,
+                    10
+            ));
         } catch (Exception e) {
-            AppLogger.log("Error setting text color for theme preview: " + theme.getTextColor() + " - " + e.getMessage());
-            sampleText.setFill(Color.WHITE); // Fallback
+            gc.setFont(Font.font("Arial", FontWeight.NORMAL, 10));
         }
-        contentBox.getChildren().add(sampleText);
 
-        previewRoot.getChildren().add(contentBox);
+        gc.fillText("Amazing", 5, 35);
+        gc.fillText("Grace", 5, 48);
 
-        // Take a snapshot of the StackPane
+        // Alignment indicator
+        String align = theme.getTextAlignment();
+
+        gc.setFill(Color.LIGHTGRAY);
+        gc.setFont(Font.font("Arial", 8));
+
+        if ("CENTER".equalsIgnoreCase(align)) {
+            gc.fillText("Center", width - 35, height - 5);
+        } else if ("RIGHT".equalsIgnoreCase(align)) {
+            gc.fillText("Right", width - 30, height - 5);
+        } else {
+            gc.fillText("Left", width - 25, height - 5);
+        }
+
         WritableImage image = new WritableImage(width, height);
-        previewRoot.snapshot(new SnapshotParameters(), image);
+        canvas.snapshot(null, image);
+
         return image;
     }
-
 
     // Renamed from updateVersesList to updateSubItemList
     private void updateSubItemList(Projectable item) {
