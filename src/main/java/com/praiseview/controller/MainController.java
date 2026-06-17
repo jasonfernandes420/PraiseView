@@ -1011,9 +1011,22 @@ public class MainController {
             stageViewTitle.setText(displayedTitle);
             stageViewTitle.setVisible(true);
             stageViewTitle.setManaged(true);
-            // Apply title-specific font settings
-            stageViewTitle.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
-                    currentActiveTheme.getTitleFontFamily(), currentActiveTheme.getTitleFontSize(), currentActiveTheme.getTitleTextColor()));
+            double projectionWidth = 1920.0;
+            double previewWidth = livePreviewPane.getWidth();
+
+            double scaleFactor = previewWidth / projectionWidth;
+
+            double previewFontSize =
+                    currentActiveTheme.getTitleFontSize() * scaleFactor;
+
+
+
+            stageViewTitle.setStyle(String.format(
+                    "-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
+                    currentActiveTheme.getTitleFontFamily(),
+                    previewFontSize,
+                    currentActiveTheme.getTitleTextColor()
+            ));
         } else {
             stageViewTitle.setText("");
             stageViewTitle.setVisible(false);
@@ -1046,7 +1059,25 @@ public class MainController {
                         AppLogger.log("Invalid text color in active theme: '" + (currentActiveTheme != null ? currentActiveTheme.getTextColor() : "NULL THEME") + "'. Falling back to WHITE. Error: " + e.getMessage());
                         mainText.setFill(Color.WHITE); // Fallback
                     }
-                    mainText.setStyle("-fx-font-family: '" + currentActiveTheme.getFontFamily() + "'; -fx-font-size: " + PREVIEW_FONT_SIZE + "px; -fx-line-spacing: 8px;");
+                    double projectionWidth = 1920.0;
+                    double previewWidth = livePreviewPane.getWidth();
+
+                    double scaleFactor = previewWidth / projectionWidth;
+
+                    double previewFontSize =
+                            currentActiveTheme.getFontSize() * scaleFactor;
+
+                    double previewLineSpacing =
+                            currentActiveTheme.getLineSpacing() * scaleFactor;
+
+                    mainText.setStyle(String.format(
+                            "-fx-font-family: '%s'; " +
+                                    "-fx-font-size: %.1fpx; " +
+                                    "-fx-line-spacing: %.1fpx;",
+                            currentActiveTheme.getFontFamily(),
+                            previewFontSize,
+                            previewLineSpacing
+                    ));
                     livePreviewText.getChildren().add(mainText);
                     livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
                 }
