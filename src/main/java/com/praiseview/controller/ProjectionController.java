@@ -70,7 +70,7 @@ public class ProjectionController {
         AppLogger.log("ProjectionController initialized");
         // Ensure media views are initially hidden
         _clearAllContentAndMedia(); // Clear everything first
-        showLogo(); // Show logo on initialization
+        clearScreen(true); // Show logo on initialization
 
         // Also bind item image/media views to projectionRoot dimensions once
         itemImageView.fitWidthProperty().bind(projectionRoot.widthProperty());
@@ -191,7 +191,7 @@ public class ProjectionController {
         itemMediaView.setManaged(false);
         pptPlaceholderContainer.setVisible(false);
         pptPlaceholderContainer.setManaged(false);
-        
+
         // Stop and dispose of any existing item media player to prevent audio overlap
         if (itemMediaPlayer != null) {
             itemMediaPlayer.stop();
@@ -292,7 +292,7 @@ public class ProjectionController {
                     lastPaginatedWidth = availableWidth;
                     lastPaginatedHeight = availableHeight;
                 }
-                
+
                 totalSubItems = currentProjectedItemPages.size();
 
                 // Ensure subItemIndex is within bounds of the newly calculated pages
@@ -304,7 +304,7 @@ public class ProjectionController {
                 if (currentProjectedItemPages != null && !currentProjectedItemPages.isEmpty()) {
                     contentToDisplay = currentProjectedItemPages.get(this.currentSubItemIndex);
                 }
-                
+
                 // Removed X/Y indicator from title for text-based items
                 // if (totalSubItems > 1 && !(item instanceof Song)) {
                 //     titleText += " (" + (this.currentSubItemIndex + 1) + "/" + totalSubItems + ")";
@@ -810,11 +810,11 @@ public class ProjectionController {
     public void clear() {
         _clearAllContentAndMedia(); // Clear all content and media
         projectionRoot.setStyle("-fx-background-color: #0f0f0f;"); // Reset to default background
-        showLogo(); // Show logo after clearing
+        clearScreen(false); // Show logo after clearing
         AppLogger.log("ProjectionController: Screen cleared to logo.");
     }
 
-    public void showLogo() {
+    public void clearScreen(boolean showLogo) {
         // Defensive check for activeTheme
         if (activeTheme == null) {
             AppLogger.log("ProjectionController: activeTheme is null in showLogo, initializing with default theme.");
@@ -840,7 +840,7 @@ public class ProjectionController {
         }
 
         projectionRoot.setStyle("-fx-background-color: #0f0f0f;"); // Ensure default background
-        if (logoImageView != null) {
+        if (logoImageView != null && showLogo) {
             // Load default logo if not already set
             if (logoImageView.getImage() == null) {
                 try {

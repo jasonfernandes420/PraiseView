@@ -208,7 +208,7 @@ public class MainController {
         // Show logo on projected screen on startup
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.showLogo();
+            proj.clearScreen(true);
         }
         // Show logo on live preview pane on startup
         showLivePreviewLogo();
@@ -1421,7 +1421,7 @@ public class MainController {
             proj.clear(); // This will now call showLogo() internally
             updateCenterPreview(); // Mirror the clear state in the stage view
         }
-        showLivePreviewLogo(); // Show logo in live preview as well
+        //showLivePreviewLogo(); // Show logo in live preview as well
     }
 
     private void showLivePreviewLogo() {
@@ -2011,11 +2011,49 @@ public class MainController {
 
         // Background
         try {
-            gc.setFill(Color.web(theme.getBackgroundColor()));
+
+            if (theme.getBackgroundImagePath() != null &&
+                    !theme.getBackgroundImagePath().isBlank()) {
+
+                File imageFile = new File(theme.getBackgroundImagePath());
+
+                if (imageFile.exists()) {
+                    Image bgImage = new Image(imageFile.toURI().toString());
+                    gc.drawImage(bgImage, 0, 0, width, height);
+                } else {
+                    gc.setFill(Color.web(theme.getBackgroundColor()));
+                    gc.fillRect(0, 0, width, height);
+                }
+
+            }else if (theme.getBackgroundVideoPath() != null &&
+                    !theme.getBackgroundVideoPath().isBlank()) {
+
+                gc.setFill(Color.web(theme.getBackgroundColor()));
+                gc.fillRect(0, 0, width, height);
+
+                gc.setFill(Color.RED);
+                gc.fillRoundRect(width - 32, 4, 28, 12, 4, 4);
+
+                gc.setFill(Color.WHITE);
+                gc.setFont(Font.font("Arial", FontWeight.BOLD, 8));
+                gc.fillText("VID", width - 28, 13);
+
+
+
+            } else {
+
+                gc.setFill(Color.web(theme.getBackgroundColor()));
+                gc.fillRect(0, 0, width, height);
+
+            }
+
         } catch (Exception e) {
+
+            AppLogger.log("Theme preview background error: " + e.getMessage());
+
             gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, width, height);
         }
-        gc.fillRect(0, 0, width, height);
 
         // Border
         gc.setStroke(Color.GRAY);
