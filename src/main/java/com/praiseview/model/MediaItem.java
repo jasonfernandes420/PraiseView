@@ -1,5 +1,6 @@
 package com.praiseview.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.praiseview.util.TextPaginationUtil; // Potentially for displaying file path if needed
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MediaItem implements Projectable {
 
     public enum MediaType {

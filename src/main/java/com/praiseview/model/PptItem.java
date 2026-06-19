@@ -1,5 +1,6 @@
 package com.praiseview.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.praiseview.util.AppLogger;
 import com.praiseview.util.PptRenderer;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @NoArgsConstructor
 public class PptItem implements Projectable {

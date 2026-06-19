@@ -4,6 +4,7 @@ import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.*;
 import com.praiseview.service.JsonService;
+import com.praiseview.service.PhoneRemoteServer;
 import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
 import javafx.application.Platform;
@@ -35,6 +36,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
@@ -830,7 +832,7 @@ public class MainController {
                         pptLibrary.add(new PptItem(file)); // Create PptItem
                     } catch (IOException e) {
                         AppLogger.log("Failed to render PPT " + file.getName() + ": " + e.getMessage());
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT " + file.getName() + ": " + e.getMessage());
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT: " + e.getMessage());
                         alert.show();
                     }
                 } else if (type == MediaItem.MediaType.IMAGE) {
@@ -1306,6 +1308,51 @@ public class MainController {
         seekMedia(10.0); // Changed to seekMedia
     }
 
+    public boolean handleRemoteCommand(String command) {
+        if (command == null) {
+            return false;
+        }
+
+        return switch (command.trim().toLowerCase(Locale.ROOT)) {
+            case "start", "project" -> {
+                startProjection();
+                yield true;
+            }
+            case "next" -> {
+                nextItemOrSubItem();
+                yield true;
+            }
+            case "previous", "prev" -> {
+                previousItemOrSubItem();
+                yield true;
+            }
+            case "blackout" -> {
+                blackout();
+                yield true;
+            }
+            case "clear" -> {
+                clearScreen();
+                yield true;
+            }
+            case "playpause", "play-pause" -> {
+                playPauseMedia();
+                yield true;
+            }
+            case "rewind" -> {
+                onMediaRewind();
+                yield true;
+            }
+            case "forward" -> {
+                onMediaForward();
+                yield true;
+            }
+            default -> {
+                AppLogger.log("Unknown phone remote command: " + command);
+                yield false;
+            }
+        };
+    }
+
     private void seekMedia(double seconds) { // Renamed from seekVideo
         // Control local preview media player
         if (liveItemMediaPlayer != null && liveItemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
@@ -1721,6 +1768,7 @@ public class MainController {
 
     @FXML private void exitApp() {
         AppLogger.log("Application exited");
+        PhoneRemoteServer.stopServer();
         // Clean up all temporary PPT image directories on exit
         for (ServiceItem item : serviceQueue) {
             if (item.getContent() instanceof PptItem) {
@@ -2257,6 +2305,38 @@ public class MainController {
             alert.setTitle("Update Error");
             alert.setHeaderText(null);
             alert.setContentText("Update service is not available. Please restart the application.");
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
+    private void handleConnectPhone() {
+        try {
+            PhoneRemoteServer remoteServer = PhoneRemoteServer.start(this);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/praiseview/view/connect-phone-view.fxml"));
+            VBox root = loader.load();
+            ConnectPhoneController controller = loader.getController();
+
+            String ipAddress = PhoneRemoteServer.findLocalIpAddress();
+            int port = remoteServer.getPort();
+
+            controller.setConnectionDetails(ipAddress, port);
+
+            Stage stage = new Stage();
+            stage.setTitle("Connect Phone via QR Code");
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.initOwner(scene.getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setOnHidden(event -> controller.dispose());
+            stage.showAndWait();
+
+        } catch (IOException e) {
+            AppLogger.log("Error opening Connect Phone dialog: " + e.getMessage());
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Could not open Connect Phone dialog");
+            alert.setContentText("An error occurred while loading the connection dialog: " + e.getMessage());
             alert.showAndWait();
         }
     }
