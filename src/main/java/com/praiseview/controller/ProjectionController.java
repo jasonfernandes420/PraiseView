@@ -5,9 +5,11 @@ import com.praiseview.util.AppLogger;
 import com.praiseview.util.TextPaginationUtil;
 import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
@@ -256,6 +258,15 @@ public class ProjectionController {
                 AppLogger.log("ProjectionController: Displaying text content.");
                 textContentContainer.setVisible(true);
                 textContentContainer.setManaged(true);
+                
+                // Apply padding to container
+                textContentContainer.setPadding(new Insets(TEXT_VERTICAL_PADDING, TEXT_HORIZONTAL_PADDING, TEXT_VERTICAL_PADDING, TEXT_HORIZONTAL_PADDING));
+                
+                // Don't constrain container size - let it grow with content
+                textContentContainer.setPrefWidth(Region.USE_COMPUTED_SIZE);
+                textContentContainer.setMaxWidth(Double.MAX_VALUE);
+                textContentContainer.setPrefHeight(Region.USE_COMPUTED_SIZE);
+                textContentContainer.setMaxHeight(Double.MAX_VALUE);
 
                 // Set title visibility and calculate its height for pagination
                 if (activeTheme != null && activeTheme.isShowTitle()) {
@@ -278,6 +289,13 @@ public class ProjectionController {
 
                 // Ensure availableHeight remains positive after title deduction
                 if (availableHeight <= 0) availableHeight = 100; // Fallback
+                
+                // Set TextFlow to wrap at availableWidth, let height grow naturally
+                lyricsFlow.setPrefWidth(availableWidth);
+                lyricsFlow.setMaxWidth(availableWidth);
+                lyricsFlow.setPrefHeight(Region.USE_COMPUTED_SIZE);
+                lyricsFlow.setMaxHeight(Double.MAX_VALUE);
+                lyricsFlow.setStyle("-fx-padding: 0px;");
 
                 // Check if re-pagination is needed for the current item and dimensions
                 boolean needsRepagination = false;

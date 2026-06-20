@@ -24,6 +24,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
@@ -53,6 +54,8 @@ public class MainController {
     // Left: Service Planner
     @FXML private ListView<ServiceItem> servicePlannerList;
     @FXML private Button editSongButton;
+    @FXML private Button moveUpButton;
+    @FXML private Button moveDownButton;
 
     // Center: Stage View
     @FXML private StackPane livePreviewPane;
@@ -157,6 +160,9 @@ public class MainController {
 
     // Custom DataFormat for internal ListView reordering
     private static final DataFormat SERVICE_ITEM_REORDER = new DataFormat("application/x-java-service-item-reorder");
+    
+    // Track currently loaded service file for Save functionality
+    private File currentServiceFile = null;
 
 
     public void setScene(javafx.scene.Scene scene) {
@@ -300,6 +306,32 @@ public class MainController {
             }
         });
 
+        // Handle DELETE key press on service list
+        servicePlannerList.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.DELETE) {
+                int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
+                if (selectedIdx >= 0) {
+                    ServiceItem removedItem = serviceQueue.remove(selectedIdx);
+                    // Clean up PPT temp files if a PptItem is removed
+                    if (removedItem != null && removedItem.getContent() instanceof PptItem) {
+                        ((PptItem) removedItem.getContent()).dispose();
+                    }
+                    // Reset if we deleted the current item
+                    if (currentQueueIndex >= serviceQueue.size()) {
+                        currentQueueIndex = -1;
+                    }
+                    AppLogger.log("Item removed from service order");
+                }
+                e.consume();
+            } else if (e.isControlDown() && e.getCode() == javafx.scene.input.KeyCode.UP) {
+                moveServiceItemUp();
+                e.consume();
+            } else if (e.isControlDown() && e.getCode() == javafx.scene.input.KeyCode.DOWN) {
+                moveServiceItemDown();
+                e.consume();
+            }
+        });
+
         // Drag & Drop from Library to Service Order AND within Service Order
         setupDragAndDrop();
 
@@ -309,6 +341,10 @@ public class MainController {
         blackoutButton.setOnAction(e -> blackout());
         clearButton.setOnAction(e -> clearScreen());
         editSongButton.setOnAction(e -> editSelectedSong());
+        
+        // Service list reorder buttons
+        moveUpButton.setOnAction(e -> moveServiceItemUp());
+        moveDownButton.setOnAction(e -> moveServiceItemDown());
 
         // Verse Navigation
         if (nextVerseButton != null) nextVerseButton.setOnAction(e -> nextItemOrSubItem());
@@ -1023,20 +1059,23 @@ public class MainController {
         AppLogger.log("MainController: Displayed Title: " + displayedTitle);
         AppLogger.log("MainController: Displayed Content (first 50 chars): " + (displayedContent != null && displayedContent.length() > 50 ? displayedContent.substring(0, 50) + "..." : displayedContent));
 
+        // Get actual projection dimensions for proper aspect ratio
+        double projectionWidth = proj.projectionRoot.getWidth();
+        double projectionHeight = proj.projectionRoot.getHeight();
+        double projectionAspectRatio = projectionWidth / projectionHeight; // Should be 16:9 or similar
+        
+        AppLogger.log("MainController: Projection dimensions - Width: " + projectionWidth + ", Height: " + projectionHeight + ", Aspect Ratio: " + projectionAspectRatio);
+
         // Set title visibility based on currentActiveTheme.showTitle
         if (currentActiveTheme != null && currentActiveTheme.isShowTitle()) {
             stageViewTitle.setText(displayedTitle);
             stageViewTitle.setVisible(true);
             stageViewTitle.setManaged(true);
-            double projectionWidth = 1920.0;
+            
+            // Use actual projection dimensions for scaling
             double previewWidth = livePreviewPane.getWidth();
-
             double scaleFactor = previewWidth / projectionWidth;
-
-            double previewFontSize =
-                    currentActiveTheme.getTitleFontSize() * scaleFactor;
-
-
+            double previewFontSize = currentActiveTheme.getTitleFontSize() * scaleFactor;
 
             stageViewTitle.setStyle(String.format(
                     "-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
@@ -1059,7 +1098,35 @@ public class MainController {
                 if (liveTextContentContainer != null) {
                     liveTextContentContainer.setVisible(true);
                     liveTextContentContainer.setManaged(true);
+                    
+                    // Calculate available width using same padding ratio as projection
+                    // Projection uses: availableWidth = projectionRoot.getWidth() - (2 * TEXT_HORIZONTAL_PADDING)
+                    // where TEXT_HORIZONTAL_PADDING = 50.0
+                    double projectionPadding = 50.0;
+                    double projectionAvailableWidth = projectionWidth - (2 * projectionPadding);
+                    
+                    // Scale padding proportionally for preview
+                    double scaleFactor = livePreviewPane.getWidth() / projectionWidth;
+                    double previewPadding = projectionPadding * scaleFactor;
+                    double previewAvailableWidth = livePreviewPane.getWidth() - (2 * previewPadding);
+                    
+                    // Set padding on container
+                    liveTextContentContainer.setPadding(new Insets(previewPadding, previewPadding, previewPadding, previewPadding));
+                    
+                    // Constrain TextFlow to available width for proper wrapping
+                    liveTextContentContainer.setPrefWidth(livePreviewPane.getWidth());
+                    liveTextContentContainer.setMaxWidth(livePreviewPane.getWidth());
+                    
+                    if (livePreviewText != null) {
+                        livePreviewText.setPrefWidth(previewAvailableWidth);
+                        livePreviewText.setMaxWidth(previewAvailableWidth);
+                    }
+                    
+                    AppLogger.log("MainController: Preview padding scale - Projection padding: " + projectionPadding + 
+                                 ", Preview padding: " + previewPadding + 
+                                 ", Available width: " + previewAvailableWidth);
                 }
+                
                 if (livePreviewText != null) {
                     livePreviewText.getChildren().clear();
                     Text mainText = new Text(displayedContent);
@@ -1076,16 +1143,12 @@ public class MainController {
                         AppLogger.log("Invalid text color in active theme: '" + (currentActiveTheme != null ? currentActiveTheme.getTextColor() : "NULL THEME") + "'. Falling back to WHITE. Error: " + e.getMessage());
                         mainText.setFill(Color.WHITE); // Fallback
                     }
-                    double projectionWidth = 1920.0;
+                    
+                    // Scale text based on actual projection dimensions
                     double previewWidth = livePreviewPane.getWidth();
-
                     double scaleFactor = previewWidth / projectionWidth;
-
-                    double previewFontSize =
-                            currentActiveTheme.getFontSize() * scaleFactor;
-
-                    double previewLineSpacing =
-                            currentActiveTheme.getLineSpacing() * scaleFactor;
+                    double previewFontSize = currentActiveTheme.getFontSize() * scaleFactor;
+                    double previewLineSpacing = currentActiveTheme.getLineSpacing() * scaleFactor;
 
                     mainText.setStyle(String.format(
                             "-fx-font-family: '%s'; " +
@@ -1713,6 +1776,36 @@ public class MainController {
         //showLivePreviewLogo(); // Show logo in live preview as well
     }
 
+    private void moveServiceItemUp() {
+        int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
+        if (selectedIdx > 0) {
+            // Swap items
+            ServiceItem item = serviceQueue.remove(selectedIdx);
+            serviceQueue.add(selectedIdx - 1, item);
+            
+            // Maintain selection on the moved item
+            servicePlannerList.getSelectionModel().select(selectedIdx - 1);
+            servicePlannerList.scrollTo(selectedIdx - 1);
+            
+            AppLogger.log("Service item moved up from " + selectedIdx + " to " + (selectedIdx - 1));
+        }
+    }
+
+    private void moveServiceItemDown() {
+        int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
+        if (selectedIdx >= 0 && selectedIdx < serviceQueue.size() - 1) {
+            // Swap items
+            ServiceItem item = serviceQueue.remove(selectedIdx);
+            serviceQueue.add(selectedIdx + 1, item);
+            
+            // Maintain selection on the moved item
+            servicePlannerList.getSelectionModel().select(selectedIdx + 1);
+            servicePlannerList.scrollTo(selectedIdx + 1);
+            
+            AppLogger.log("Service item moved down from " + selectedIdx + " to " + (selectedIdx + 1));
+        }
+    }
+
     private void showLivePreviewLogo() {
         hideAllLiveMediaViews(); // Hide all other preview elements
         if (liveLogoImageView != null) {
@@ -1755,7 +1848,9 @@ public class MainController {
             servicePlannerList.getItems().clear();
             currentQueueIndex = -1;
             currentSubItemIndex = 0;
+            currentServiceFile = null; // Reset the loaded file reference
             clearScreen(); // Clear main preview as well
+            updateWindowTitle(); // Update window title back to default
             AppLogger.log("New service created");
         }
     }
@@ -1767,15 +1862,55 @@ public class MainController {
             return;
         }
 
+        // If we already have a file loaded, save directly to it
+        if (currentServiceFile != null) {
+            jsonService.saveService(new java.util.ArrayList<>(serviceQueue), currentServiceFile);
+            AppLogger.log("Service saved: " + currentServiceFile.getName());
+            updateWindowTitle();
+            return;
+        }
+
+        // Otherwise, show Save As dialog
         FileChooser fc = new FileChooser();
         fc.setTitle("Save Service");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
         fc.setInitialFileName("service_" + System.currentTimeMillis() + ".service");
 
-        File file = fc.showSaveDialog(null);
+        File file = fc.showSaveDialog(scene.getWindow());
         if (file != null) {
+            currentServiceFile = file;
             jsonService.saveService(new java.util.ArrayList<>(serviceQueue), file);
             AppLogger.log("Service saved: " + file.getName());
+            updateWindowTitle();
+        }
+    }
+
+    @FXML private void saveServiceAs() {
+        if (serviceQueue.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot save empty service. Add items first.");
+            alert.show();
+            return;
+        }
+
+        // Always show Save As dialog
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Save Service As");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
+        
+        // Pre-populate with current file name if one exists
+        if (currentServiceFile != null) {
+            fc.setInitialFileName(currentServiceFile.getName());
+            fc.setInitialDirectory(currentServiceFile.getParentFile());
+        } else {
+            fc.setInitialFileName("service_" + System.currentTimeMillis() + ".service");
+        }
+
+        File file = fc.showSaveDialog(scene.getWindow());
+        if (file != null) {
+            currentServiceFile = file; // Update to new file
+            jsonService.saveService(new java.util.ArrayList<>(serviceQueue), file);
+            AppLogger.log("Service saved as: " + file.getName());
+            updateWindowTitle();
         }
     }
 
@@ -1784,12 +1919,13 @@ public class MainController {
         fc.setTitle("Load Service");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
 
-        File file = fc.showOpenDialog(null);
+        File file = fc.showOpenDialog(scene.getWindow());
         if (file != null) {
             java.util.List<ServiceItem> loadedService = jsonService.loadService(file);
             if (loadedService != null && !loadedService.isEmpty()) {
                 serviceQueue.clear();
                 serviceQueue.addAll(loadedService);
+                currentServiceFile = file; // Track the loaded file for future saves
                 // For Announcement, rePaginate is still used as its implementation hasn't changed
                 /*for (ServiceItem item : serviceQueue) {
                     Projectable projectable = item.getContent();
@@ -1802,6 +1938,7 @@ public class MainController {
                 currentQueueIndex = -1;
                 currentSubItemIndex = 0;
                 clearScreen(); // Clear main preview after loading new service
+                updateWindowTitle(); // Update window title with loaded file name
                 AppLogger.log("Service loaded: " + file.getName());
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load service file.");
@@ -2498,6 +2635,20 @@ public class MainController {
         prayerList.refresh(); // Explicitly refresh the ListView
     }
 
+    /**
+     * Updates the window title to show the currently loaded service file name.
+     */
+    private void updateWindowTitle() {
+        if (scene != null && scene.getWindow() instanceof javafx.stage.Stage) {
+            javafx.stage.Stage stage = (javafx.stage.Stage) scene.getWindow();
+            if (currentServiceFile != null) {
+                stage.setTitle("PraiseView - " + currentServiceFile.getName());
+            } else {
+                stage.setTitle("PraiseView");
+            }
+        }
+    }
+
     @FXML
     private void showAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -2516,13 +2667,12 @@ public class MainController {
                 â€¢ Custom themes (colors, fonts, backgrounds, logos)
                 â€¢ Media support (Images, Videos, PPT, Background videos)
                 â€¢ Live preview + navigation controls
+                â€¢ Mobile App Companion (remote control)
                 
                 ðŸ›£ï¸ Future Plans / Roadmap:
-                â€¢ Smooth Animations & Transitions between slides
-                â€¢ Mobile App Companion (remote control)
                 â€¢ AI Helper for automatic slide advancement
                 â€¢ Improved PowerPoint integration (thumbnails + live control)
-                â€¢ More import formats (ChordPro, OpenLP, etc.)
+                â€¢ Text input for Specific Languages
                 
                 Made by - Jason Fernandes
                 For any issues to be raised, whatsapp at +919969965966

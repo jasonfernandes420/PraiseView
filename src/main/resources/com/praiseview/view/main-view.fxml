@@ -21,6 +21,7 @@
             <Menu text="File">
                 <MenuItem text="New Service" onAction="#newService"/>
                 <MenuItem text="Save Service" onAction="#saveService"/>
+                <MenuItem text="Save As Service" onAction="#saveServiceAs" />
                 <MenuItem text="Load Service" onAction="#importService"/>
                 <SeparatorMenuItem/>
                 <MenuItem text="Import Songs..." onAction="#importSongs"/>
@@ -48,6 +49,11 @@
             <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
             <Label text="Mass Planner - Service Order" styleClass="header"/>
             <ListView fx:id="servicePlannerList" VBox.vgrow="ALWAYS"/>
+            <!-- Reorder buttons -->
+            <HBox spacing="8" alignment="CENTER">
+                <Button fx:id="moveUpButton" text="▲ Up" style="-fx-font-size: 11px; -fx-padding: 6px 12px;" />
+                <Button fx:id="moveDownButton" text="▼ Down" style="-fx-font-size: 11px; -fx-padding: 6px 12px;" />
+            </HBox>
         </VBox>
     </left>
 
