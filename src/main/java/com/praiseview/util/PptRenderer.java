@@ -63,17 +63,19 @@ public class PptRenderer {
                 BufferedImage img = new BufferedImage(pgsize.width, pgsize.height, BufferedImage.TYPE_INT_RGB);
                 Graphics2D graphics = img.createGraphics();
 
-                // Clear the background to white or a default color
+                // Enable high-quality rendering
+                graphics.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                graphics.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+                graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                graphics.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL, java.awt.RenderingHints.VALUE_STROKE_NORMALIZE);
+
+                // Set background to white
                 graphics.setPaint(Color.WHITE);
                 graphics.fill(new Rectangle2D.Float(0, 0, pgsize.width, pgsize.height));
 
-                // Render the slide
+                // Render the slide content
                 slide.draw(graphics);
-
-                // Add slide number to the image (optional, but good for debugging/preview)
-                graphics.setColor(Color.BLACK);
-                graphics.setFont(new Font("Arial", Font.BOLD, 20));
-                graphics.drawString("Slide " + slideNum, 20, pgsize.height - 20);
 
                 String outputPath = tempDir.resolve("slide_" + slideNum + ".png").toString();
                 ImageIO.write(img, "png", new File(outputPath));

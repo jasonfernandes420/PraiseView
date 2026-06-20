@@ -4,6 +4,7 @@ import com.praiseview.PraiseViewApp;
 import com.praiseview.db.DatabaseService;
 import com.praiseview.model.*;
 import com.praiseview.service.JsonService;
+import com.praiseview.service.PhoneRemoteServer;
 import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
 import javafx.application.Platform;
@@ -23,6 +24,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
@@ -35,6 +37,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
@@ -51,6 +54,8 @@ public class MainController {
     // Left: Service Planner
     @FXML private ListView<ServiceItem> servicePlannerList;
     @FXML private Button editSongButton;
+    @FXML private Button moveUpButton;
+    @FXML private Button moveDownButton;
 
     // Center: Stage View
     @FXML private StackPane livePreviewPane;
@@ -138,6 +143,7 @@ public class MainController {
     private ObservableList<Theme> availableThemes = FXCollections.observableArrayList();
     private static Path THEMES_FILE_PATH; // Changed to Path
     private Theme currentActiveTheme; // The theme currently applied to projection and preview
+    private boolean livePreviewThemeHiddenByBlackout = false; // Track if preview theme was hidden by blackout
 
 
     private int currentQueueIndex = -1;
@@ -154,6 +160,9 @@ public class MainController {
 
     // Custom DataFormat for internal ListView reordering
     private static final DataFormat SERVICE_ITEM_REORDER = new DataFormat("application/x-java-service-item-reorder");
+    
+    // Track currently loaded service file for Save functionality
+    private File currentServiceFile = null;
 
 
     public void setScene(javafx.scene.Scene scene) {
@@ -297,6 +306,32 @@ public class MainController {
             }
         });
 
+        // Handle DELETE key press on service list
+        servicePlannerList.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.DELETE) {
+                int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
+                if (selectedIdx >= 0) {
+                    ServiceItem removedItem = serviceQueue.remove(selectedIdx);
+                    // Clean up PPT temp files if a PptItem is removed
+                    if (removedItem != null && removedItem.getContent() instanceof PptItem) {
+                        ((PptItem) removedItem.getContent()).dispose();
+                    }
+                    // Reset if we deleted the current item
+                    if (currentQueueIndex >= serviceQueue.size()) {
+                        currentQueueIndex = -1;
+                    }
+                    AppLogger.log("Item removed from service order");
+                }
+                e.consume();
+            } else if (e.isControlDown() && e.getCode() == javafx.scene.input.KeyCode.UP) {
+                moveServiceItemUp();
+                e.consume();
+            } else if (e.isControlDown() && e.getCode() == javafx.scene.input.KeyCode.DOWN) {
+                moveServiceItemDown();
+                e.consume();
+            }
+        });
+
         // Drag & Drop from Library to Service Order AND within Service Order
         setupDragAndDrop();
 
@@ -306,6 +341,10 @@ public class MainController {
         blackoutButton.setOnAction(e -> blackout());
         clearButton.setOnAction(e -> clearScreen());
         editSongButton.setOnAction(e -> editSelectedSong());
+        
+        // Service list reorder buttons
+        moveUpButton.setOnAction(e -> moveServiceItemUp());
+        moveDownButton.setOnAction(e -> moveServiceItemDown());
 
         // Verse Navigation
         if (nextVerseButton != null) nextVerseButton.setOnAction(e -> nextItemOrSubItem());
@@ -830,7 +869,7 @@ public class MainController {
                         pptLibrary.add(new PptItem(file)); // Create PptItem
                     } catch (IOException e) {
                         AppLogger.log("Failed to render PPT " + file.getName() + ": " + e.getMessage());
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT " + file.getName() + ": " + e.getMessage());
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load PPT: " + e.getMessage());
                         alert.show();
                     }
                 } else if (type == MediaItem.MediaType.IMAGE) {
@@ -868,6 +907,7 @@ public class MainController {
         }
         updateCenterPreview(); // Mirror the projection
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
+        notifyPhoneRemoteStateChanged();
     }
 
     private void showCurrentItem() {
@@ -892,6 +932,12 @@ public class MainController {
         }
         updateCenterPreview(); // Mirror the projection
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
+        notifyPhoneRemoteStateChanged();
+    }
+
+    private void notifyPhoneRemoteStateChanged() {
+        sendServiceListToPhone();
+        sendVerseListToPhone();
     }
 
     // Helper to hide all media preview elements
@@ -981,6 +1027,15 @@ public class MainController {
             currentSubItemList.getItems().clear(); // Clear sub-item list by default // Renamed
         }
 
+        // Restore theme background if it was hidden by blackout
+        if (livePreviewThemeHiddenByBlackout && currentActiveTheme != null) {
+            // Clear the black background set by blackout
+            if (livePreviewPane != null) {
+                livePreviewPane.setStyle(""); // Clear inline styles
+            }
+            applyThemeBackgroundToLivePreview(currentActiveTheme);
+            livePreviewThemeHiddenByBlackout = false; // Clear flag
+        }
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj == null) {
@@ -1004,20 +1059,23 @@ public class MainController {
         AppLogger.log("MainController: Displayed Title: " + displayedTitle);
         AppLogger.log("MainController: Displayed Content (first 50 chars): " + (displayedContent != null && displayedContent.length() > 50 ? displayedContent.substring(0, 50) + "..." : displayedContent));
 
+        // Get actual projection dimensions for proper aspect ratio
+        double projectionWidth = proj.projectionRoot.getWidth();
+        double projectionHeight = proj.projectionRoot.getHeight();
+        double projectionAspectRatio = projectionWidth / projectionHeight; // Should be 16:9 or similar
+        
+        AppLogger.log("MainController: Projection dimensions - Width: " + projectionWidth + ", Height: " + projectionHeight + ", Aspect Ratio: " + projectionAspectRatio);
+
         // Set title visibility based on currentActiveTheme.showTitle
         if (currentActiveTheme != null && currentActiveTheme.isShowTitle()) {
             stageViewTitle.setText(displayedTitle);
             stageViewTitle.setVisible(true);
             stageViewTitle.setManaged(true);
-            double projectionWidth = 1920.0;
+            
+            // Use actual projection dimensions for scaling
             double previewWidth = livePreviewPane.getWidth();
-
             double scaleFactor = previewWidth / projectionWidth;
-
-            double previewFontSize =
-                    currentActiveTheme.getTitleFontSize() * scaleFactor;
-
-
+            double previewFontSize = currentActiveTheme.getTitleFontSize() * scaleFactor;
 
             stageViewTitle.setStyle(String.format(
                     "-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
@@ -1040,7 +1098,35 @@ public class MainController {
                 if (liveTextContentContainer != null) {
                     liveTextContentContainer.setVisible(true);
                     liveTextContentContainer.setManaged(true);
+                    
+                    // Calculate available width using same padding ratio as projection
+                    // Projection uses: availableWidth = projectionRoot.getWidth() - (2 * TEXT_HORIZONTAL_PADDING)
+                    // where TEXT_HORIZONTAL_PADDING = 50.0
+                    double projectionPadding = 50.0;
+                    double projectionAvailableWidth = projectionWidth - (2 * projectionPadding);
+                    
+                    // Scale padding proportionally for preview
+                    double scaleFactor = livePreviewPane.getWidth() / projectionWidth;
+                    double previewPadding = projectionPadding * scaleFactor;
+                    double previewAvailableWidth = livePreviewPane.getWidth() - (2 * previewPadding);
+                    
+                    // Set padding on container
+                    liveTextContentContainer.setPadding(new Insets(previewPadding, previewPadding, previewPadding, previewPadding));
+                    
+                    // Constrain TextFlow to available width for proper wrapping
+                    liveTextContentContainer.setPrefWidth(livePreviewPane.getWidth());
+                    liveTextContentContainer.setMaxWidth(livePreviewPane.getWidth());
+                    
+                    if (livePreviewText != null) {
+                        livePreviewText.setPrefWidth(previewAvailableWidth);
+                        livePreviewText.setMaxWidth(previewAvailableWidth);
+                    }
+                    
+                    AppLogger.log("MainController: Preview padding scale - Projection padding: " + projectionPadding + 
+                                 ", Preview padding: " + previewPadding + 
+                                 ", Available width: " + previewAvailableWidth);
                 }
+                
                 if (livePreviewText != null) {
                     livePreviewText.getChildren().clear();
                     Text mainText = new Text(displayedContent);
@@ -1057,16 +1143,12 @@ public class MainController {
                         AppLogger.log("Invalid text color in active theme: '" + (currentActiveTheme != null ? currentActiveTheme.getTextColor() : "NULL THEME") + "'. Falling back to WHITE. Error: " + e.getMessage());
                         mainText.setFill(Color.WHITE); // Fallback
                     }
-                    double projectionWidth = 1920.0;
+                    
+                    // Scale text based on actual projection dimensions
                     double previewWidth = livePreviewPane.getWidth();
-
                     double scaleFactor = previewWidth / projectionWidth;
-
-                    double previewFontSize =
-                            currentActiveTheme.getFontSize() * scaleFactor;
-
-                    double previewLineSpacing =
-                            currentActiveTheme.getLineSpacing() * scaleFactor;
+                    double previewFontSize = currentActiveTheme.getFontSize() * scaleFactor;
+                    double previewLineSpacing = currentActiveTheme.getLineSpacing() * scaleFactor;
 
                     mainText.setStyle(String.format(
                             "-fx-font-family: '%s'; " +
@@ -1306,6 +1388,275 @@ public class MainController {
         seekMedia(10.0); // Changed to seekMedia
     }
 
+    public boolean handleRemoteCommand(String command) {
+        if (command == null || command.isBlank()) {
+            return false;
+        }
+
+        String trimmed = command.trim();
+        
+        // Handle JSON commands with parameters
+        if (trimmed.startsWith("{")) {
+            return handleJsonRemoteCommand(trimmed);
+        }
+        
+        // Handle simple text commands
+        return handleSimpleRemoteCommand(trimmed.toLowerCase(Locale.ROOT));
+    }
+
+    private boolean handleJsonRemoteCommand(String jsonCommand) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> cmdMap = mapper.readValue(jsonCommand, java.util.Map.class);
+            
+            String cmd = (String) cmdMap.get("command");
+            if (cmd == null) {
+                return false;
+            }
+            
+            cmd = cmd.toLowerCase(Locale.ROOT);
+            
+            return switch (cmd) {
+                case "get-services" -> {
+                    sendServiceListToPhone();
+                    yield true;
+                }
+                case "select-service" -> {
+                    Object indexObj = cmdMap.get("index");
+                    if (indexObj != null) {
+                        int index = ((Number) indexObj).intValue();
+                        selectServiceAndSendVerses(index);
+                        yield true;
+                    }
+                    yield false;
+                }
+                case "select-verse" -> {
+                    Object verseIndexObj = cmdMap.get("verse_index");
+                    Object contentIdObj = cmdMap.get("content_id");
+                    if (verseIndexObj != null && contentIdObj != null) {
+                        int verseIndex = ((Number) verseIndexObj).intValue();
+                        String contentId = (String) contentIdObj;
+                        selectVerseAndProject(contentId, verseIndex);
+                        yield true;
+                    }
+                    yield false;
+                }
+                default -> handleSimpleRemoteCommand(cmd);
+            };
+        } catch (Exception e) {
+            AppLogger.log("Error parsing JSON remote command: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean handleSimpleRemoteCommand(String command) {
+        return switch (command) {
+            case "start", "project" -> {
+                startProjection();
+                yield true;
+            }
+            case "next" -> {
+                nextItemOrSubItem();
+                yield true;
+            }
+            case "previous", "prev" -> {
+                previousItemOrSubItem();
+                yield true;
+            }
+            case "blackout" -> {
+                blackout();
+                yield true;
+            }
+            case "clear" -> {
+                clearScreen();
+                yield true;
+            }
+            case "playpause", "play-pause" -> {
+                playPauseMedia();
+                yield true;
+            }
+            case "rewind" -> {
+                onMediaRewind();
+                yield true;
+            }
+            case "forward" -> {
+                onMediaForward();
+                yield true;
+            }
+            case "get-services" -> {
+                sendServiceListToPhone();
+                yield true;
+            }
+            default -> {
+                AppLogger.log("Unknown phone remote command: " + command);
+                yield false;
+            }
+        };
+    }
+
+    private void sendServiceListToPhone() {
+        PhoneRemoteServer server = PhoneRemoteServer.getInstance();
+        if (server == null) {
+            return;
+        }
+
+        java.util.List<ServiceListDTO.ServiceItemDTO> items = new java.util.ArrayList<>();
+        for (int i = 0; i < serviceQueue.size(); i++) {
+            ServiceItem item = serviceQueue.get(i);
+            items.add(new ServiceListDTO.ServiceItemDTO(
+                item.getId(),
+                i,
+                item.getTitle(),
+                item.getType()
+            ));
+        }
+
+        ServiceListDTO dto = new ServiceListDTO(items, currentQueueIndex);
+        server.sendServiceListToClients(dto);
+    }
+
+    private void selectServiceAndSendVerses(int serviceIndex) {
+        if (serviceIndex < 0 || serviceIndex >= serviceQueue.size()) {
+            AppLogger.log("Invalid service index: " + serviceIndex);
+            return;
+        }
+
+        currentQueueIndex = serviceIndex;
+        currentSubItemIndex = 0;
+        showCurrentItem();
+    }
+
+    private void selectVerseAndProject(String contentId, int verseIndex) {
+        if (contentId == null || contentId.isBlank()) {
+            AppLogger.log("Invalid content ID");
+            return;
+        }
+
+        // Find the service by content ID
+        int serviceIndex = -1;
+        for (int i = 0; i < serviceQueue.size(); i++) {
+            ServiceItem item = serviceQueue.get(i);
+            Projectable content = item.getContent();
+            if (content instanceof Song) {
+                if (((Song) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof Prayer) {
+                if (((Prayer) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof TextSlide) {
+                if (((TextSlide) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof MediaItem) {
+                if (((MediaItem) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof PptItem) {
+                if (((PptItem) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (serviceIndex < 0) {
+            AppLogger.log("Content not found with ID: " + contentId);
+            return;
+        }
+
+        currentQueueIndex = serviceIndex;
+        
+        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        Projectable projectable = currentItem.getContent();
+        
+        if (projectable == null) {
+            return;
+        }
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) {
+            return;
+        }
+
+        int maxVerses = proj.getCurrentProjectedItemSubItemCount();
+        if (verseIndex >= 0 && verseIndex < maxVerses) {
+            currentSubItemIndex = verseIndex;
+            showCurrentItem();
+        } else {
+            AppLogger.log("Invalid verse index: " + verseIndex + " (max: " + maxVerses + ")");
+        }
+    }
+
+    private void sendVerseListToPhone() {
+        PhoneRemoteServer server = PhoneRemoteServer.getInstance();
+        if (server == null || currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+            return;
+        }
+
+        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        Projectable projectable = currentItem.getContent();
+        
+        if (projectable == null) {
+            return;
+        }
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) {
+            return;
+        }
+
+        String contentId = getContentId(projectable);
+        if (contentId == null) {
+            AppLogger.log("Could not get content ID for projectable");
+            return;
+        }
+
+        java.util.List<String> projectedPages = proj.getCurrentProjectedItemPages();
+        if (projectedPages == null || projectedPages.isEmpty()) {
+            AppLogger.log("No projected pages available for phone verse list.");
+            return;
+        }
+
+        int maxVerses = projectedPages.size();
+        java.util.List<VerseListDTO.VerseItemDTO> verseItems = new java.util.ArrayList<>();
+
+        for (int i = 0; i < maxVerses; i++) {
+            String label = projectable.getSubItemLabel(i);
+            String content = projectedPages.get(i);
+            String preview = content.length() > 100 ? content.substring(0, 100) + "..." : content;
+            verseItems.add(new VerseListDTO.VerseItemDTO(i, label, preview, content));
+        }
+
+        VerseListDTO dto = new VerseListDTO(
+            currentItem.getTitle(),
+            contentId,
+            verseItems,
+            currentSubItemIndex
+        );
+        server.sendVerseListToClients(dto);
+    }
+
+    private String getContentId(Projectable projectable) {
+        if (projectable instanceof Song) {
+            return ((Song) projectable).getId();
+        } else if (projectable instanceof Prayer) {
+            return ((Prayer) projectable).getId();
+        } else if (projectable instanceof TextSlide) {
+            return ((TextSlide) projectable).getId();
+        } else if (projectable instanceof MediaItem) {
+            return ((MediaItem) projectable).getId();
+        } else if (projectable instanceof PptItem) {
+            return ((PptItem) projectable).getId();
+        }
+        return null;
+    }
+
     private void seekMedia(double seconds) { // Renamed from seekVideo
         // Control local preview media player
         if (liveItemMediaPlayer != null && liveItemMediaPlayer.getStatus() != MediaPlayer.Status.STOPPED) {
@@ -1411,6 +1762,7 @@ public class MainController {
             }
         }
 
+        livePreviewThemeHiddenByBlackout = true; // Mark preview theme as hidden by blackout
         updateCenterPreview(); // or whatever method refreshes the preview
         AppLogger.log("MainController: Blackout mirrored to preview pane.");
     }
@@ -1422,6 +1774,36 @@ public class MainController {
             updateCenterPreview(); // Mirror the clear state in the stage view
         }
         //showLivePreviewLogo(); // Show logo in live preview as well
+    }
+
+    private void moveServiceItemUp() {
+        int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
+        if (selectedIdx > 0) {
+            // Swap items
+            ServiceItem item = serviceQueue.remove(selectedIdx);
+            serviceQueue.add(selectedIdx - 1, item);
+            
+            // Maintain selection on the moved item
+            servicePlannerList.getSelectionModel().select(selectedIdx - 1);
+            servicePlannerList.scrollTo(selectedIdx - 1);
+            
+            AppLogger.log("Service item moved up from " + selectedIdx + " to " + (selectedIdx - 1));
+        }
+    }
+
+    private void moveServiceItemDown() {
+        int selectedIdx = servicePlannerList.getSelectionModel().getSelectedIndex();
+        if (selectedIdx >= 0 && selectedIdx < serviceQueue.size() - 1) {
+            // Swap items
+            ServiceItem item = serviceQueue.remove(selectedIdx);
+            serviceQueue.add(selectedIdx + 1, item);
+            
+            // Maintain selection on the moved item
+            servicePlannerList.getSelectionModel().select(selectedIdx + 1);
+            servicePlannerList.scrollTo(selectedIdx + 1);
+            
+            AppLogger.log("Service item moved down from " + selectedIdx + " to " + (selectedIdx + 1));
+        }
     }
 
     private void showLivePreviewLogo() {
@@ -1466,7 +1848,9 @@ public class MainController {
             servicePlannerList.getItems().clear();
             currentQueueIndex = -1;
             currentSubItemIndex = 0;
+            currentServiceFile = null; // Reset the loaded file reference
             clearScreen(); // Clear main preview as well
+            updateWindowTitle(); // Update window title back to default
             AppLogger.log("New service created");
         }
     }
@@ -1478,15 +1862,55 @@ public class MainController {
             return;
         }
 
+        // If we already have a file loaded, save directly to it
+        if (currentServiceFile != null) {
+            jsonService.saveService(new java.util.ArrayList<>(serviceQueue), currentServiceFile);
+            AppLogger.log("Service saved: " + currentServiceFile.getName());
+            updateWindowTitle();
+            return;
+        }
+
+        // Otherwise, show Save As dialog
         FileChooser fc = new FileChooser();
         fc.setTitle("Save Service");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
         fc.setInitialFileName("service_" + System.currentTimeMillis() + ".service");
 
-        File file = fc.showSaveDialog(null);
+        File file = fc.showSaveDialog(scene.getWindow());
         if (file != null) {
+            currentServiceFile = file;
             jsonService.saveService(new java.util.ArrayList<>(serviceQueue), file);
             AppLogger.log("Service saved: " + file.getName());
+            updateWindowTitle();
+        }
+    }
+
+    @FXML private void saveServiceAs() {
+        if (serviceQueue.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot save empty service. Add items first.");
+            alert.show();
+            return;
+        }
+
+        // Always show Save As dialog
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Save Service As");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
+        
+        // Pre-populate with current file name if one exists
+        if (currentServiceFile != null) {
+            fc.setInitialFileName(currentServiceFile.getName());
+            fc.setInitialDirectory(currentServiceFile.getParentFile());
+        } else {
+            fc.setInitialFileName("service_" + System.currentTimeMillis() + ".service");
+        }
+
+        File file = fc.showSaveDialog(scene.getWindow());
+        if (file != null) {
+            currentServiceFile = file; // Update to new file
+            jsonService.saveService(new java.util.ArrayList<>(serviceQueue), file);
+            AppLogger.log("Service saved as: " + file.getName());
+            updateWindowTitle();
         }
     }
 
@@ -1495,12 +1919,13 @@ public class MainController {
         fc.setTitle("Load Service");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Service Files", "*.service"));
 
-        File file = fc.showOpenDialog(null);
+        File file = fc.showOpenDialog(scene.getWindow());
         if (file != null) {
             java.util.List<ServiceItem> loadedService = jsonService.loadService(file);
             if (loadedService != null && !loadedService.isEmpty()) {
                 serviceQueue.clear();
                 serviceQueue.addAll(loadedService);
+                currentServiceFile = file; // Track the loaded file for future saves
                 // For Announcement, rePaginate is still used as its implementation hasn't changed
                 /*for (ServiceItem item : serviceQueue) {
                     Projectable projectable = item.getContent();
@@ -1513,6 +1938,7 @@ public class MainController {
                 currentQueueIndex = -1;
                 currentSubItemIndex = 0;
                 clearScreen(); // Clear main preview after loading new service
+                updateWindowTitle(); // Update window title with loaded file name
                 AppLogger.log("Service loaded: " + file.getName());
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load service file.");
@@ -1721,6 +2147,7 @@ public class MainController {
 
     @FXML private void exitApp() {
         AppLogger.log("Application exited");
+        PhoneRemoteServer.stopServer();
         // Clean up all temporary PPT image directories on exit
         for (ServiceItem item : serviceQueue) {
             if (item.getContent() instanceof PptItem) {
@@ -2148,15 +2575,20 @@ public class MainController {
             // Set custom cell factory to display sub-item labels with preview
             currentSubItemList.setCellFactory(lv -> new ListCell<SubItemDisplayItem>() {
                 @Override
-                protected void updateItem(SubItemDisplayItem item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
+                protected void updateItem(SubItemDisplayItem displayItem, boolean empty) {
+                    super.updateItem(displayItem, empty);
+                    if (empty || displayItem == null) {
                         setText(null);
                     } else {
-                        // Add null check for item.content before calling length()
-                        String preview = (item.content != null && item.content.length() > 30) ?
-                                item.content.substring(0, 30) + "..." : (item.content != null ? item.content : "");
-                        setText(item.label + ": " + preview);
+                        // For PPT items, only show the label (without path preview)
+                        if (item instanceof PptItem) {
+                            setText(displayItem.label);
+                        } else {
+                            // For other items, add null check for content before calling length()
+                            String preview = (displayItem.content != null && displayItem.content.length() > 30) ?
+                                    displayItem.content.substring(0, 30) + "..." : (displayItem.content != null ? displayItem.content : "");
+                            setText(displayItem.label + ": " + preview);
+                        }
                     }
                 }
             });
@@ -2192,7 +2624,7 @@ public class MainController {
     private void openPrayerEditor(Prayer prayer) {
         PrayerEditorDialog dialog = new PrayerEditorDialog(prayer);
         dialog.showAndWait().ifPresent(result -> {
-            dbService.savePrayer(result);           // ← Save to DB
+            dbService.savePrayer(result);           // â† Save to DB
             loadPrayers();                          // Refresh list
             AppLogger.log("Prayer saved: " + result.getTitle());
         });
@@ -2201,6 +2633,20 @@ public class MainController {
     private void loadPrayers() {
         allPrayers.setAll(dbService.loadAllPrayers());
         prayerList.refresh(); // Explicitly refresh the ListView
+    }
+
+    /**
+     * Updates the window title to show the currently loaded service file name.
+     */
+    private void updateWindowTitle() {
+        if (scene != null && scene.getWindow() instanceof javafx.stage.Stage) {
+            javafx.stage.Stage stage = (javafx.stage.Stage) scene.getWindow();
+            if (currentServiceFile != null) {
+                stage.setTitle("PraiseView - " + currentServiceFile.getName());
+            } else {
+                stage.setTitle("PraiseView");
+            }
+        }
     }
 
     @FXML
@@ -2214,20 +2660,19 @@ public class MainController {
                 
                 A free and open-source worship projection software built for churches and worship services.
                 
-                ✨ Current Features:
-                • Multi-monitor full-screen projection
-                • Song, Prayer & Announcement management
-                • Service planner
-                • Custom themes (colors, fonts, backgrounds, logos)
-                • Media support (Images, Videos, PPT, Background videos)
-                • Live preview + navigation controls
+                âœ¨ Current Features:
+                â€¢ Multi-monitor full-screen projection
+                â€¢ Song, Prayer & Announcement management
+                â€¢ Service planner
+                â€¢ Custom themes (colors, fonts, backgrounds, logos)
+                â€¢ Media support (Images, Videos, PPT, Background videos)
+                â€¢ Live preview + navigation controls
+                â€¢ Mobile App Companion (remote control)
                 
-                🛣️ Future Plans / Roadmap:
-                • Smooth Animations & Transitions between slides
-                • Mobile App Companion (remote control)
-                • AI Helper for automatic slide advancement
-                • Improved PowerPoint integration (thumbnails + live control)
-                • More import formats (ChordPro, OpenLP, etc.)
+                ðŸ›£ï¸ Future Plans / Roadmap:
+                â€¢ AI Helper for automatic slide advancement
+                â€¢ Improved PowerPoint integration (thumbnails + live control)
+                â€¢ Text input for Specific Languages
                 
                 Made by - Jason Fernandes
                 For any issues to be raised, whatsapp at +919969965966
@@ -2257,6 +2702,38 @@ public class MainController {
             alert.setTitle("Update Error");
             alert.setHeaderText(null);
             alert.setContentText("Update service is not available. Please restart the application.");
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
+    private void handleConnectPhone() {
+        try {
+            PhoneRemoteServer remoteServer = PhoneRemoteServer.start(this);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/praiseview/view/connect-phone-view.fxml"));
+            VBox root = loader.load();
+            ConnectPhoneController controller = loader.getController();
+
+            String ipAddress = PhoneRemoteServer.findLocalIpAddress();
+            int port = remoteServer.getPort();
+
+            controller.setConnectionDetails(ipAddress, port);
+
+            Stage stage = new Stage();
+            stage.setTitle("Connect Phone via QR Code");
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.initOwner(scene.getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setOnHidden(event -> controller.dispose());
+            stage.showAndWait();
+
+        } catch (IOException e) {
+            AppLogger.log("Error opening Connect Phone dialog: " + e.getMessage());
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Could not open Connect Phone dialog");
+            alert.setContentText("An error occurred while loading the connection dialog: " + e.getMessage());
             alert.showAndWait();
         }
     }

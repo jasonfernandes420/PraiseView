@@ -2,6 +2,7 @@ package com.praiseview;
 
 import com.praiseview.controller.MainController;
 import com.praiseview.controller.ProjectionController;
+import com.praiseview.service.PhoneRemoteServer;
 import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
 import javafx.application.Application;
@@ -39,6 +40,7 @@ public class PraiseViewApp extends Application {
             if (projStage != null) {
                 projStage.close();
             }
+            PhoneRemoteServer.stopServer();
             // Also ensure the application exits cleanly, especially if there are background threads
             Platform.exit();
             System.exit(0);
@@ -190,6 +192,7 @@ public class PraiseViewApp extends Application {
 
     @Override
     public void stop() throws Exception{
+        PhoneRemoteServer.stopServer();
         super.stop();
     }
 }

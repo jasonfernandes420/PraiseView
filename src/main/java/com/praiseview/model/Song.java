@@ -13,12 +13,12 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Song implements Projectable { // Implement Projectable interface
+public class Song implements Projectable {
 
     private String id = UUID.randomUUID().toString();
     private String title;
-    private String language;        // English, Hindi, Kannada, Tamil
-    private String category;        // Entrance Hymn, Offertory, etc.
+    private String language;
+    private String category;
     private String author;
     private String composer;
     private String copyright;
@@ -26,7 +26,6 @@ public class Song implements Projectable { // Implement Projectable interface
 
     private List<Integer> verseOrder = new ArrayList<>();
 
-    // Getters and Setters
     public String getId() { return id; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -49,7 +48,6 @@ public class Song implements Projectable { // Implement Projectable interface
     public List<Verse> getVerses() { return verses; }
     public void setVerses(List<Verse> verses) {
         this.verses = verses;
-        // Auto-create default order
         if (verseOrder.isEmpty() && !verses.isEmpty()) {
             for (int i = 0; i < verses.size(); i++) {
                 verseOrder.add(i);
@@ -59,13 +57,12 @@ public class Song implements Projectable { // Implement Projectable interface
 
     public List<Integer> getVerseOrder() { return verseOrder; }
 
-    // Get verse at specific position in the custom order
     public Verse getVerseAtPosition(int position) {
         if (position < 0 || position >= verseOrder.size()) return null;
         int verseIndex = verseOrder.get(position);
         return verses.get(verseIndex);
     }
-    // New method for custom order from dialog
+
     public void setVerseOrderFromList(List<Verse> orderedList) {
         this.verseOrder.clear();
         for (Verse v : orderedList) {
@@ -86,10 +83,8 @@ public class Song implements Projectable { // Implement Projectable interface
 
     @Override
     public String toString() {
-        return getTitle();   // This fixes class name display
+        return getTitle();
     }
-
-    // --- Projectable Interface Implementations ---
 
     @Override
     public String getType() {
@@ -123,6 +118,7 @@ public class Song implements Projectable { // Implement Projectable interface
     public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
         return verseOrder.size();
     }
+
     @Override
     public String getSubItemLabel(int index) {
         Verse verse = getVerseAtPosition(index);

@@ -3,10 +3,13 @@ package com.praiseview.controller;
 import com.praiseview.model.*;
 import com.praiseview.util.AppLogger;
 import com.praiseview.util.TextPaginationUtil;
+import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
@@ -52,6 +55,10 @@ public class ProjectionController {
     private List<String> currentProjectedItemPages; // Cached paginated content for the current item
 
     private Theme activeTheme; // Store the currently active theme to check showTitle property
+    private boolean themeHiddenByBlackout = false; // Track if theme was hidden by blackout
+    
+    // PPT transition tracking
+    private int lastPptSubItemIndex = -1; // Track the last displayed PPT slide index
 
     // Fields to cache pagination parameters to prevent unnecessary re-pagination
     private Projectable lastPaginatedItem = null;
@@ -180,6 +187,12 @@ public class ProjectionController {
             applyTheme(activeTheme); // Apply to set initial styles
         }
 
+        // Restore theme background if it was hidden by blackout
+        if (themeHiddenByBlackout && activeTheme != null) {
+            applyThemeBackgroundToProjection(activeTheme);
+            themeHiddenByBlackout = false; // Clear flag
+        }
+
         // --- Start: Clear and reset all content views and media players ---
         textContentContainer.setVisible(false);
         textContentContainer.setManaged(false);
@@ -230,6 +243,11 @@ public class ProjectionController {
         // Declare imageFile and slideImageFile here to ensure definite assignment
         File imageFile = null;
         File slideImageFile = null;
+        
+        // Reset PPT transition tracking if switching to non-PPT items
+        if (!(item instanceof PptItem)) {
+            lastPptSubItemIndex = -1;
+        }
 
         // Handle different Projectable types
         switch (item.getType()) {
@@ -240,6 +258,15 @@ public class ProjectionController {
                 AppLogger.log("ProjectionController: Displaying text content.");
                 textContentContainer.setVisible(true);
                 textContentContainer.setManaged(true);
+                
+                // Apply padding to container
+                textContentContainer.setPadding(new Insets(TEXT_VERTICAL_PADDING, TEXT_HORIZONTAL_PADDING, TEXT_VERTICAL_PADDING, TEXT_HORIZONTAL_PADDING));
+                
+                // Don't constrain container size - let it grow with content
+                textContentContainer.setPrefWidth(Region.USE_COMPUTED_SIZE);
+                textContentContainer.setMaxWidth(Double.MAX_VALUE);
+                textContentContainer.setPrefHeight(Region.USE_COMPUTED_SIZE);
+                textContentContainer.setMaxHeight(Double.MAX_VALUE);
 
                 // Set title visibility and calculate its height for pagination
                 if (activeTheme != null && activeTheme.isShowTitle()) {
@@ -262,6 +289,13 @@ public class ProjectionController {
 
                 // Ensure availableHeight remains positive after title deduction
                 if (availableHeight <= 0) availableHeight = 100; // Fallback
+                
+                // Set TextFlow to wrap at availableWidth, let height grow naturally
+                lyricsFlow.setPrefWidth(availableWidth);
+                lyricsFlow.setMaxWidth(availableWidth);
+                lyricsFlow.setPrefHeight(Region.USE_COMPUTED_SIZE);
+                lyricsFlow.setMaxHeight(Double.MAX_VALUE);
+                lyricsFlow.setStyle("-fx-padding: 0px;");
 
                 // Check if re-pagination is needed for the current item and dimensions
                 boolean needsRepagination = false;
@@ -434,10 +468,33 @@ public class ProjectionController {
 
                     if (slideImageFile.exists()) {
                         try {
+                            // Apply fade transition only when switching between PPT slides (not on initial display)
+                            boolean isPptTransition = currentProjectedItem instanceof PptItem && lastPptSubItemIndex != subItemIndex && lastPptSubItemIndex >= 0;
+                            
                             Image slideImage = new Image(slideImageFile.toURI().toString());
-                            itemImageView.setImage(slideImage);
+                            
+                            if (isPptTransition) {
+                                // Apply fade-out, change image, fade-in transition
+                                FadeTransition fadeOut = new FadeTransition(Duration.millis(200), itemImageView);
+                                fadeOut.setFromValue(1.0);
+                                fadeOut.setToValue(0.0);
+                                fadeOut.setOnFinished(e -> {
+                                    itemImageView.setImage(slideImage);
+                                    FadeTransition fadeIn = new FadeTransition(Duration.millis(300), itemImageView);
+                                    fadeIn.setFromValue(0.0);
+                                    fadeIn.setToValue(1.0);
+                                    fadeIn.play();
+                                });
+                                fadeOut.play();
+                            } else {
+                                // No transition on first PPT display
+                                itemImageView.setImage(slideImage);
+                                itemImageView.setOpacity(1.0);
+                            }
+                            
                             // Update title with slide number
                             titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, projectionRoot.getWidth(), projectionRoot.getHeight()) + ")";
+                            lastPptSubItemIndex = subItemIndex; // Update last displayed slide
                             AppLogger.log("ProjectionController: PPT slide image loaded successfully.");
                         } catch (Exception e) {
                             AppLogger.log("ProjectionController: Error loading PPT slide image: " + e.getMessage());
@@ -804,6 +861,7 @@ public class ProjectionController {
         }
 
         currentProjectedItem = null;
+        themeHiddenByBlackout = true; // Mark theme as hidden by blackout
         AppLogger.log("ProjectionController: Screen fully blacked out.");
     }
 

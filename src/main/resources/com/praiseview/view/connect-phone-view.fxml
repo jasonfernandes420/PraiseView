@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.geometry.Insets?>
+<?import javafx.geometry.Pos?>
+
+<VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.praiseview.controller.ConnectPhoneController"
+      prefWidth="400" prefHeight="450">
+    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+    <Label text="Connect Your Phone" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    <Label text="Scan the QR code below with your companion app:" wrapText="true" alignment="CENTER"/>
+
+    <ImageView fx:id="qrCodeImageView" fitWidth="300" fitHeight="300" preserveRatio="true"/>
+
+    <Label fx:id="connectionStatusLabel" text="Waiting for phone connection..." wrapText="true" alignment="CENTER"
+           style="-fx-text-fill: #8a5a00; -fx-font-weight: bold;"/>
+    <Label fx:id="connectionDetailsLabel" text="Details: IP: --, Port: --, App: PraiseView" wrapText="true" alignment="CENTER"/>
+</VBox>
