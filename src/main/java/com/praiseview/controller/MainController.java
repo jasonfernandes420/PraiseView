@@ -140,6 +140,7 @@ public class MainController {
     private ObservableList<Theme> availableThemes = FXCollections.observableArrayList();
     private static Path THEMES_FILE_PATH; // Changed to Path
     private Theme currentActiveTheme; // The theme currently applied to projection and preview
+    private boolean livePreviewThemeHiddenByBlackout = false; // Track if preview theme was hidden by blackout
 
 
     private int currentQueueIndex = -1;
@@ -870,6 +871,7 @@ public class MainController {
         }
         updateCenterPreview(); // Mirror the projection
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
+        notifyPhoneRemoteStateChanged();
     }
 
     private void showCurrentItem() {
@@ -894,6 +896,12 @@ public class MainController {
         }
         updateCenterPreview(); // Mirror the projection
         livePreviewPane.requestFocus(); // Ensure focus for arrow keys
+        notifyPhoneRemoteStateChanged();
+    }
+
+    private void notifyPhoneRemoteStateChanged() {
+        sendServiceListToPhone();
+        sendVerseListToPhone();
     }
 
     // Helper to hide all media preview elements
@@ -983,6 +991,15 @@ public class MainController {
             currentSubItemList.getItems().clear(); // Clear sub-item list by default // Renamed
         }
 
+        // Restore theme background if it was hidden by blackout
+        if (livePreviewThemeHiddenByBlackout && currentActiveTheme != null) {
+            // Clear the black background set by blackout
+            if (livePreviewPane != null) {
+                livePreviewPane.setStyle(""); // Clear inline styles
+            }
+            applyThemeBackgroundToLivePreview(currentActiveTheme);
+            livePreviewThemeHiddenByBlackout = false; // Clear flag
+        }
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj == null) {
@@ -1309,11 +1326,68 @@ public class MainController {
     }
 
     public boolean handleRemoteCommand(String command) {
-        if (command == null) {
+        if (command == null || command.isBlank()) {
             return false;
         }
 
-        return switch (command.trim().toLowerCase(Locale.ROOT)) {
+        String trimmed = command.trim();
+        
+        // Handle JSON commands with parameters
+        if (trimmed.startsWith("{")) {
+            return handleJsonRemoteCommand(trimmed);
+        }
+        
+        // Handle simple text commands
+        return handleSimpleRemoteCommand(trimmed.toLowerCase(Locale.ROOT));
+    }
+
+    private boolean handleJsonRemoteCommand(String jsonCommand) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> cmdMap = mapper.readValue(jsonCommand, java.util.Map.class);
+            
+            String cmd = (String) cmdMap.get("command");
+            if (cmd == null) {
+                return false;
+            }
+            
+            cmd = cmd.toLowerCase(Locale.ROOT);
+            
+            return switch (cmd) {
+                case "get-services" -> {
+                    sendServiceListToPhone();
+                    yield true;
+                }
+                case "select-service" -> {
+                    Object indexObj = cmdMap.get("index");
+                    if (indexObj != null) {
+                        int index = ((Number) indexObj).intValue();
+                        selectServiceAndSendVerses(index);
+                        yield true;
+                    }
+                    yield false;
+                }
+                case "select-verse" -> {
+                    Object verseIndexObj = cmdMap.get("verse_index");
+                    Object contentIdObj = cmdMap.get("content_id");
+                    if (verseIndexObj != null && contentIdObj != null) {
+                        int verseIndex = ((Number) verseIndexObj).intValue();
+                        String contentId = (String) contentIdObj;
+                        selectVerseAndProject(contentId, verseIndex);
+                        yield true;
+                    }
+                    yield false;
+                }
+                default -> handleSimpleRemoteCommand(cmd);
+            };
+        } catch (Exception e) {
+            AppLogger.log("Error parsing JSON remote command: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean handleSimpleRemoteCommand(String command) {
+        return switch (command) {
             case "start", "project" -> {
                 startProjection();
                 yield true;
@@ -1346,11 +1420,178 @@ public class MainController {
                 onMediaForward();
                 yield true;
             }
+            case "get-services" -> {
+                sendServiceListToPhone();
+                yield true;
+            }
             default -> {
                 AppLogger.log("Unknown phone remote command: " + command);
                 yield false;
             }
         };
+    }
+
+    private void sendServiceListToPhone() {
+        PhoneRemoteServer server = PhoneRemoteServer.getInstance();
+        if (server == null) {
+            return;
+        }
+
+        java.util.List<ServiceListDTO.ServiceItemDTO> items = new java.util.ArrayList<>();
+        for (int i = 0; i < serviceQueue.size(); i++) {
+            ServiceItem item = serviceQueue.get(i);
+            items.add(new ServiceListDTO.ServiceItemDTO(
+                item.getId(),
+                i,
+                item.getTitle(),
+                item.getType()
+            ));
+        }
+
+        ServiceListDTO dto = new ServiceListDTO(items, currentQueueIndex);
+        server.sendServiceListToClients(dto);
+    }
+
+    private void selectServiceAndSendVerses(int serviceIndex) {
+        if (serviceIndex < 0 || serviceIndex >= serviceQueue.size()) {
+            AppLogger.log("Invalid service index: " + serviceIndex);
+            return;
+        }
+
+        currentQueueIndex = serviceIndex;
+        currentSubItemIndex = 0;
+        showCurrentItem();
+    }
+
+    private void selectVerseAndProject(String contentId, int verseIndex) {
+        if (contentId == null || contentId.isBlank()) {
+            AppLogger.log("Invalid content ID");
+            return;
+        }
+
+        // Find the service by content ID
+        int serviceIndex = -1;
+        for (int i = 0; i < serviceQueue.size(); i++) {
+            ServiceItem item = serviceQueue.get(i);
+            Projectable content = item.getContent();
+            if (content instanceof Song) {
+                if (((Song) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof Prayer) {
+                if (((Prayer) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof TextSlide) {
+                if (((TextSlide) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof MediaItem) {
+                if (((MediaItem) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            } else if (content instanceof PptItem) {
+                if (((PptItem) content).getId().equals(contentId)) {
+                    serviceIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (serviceIndex < 0) {
+            AppLogger.log("Content not found with ID: " + contentId);
+            return;
+        }
+
+        currentQueueIndex = serviceIndex;
+        
+        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        Projectable projectable = currentItem.getContent();
+        
+        if (projectable == null) {
+            return;
+        }
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) {
+            return;
+        }
+
+        int maxVerses = proj.getCurrentProjectedItemSubItemCount();
+        if (verseIndex >= 0 && verseIndex < maxVerses) {
+            currentSubItemIndex = verseIndex;
+            showCurrentItem();
+        } else {
+            AppLogger.log("Invalid verse index: " + verseIndex + " (max: " + maxVerses + ")");
+        }
+    }
+
+    private void sendVerseListToPhone() {
+        PhoneRemoteServer server = PhoneRemoteServer.getInstance();
+        if (server == null || currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+            return;
+        }
+
+        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        Projectable projectable = currentItem.getContent();
+        
+        if (projectable == null) {
+            return;
+        }
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) {
+            return;
+        }
+
+        String contentId = getContentId(projectable);
+        if (contentId == null) {
+            AppLogger.log("Could not get content ID for projectable");
+            return;
+        }
+
+        java.util.List<String> projectedPages = proj.getCurrentProjectedItemPages();
+        if (projectedPages == null || projectedPages.isEmpty()) {
+            AppLogger.log("No projected pages available for phone verse list.");
+            return;
+        }
+
+        int maxVerses = projectedPages.size();
+        java.util.List<VerseListDTO.VerseItemDTO> verseItems = new java.util.ArrayList<>();
+
+        for (int i = 0; i < maxVerses; i++) {
+            String label = projectable.getSubItemLabel(i);
+            String content = projectedPages.get(i);
+            String preview = content.length() > 100 ? content.substring(0, 100) + "..." : content;
+            verseItems.add(new VerseListDTO.VerseItemDTO(i, label, preview, content));
+        }
+
+        VerseListDTO dto = new VerseListDTO(
+            currentItem.getTitle(),
+            contentId,
+            verseItems,
+            currentSubItemIndex
+        );
+        server.sendVerseListToClients(dto);
+    }
+
+    private String getContentId(Projectable projectable) {
+        if (projectable instanceof Song) {
+            return ((Song) projectable).getId();
+        } else if (projectable instanceof Prayer) {
+            return ((Prayer) projectable).getId();
+        } else if (projectable instanceof TextSlide) {
+            return ((TextSlide) projectable).getId();
+        } else if (projectable instanceof MediaItem) {
+            return ((MediaItem) projectable).getId();
+        } else if (projectable instanceof PptItem) {
+            return ((PptItem) projectable).getId();
+        }
+        return null;
     }
 
     private void seekMedia(double seconds) { // Renamed from seekVideo
@@ -1458,6 +1699,7 @@ public class MainController {
             }
         }
 
+        livePreviewThemeHiddenByBlackout = true; // Mark preview theme as hidden by blackout
         updateCenterPreview(); // or whatever method refreshes the preview
         AppLogger.log("MainController: Blackout mirrored to preview pane.");
     }
@@ -2240,7 +2482,7 @@ public class MainController {
     private void openPrayerEditor(Prayer prayer) {
         PrayerEditorDialog dialog = new PrayerEditorDialog(prayer);
         dialog.showAndWait().ifPresent(result -> {
-            dbService.savePrayer(result);           // ← Save to DB
+            dbService.savePrayer(result);           // â† Save to DB
             loadPrayers();                          // Refresh list
             AppLogger.log("Prayer saved: " + result.getTitle());
         });
@@ -2262,20 +2504,20 @@ public class MainController {
                 
                 A free and open-source worship projection software built for churches and worship services.
                 
-                ✨ Current Features:
-                • Multi-monitor full-screen projection
-                • Song, Prayer & Announcement management
-                • Service planner
-                • Custom themes (colors, fonts, backgrounds, logos)
-                • Media support (Images, Videos, PPT, Background videos)
-                • Live preview + navigation controls
+                âœ¨ Current Features:
+                â€¢ Multi-monitor full-screen projection
+                â€¢ Song, Prayer & Announcement management
+                â€¢ Service planner
+                â€¢ Custom themes (colors, fonts, backgrounds, logos)
+                â€¢ Media support (Images, Videos, PPT, Background videos)
+                â€¢ Live preview + navigation controls
                 
-                🛣️ Future Plans / Roadmap:
-                • Smooth Animations & Transitions between slides
-                • Mobile App Companion (remote control)
-                • AI Helper for automatic slide advancement
-                • Improved PowerPoint integration (thumbnails + live control)
-                • More import formats (ChordPro, OpenLP, etc.)
+                ðŸ›£ï¸ Future Plans / Roadmap:
+                â€¢ Smooth Animations & Transitions between slides
+                â€¢ Mobile App Companion (remote control)
+                â€¢ AI Helper for automatic slide advancement
+                â€¢ Improved PowerPoint integration (thumbnails + live control)
+                â€¢ More import formats (ChordPro, OpenLP, etc.)
                 
                 Made by - Jason Fernandes
                 For any issues to be raised, whatsapp at +919969965966

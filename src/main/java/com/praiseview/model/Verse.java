@@ -1,4 +1,4 @@
-﻿package com.praiseview.model;
+package com.praiseview.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

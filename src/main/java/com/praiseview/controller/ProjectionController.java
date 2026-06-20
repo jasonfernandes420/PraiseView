@@ -52,6 +52,7 @@ public class ProjectionController {
     private List<String> currentProjectedItemPages; // Cached paginated content for the current item
 
     private Theme activeTheme; // Store the currently active theme to check showTitle property
+    private boolean themeHiddenByBlackout = false; // Track if theme was hidden by blackout
 
     // Fields to cache pagination parameters to prevent unnecessary re-pagination
     private Projectable lastPaginatedItem = null;
@@ -178,6 +179,12 @@ public class ProjectionController {
             AppLogger.log("ProjectionController: activeTheme is null, initializing with default theme.");
             activeTheme = new Theme(); // Initialize with default theme
             applyTheme(activeTheme); // Apply to set initial styles
+        }
+
+        // Restore theme background if it was hidden by blackout
+        if (themeHiddenByBlackout && activeTheme != null) {
+            applyThemeBackgroundToProjection(activeTheme);
+            themeHiddenByBlackout = false; // Clear flag
         }
 
         // --- Start: Clear and reset all content views and media players ---
@@ -804,6 +811,7 @@ public class ProjectionController {
         }
 
         currentProjectedItem = null;
+        themeHiddenByBlackout = true; // Mark theme as hidden by blackout
         AppLogger.log("ProjectionController: Screen fully blacked out.");
     }
 

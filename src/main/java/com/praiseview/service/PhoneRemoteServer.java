@@ -1,6 +1,10 @@
 package com.praiseview.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.praiseview.controller.MainController;
+import com.praiseview.model.ServiceListDTO;
+import com.praiseview.model.VerseListDTO;
 import com.praiseview.util.AppLogger;
 import javafx.application.Platform;
 
@@ -38,8 +42,10 @@ public class PhoneRemoteServer {
     private static PhoneRemoteServer instance;
 
     private final MainController mainController;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicInteger connectionCount = new AtomicInteger(0);
     private final Set<Consumer<Integer>> connectionListeners = ConcurrentHashMap.newKeySet();
+    private final Set<BufferedOutputStream> connectedClients = ConcurrentHashMap.newKeySet();
     private final ExecutorService clientExecutor = Executors.newCachedThreadPool(r -> {
         Thread thread = new Thread(r, "PraiseView Phone Remote Client");
         thread.setDaemon(true);
@@ -112,6 +118,57 @@ public class PhoneRemoteServer {
         connectionListeners.remove(listener);
     }
 
+    /**
+     * Sends the service list to all connected phone clients
+     */
+    public void sendServiceListToClients(ServiceListDTO serviceList) {
+        try {
+            String json = objectMapper.writeValueAsString(serviceList);
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "service_list");
+            message.put("data", objectMapper.readValue(json, Map.class));
+            sendToAllClients(objectMapper.writeValueAsString(message));
+        } catch (JsonProcessingException e) {
+            AppLogger.log("Error serializing service list: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sends the verse/item list to all connected phone clients
+     */
+    public void sendVerseListToClients(VerseListDTO verseList) {
+        try {
+            String json = objectMapper.writeValueAsString(verseList);
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "verse_list");
+            message.put("data", objectMapper.readValue(json, Map.class));
+            sendToAllClients(objectMapper.writeValueAsString(message));
+        } catch (JsonProcessingException e) {
+            AppLogger.log("Error serializing verse list: " + e.getMessage());
+        }
+    }
+
+    private void sendToAllClients(String message) {
+        if (connectedClients.isEmpty()) {
+            AppLogger.log("No connected clients to send message to");
+            return;
+        }
+
+        java.util.List<BufferedOutputStream> failedClients = new java.util.ArrayList<>();
+        
+        for (BufferedOutputStream client : connectedClients) {
+            try {
+                sendText(client, message);
+            } catch (IOException e) {
+                AppLogger.log("Failed to send to client: " + e.getMessage());
+                failedClients.add(client);
+            }
+        }
+
+        // Remove failed clients from the set
+        connectedClients.removeAll(failedClients);
+    }
+
     public static String findLocalIpAddress() {
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -163,6 +220,7 @@ public class PhoneRemoteServer {
         } catch (IOException e) {
             AppLogger.log("Error closing phone remote WebSocket server: " + e.getMessage());
         }
+        connectedClients.clear();
         connectionCount.set(0);
         notifyConnectionListeners(0);
         clientExecutor.shutdownNow();
@@ -184,14 +242,18 @@ public class PhoneRemoteServer {
 
     private void handleClient(Socket socket) {
         boolean connected = false;
+        BufferedOutputStream output = null;
         try (socket;
              BufferedInputStream input = new BufferedInputStream(socket.getInputStream());
-             BufferedOutputStream output = new BufferedOutputStream(socket.getOutputStream())) {
+             BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())) {
 
+            output = out;
+            
             if (!handshake(input, output)) {
                 return;
             }
 
+            connectedClients.add(output);
             connected = true;
             int activeConnections = connectionCount.incrementAndGet();
             notifyConnectionListeners(activeConnections);
@@ -205,6 +267,9 @@ public class PhoneRemoteServer {
         } catch (IOException e) {
             AppLogger.log("Phone remote client error: " + e.getMessage());
         } finally {
+            if (output != null) {
+                connectedClients.remove(output);
+            }
             if (connected) {
                 int activeConnections = Math.max(0, connectionCount.decrementAndGet());
                 notifyConnectionListeners(activeConnections);
@@ -283,19 +348,13 @@ public class PhoneRemoteServer {
     }
 
     private void handleMessage(BufferedOutputStream output, String message) throws IOException {
-        String command = parseCommand(message);
-        if (command == null || command.isBlank()) {
-            sendText(output, "{\"status\":\"error\",\"message\":\"Missing command\"}");
-            return;
-        }
-
         Platform.runLater(() -> {
-            boolean handled = mainController.handleRemoteCommand(command);
+            boolean handled = mainController.handleRemoteCommand(message);
             try {
                 if (handled) {
-                    sendText(output, "{\"status\":\"ok\",\"command\":\"" + command + "\"}");
+                    sendText(output, "{\"status\":\"ok\"}");
                 } else {
-                    sendText(output, "{\"status\":\"error\",\"message\":\"Unknown command: " + command + "\"}");
+                    sendText(output, "{\"status\":\"error\",\"message\":\"Unknown command\"}");
                 }
             } catch (IOException e) {
                 AppLogger.log("Could not send phone remote response: " + e.getMessage());

@@ -1,4 +1,4 @@
-﻿package com.praiseview.controller;
+package com.praiseview.controller;
 
 import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
@@ -6,6 +6,8 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import org.controlsfx.control.CheckComboBox;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +20,7 @@ public class SongEditorDialog extends Dialog<Song> {
     public SongEditorDialog(Song songToEdit) {
         setTitle(songToEdit == null ? "Add New Song" : "Edit Song");
         setResizable(true);
-        getDialogPane().setPrefSize(950, 800);
+        getDialogPane().setPrefSize(950, 820);
 
         VBox mainLayout = new VBox(12);
         mainLayout.setPadding(new Insets(15));
@@ -26,29 +28,33 @@ public class SongEditorDialog extends Dialog<Song> {
         // Basic Info
         TextField titleField = new TextField(songToEdit != null ? songToEdit.getTitle() : "");
         titleField.setPromptText("Song title");
-        
-        TextField authorField = new TextField(songToEdit != null && songToEdit.getAuthor() != null ? songToEdit.getAuthor() : "");
-        authorField.setPromptText("Author");
-        
-        TextField composerField = new TextField(songToEdit != null && songToEdit.getComposer() != null ? songToEdit.getComposer() : "");
-        composerField.setPromptText("Composer");
 
         // Language and Category on one line
         HBox langCategoryBox = new HBox(15);
         
         ComboBox<String> languageCombo = new ComboBox<>();
-        languageCombo.getItems().addAll("English", "Hindi", "Marathi", "Konkani", "Tamil");
+        languageCombo.getItems().addAll("English", "Latin","Hindi", "Marathi", "Konkani", "Tamil");
         languageCombo.setValue(songToEdit != null && songToEdit.getLanguage() != null ? songToEdit.getLanguage() : "English");
         languageCombo.setPrefWidth(150);
 
-        // MultiCombo for categories (using CheckComboBox concept via custom handling)
-        ComboBox<String> categoryCombo = new ComboBox<>();
+        CheckComboBox<String> categoryCombo = new CheckComboBox<>();
         categoryCombo.getItems().addAll("Entrance Hymn", "Penitential Rite", "Gloria",
                 "Responsorial Psalm", "Gospel Acclamation", "Offertory", "Communion",
-                "Meditation", "Recessional", "Adoration", "Marian Hymn", "Lenten Hymn",
+                "Meditation", "Recessional", "Adoration", "Marian Hymn", "Lenten Hymn","Advent Hymn",
                 "Christmas Hymn", "Easter Hymn", "Holy Week", "Funeral", "Wedding");
-        categoryCombo.setValue(songToEdit != null && songToEdit.getCategory() != null ? songToEdit.getCategory() : "");
         categoryCombo.setPrefWidth(250);
+        
+        // Load existing categories if editing
+        if (songToEdit != null && songToEdit.getCategory() != null && !songToEdit.getCategory().isEmpty()) {
+            String[] cats = songToEdit.getCategory().split(",");
+            for (String cat : cats) {
+                cat = cat.trim();
+                int idx = categoryCombo.getItems().indexOf(cat);
+                if (idx >= 0) {
+                    categoryCombo.getCheckModel().check(idx);
+                }
+            }
+        }
 
         Label langLabel = new Label("Language:");
         Label catLabel = new Label("Category:");
@@ -59,32 +65,25 @@ public class SongEditorDialog extends Dialog<Song> {
 
         // Left: Available Verses
         VBox availableBox = new VBox(10);
-        availableBox.setPrefWidth(380);
+        availableBox.setPrefWidth(400);
 
         TextArea lyricsArea = new TextArea();
         lyricsArea.setPromptText("Paste lyrics here...");
-        lyricsArea.setPrefHeight(300);
+        lyricsArea.setPrefHeight(250);
         lyricsArea.setWrapText(true);
-
-        TextArea editVerseArea = new TextArea();
-        editVerseArea.setPromptText("Select a verse to edit...");
-        editVerseArea.setWrapText(true);
-        editVerseArea.setPrefHeight(200);
-
+        
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("VERSE", "CHORUS", "BRIDGE", "PRE_CHORUS", "CODA");
         typeCombo.setValue("VERSE");
+        
+        // Don't apply custom font during editing - it can corrupt Unicode input
+        // Use system default font for text editing to preserve correct character encoding
 
-        ComboBox<String> editTypeCombo = new ComboBox<>();
-        editTypeCombo.getItems().addAll("VERSE", "CHORUS", "BRIDGE", "PRE_CHORUS", "CODA");
-        editTypeCombo.setValue("VERSE");
-
-        Button addVerseBtn = new Button("➕ Add Verse");
-        Button updateVerseBtn = new Button("✏️ Update Selected");
-        Button deleteVerseBtn = new Button("🗑️ Delete Selected");
+        Button addVerseBtn = new Button("Add Verse");
+        Button deleteVerseBtn = new Button("Delete Selected");
 
         ListView<Verse> availableList = new ListView<>();
-        availableList.setPrefHeight(250);
+        availableList.setPrefHeight(200);
         
         // Initialize typeCounter from existing song
         if (songToEdit != null && !songToEdit.getVerses().isEmpty()) {
@@ -103,6 +102,32 @@ public class SongEditorDialog extends Dialog<Song> {
             }
         }
 
+        // View and Edit selected verse lyrics
+        TextArea viewVerseArea = new TextArea();
+        viewVerseArea.setPromptText("Select a verse to view/edit its lyrics...");
+        viewVerseArea.setWrapText(true);
+        viewVerseArea.setEditable(true);
+        viewVerseArea.setPrefHeight(150);
+
+        // Show lyrics when verse selected
+        availableList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                viewVerseArea.setText(newVal.getContent());
+            } else {
+                viewVerseArea.clear();
+            }
+        });
+
+        // Update selected verse with new lyrics
+        Button updateVerseBtn = new Button("Update Verse");
+        updateVerseBtn.setOnAction(e -> {
+            Verse selected = availableList.getSelectionModel().getSelectedItem();
+            if (selected != null && !viewVerseArea.getText().trim().isEmpty()) {
+                selected.setContent(viewVerseArea.getText().trim());
+                availableList.refresh(); // Refresh list to reflect changes
+            }
+        });
+
         addVerseBtn.setOnAction(e -> {
             if (!lyricsArea.getText().trim().isEmpty()) {
                 String type = typeCombo.getValue();
@@ -114,25 +139,6 @@ public class SongEditorDialog extends Dialog<Song> {
                 Verse verse = new Verse(label, lyricsArea.getText().trim(), Verse.VerseType.valueOf(type));
                 availableList.getItems().add(verse);
                 lyricsArea.clear();
-                editVerseArea.clear();
-            }
-        });
-
-        // Handle verse selection for editing
-        availableList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                editVerseArea.setText(newVal.getContent());
-                editTypeCombo.setValue(newVal.getType().name());
-            }
-        });
-
-        // Update verse button
-        updateVerseBtn.setOnAction(e -> {
-            Verse selected = availableList.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                selected.setContent(editVerseArea.getText());
-                selected.setType(Verse.VerseType.valueOf(editTypeCombo.getValue()));
-                availableList.refresh();
             }
         });
 
@@ -141,18 +147,15 @@ public class SongEditorDialog extends Dialog<Song> {
             Verse selected = availableList.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 availableList.getItems().remove(selected);
-                editVerseArea.clear();
+                viewVerseArea.clear();
             }
         });
 
         HBox addVerseButtonsBox = new HBox(8);
         addVerseButtonsBox.getChildren().addAll(addVerseBtn, deleteVerseBtn);
 
-        HBox updateVerseBox = new HBox(8);
-        updateVerseBox.getChildren().addAll(
-                new VBox(5, new Label("Type:"), editTypeCombo),
-                updateVerseBtn
-        );
+        HBox updateVerseButtonBox = new HBox(8);
+        updateVerseButtonBox.getChildren().add(updateVerseBtn);
 
         availableBox.getChildren().addAll(
                 new Label("Add New Verse"),
@@ -162,9 +165,9 @@ public class SongEditorDialog extends Dialog<Song> {
                 new Separator(),
                 new Label("Available Verses"),
                 availableList,
-                new Label("Edit Selected Verse"),
-                editVerseArea,
-                updateVerseBox
+                new Label("View/Edit Lyrics"),
+                viewVerseArea,
+                updateVerseButtonBox
         );
 
         // Right: Performance Order
@@ -183,7 +186,7 @@ public class SongEditorDialog extends Dialog<Song> {
             }
         }
 
-        Button addToOrderBtn = new Button("➕ Add to Performance Order");
+        Button addToOrderBtn = new Button("Add to Performance Order");
         addToOrderBtn.setOnAction(e -> {
             Verse selected = availableList.getSelectionModel().getSelectedItem();
             if (selected != null) {
@@ -191,7 +194,7 @@ public class SongEditorDialog extends Dialog<Song> {
             }
         });
 
-        Button removeFromOrderBtn = new Button("🗑️ Remove from Order");
+        Button removeFromOrderBtn = new Button("Remove from Order");
         removeFromOrderBtn.setOnAction(e -> {
             Verse selected = orderList.getSelectionModel().getSelectedItem();
             if (selected != null) {
@@ -199,7 +202,7 @@ public class SongEditorDialog extends Dialog<Song> {
             }
         });
 
-        Button moveUpBtn = new Button("⬆️ Move Up");
+        Button moveUpBtn = new Button("Move Up");
         moveUpBtn.setOnAction(e -> {
             int idx = orderList.getSelectionModel().getSelectedIndex();
             if (idx > 0) {
@@ -209,7 +212,7 @@ public class SongEditorDialog extends Dialog<Song> {
             }
         });
 
-        Button moveDownBtn = new Button("⬇️ Move Down");
+        Button moveDownBtn = new Button("Move Down");
         moveDownBtn.setOnAction(e -> {
             int idx = orderList.getSelectionModel().getSelectedIndex();
             if (idx >= 0 && idx < orderList.getItems().size() - 1) {
@@ -235,8 +238,6 @@ public class SongEditorDialog extends Dialog<Song> {
 
         mainLayout.getChildren().addAll(
                 new Label("Title:"), titleField,
-                new Label("Author:"), authorField,
-                new Label("Composer:"), composerField,
                 langCategoryBox,
                 new Separator(),
                 verseSection
@@ -252,9 +253,16 @@ public class SongEditorDialog extends Dialog<Song> {
                 Song song = songToEdit != null ? songToEdit : new Song();
                 song.setTitle(titleField.getText().trim());
                 song.setLanguage(languageCombo.getValue());
-                song.setCategory(categoryCombo.getValue());
-                song.setAuthor(authorField.getText().trim());
-                song.setComposer(composerField.getText().trim());
+                
+                // Get checked categories as comma-separated string
+                List<String> checkedCategories = new ArrayList<>();
+                for (String cat : categoryCombo.getItems()) {
+                    if (categoryCombo.getCheckModel().isChecked(cat)) {
+                        checkedCategories.add(cat);
+                    }
+                }
+                song.setCategory(String.join(",", checkedCategories));
+                
                 song.setVerses(new ArrayList<>(availableList.getItems()));
                 song.setVerseOrderFromList(orderList.getItems());
                 return song;
@@ -272,7 +280,6 @@ public class SongEditorDialog extends Dialog<Song> {
             }
         });
 
-        // Drag & Drop logic
         listView.setOnDragDetected(e -> {
             if (listView.getSelectionModel().getSelectedItem() != null) {
                 Dragboard db = listView.startDragAndDrop(TransferMode.MOVE);
