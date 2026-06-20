@@ -121,7 +121,7 @@ public class PptItem implements Projectable {
     @Override
     public String getSubItemLabel(int index) {
         if (index >= 0 && index < renderedSlideImagePaths.size()) {
-            return "Slide " + (index + 1);
+            return "Slide " + (index + 1) + " of " + renderedSlideImagePaths.size();
         }
         return "Slide (N/A)";
     }

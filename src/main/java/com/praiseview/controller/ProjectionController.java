@@ -3,6 +3,7 @@ package com.praiseview.controller;
 import com.praiseview.model.*;
 import com.praiseview.util.AppLogger;
 import com.praiseview.util.TextPaginationUtil;
+import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -53,6 +54,9 @@ public class ProjectionController {
 
     private Theme activeTheme; // Store the currently active theme to check showTitle property
     private boolean themeHiddenByBlackout = false; // Track if theme was hidden by blackout
+    
+    // PPT transition tracking
+    private int lastPptSubItemIndex = -1; // Track the last displayed PPT slide index
 
     // Fields to cache pagination parameters to prevent unnecessary re-pagination
     private Projectable lastPaginatedItem = null;
@@ -237,6 +241,11 @@ public class ProjectionController {
         // Declare imageFile and slideImageFile here to ensure definite assignment
         File imageFile = null;
         File slideImageFile = null;
+        
+        // Reset PPT transition tracking if switching to non-PPT items
+        if (!(item instanceof PptItem)) {
+            lastPptSubItemIndex = -1;
+        }
 
         // Handle different Projectable types
         switch (item.getType()) {
@@ -441,10 +450,33 @@ public class ProjectionController {
 
                     if (slideImageFile.exists()) {
                         try {
+                            // Apply fade transition only when switching between PPT slides (not on initial display)
+                            boolean isPptTransition = currentProjectedItem instanceof PptItem && lastPptSubItemIndex != subItemIndex && lastPptSubItemIndex >= 0;
+                            
                             Image slideImage = new Image(slideImageFile.toURI().toString());
-                            itemImageView.setImage(slideImage);
+                            
+                            if (isPptTransition) {
+                                // Apply fade-out, change image, fade-in transition
+                                FadeTransition fadeOut = new FadeTransition(Duration.millis(200), itemImageView);
+                                fadeOut.setFromValue(1.0);
+                                fadeOut.setToValue(0.0);
+                                fadeOut.setOnFinished(e -> {
+                                    itemImageView.setImage(slideImage);
+                                    FadeTransition fadeIn = new FadeTransition(Duration.millis(300), itemImageView);
+                                    fadeIn.setFromValue(0.0);
+                                    fadeIn.setToValue(1.0);
+                                    fadeIn.play();
+                                });
+                                fadeOut.play();
+                            } else {
+                                // No transition on first PPT display
+                                itemImageView.setImage(slideImage);
+                                itemImageView.setOpacity(1.0);
+                            }
+                            
                             // Update title with slide number
                             titleText += " (" + (subItemIndex + 1) + "/" + pptItem.getSubItemCount(currentFontSize, projectionRoot.getWidth(), projectionRoot.getHeight()) + ")";
+                            lastPptSubItemIndex = subItemIndex; // Update last displayed slide
                             AppLogger.log("ProjectionController: PPT slide image loaded successfully.");
                         } catch (Exception e) {
                             AppLogger.log("ProjectionController: Error loading PPT slide image: " + e.getMessage());

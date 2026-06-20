@@ -2438,15 +2438,20 @@ public class MainController {
             // Set custom cell factory to display sub-item labels with preview
             currentSubItemList.setCellFactory(lv -> new ListCell<SubItemDisplayItem>() {
                 @Override
-                protected void updateItem(SubItemDisplayItem item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
+                protected void updateItem(SubItemDisplayItem displayItem, boolean empty) {
+                    super.updateItem(displayItem, empty);
+                    if (empty || displayItem == null) {
                         setText(null);
                     } else {
-                        // Add null check for item.content before calling length()
-                        String preview = (item.content != null && item.content.length() > 30) ?
-                                item.content.substring(0, 30) + "..." : (item.content != null ? item.content : "");
-                        setText(item.label + ": " + preview);
+                        // For PPT items, only show the label (without path preview)
+                        if (item instanceof PptItem) {
+                            setText(displayItem.label);
+                        } else {
+                            // For other items, add null check for content before calling length()
+                            String preview = (displayItem.content != null && displayItem.content.length() > 30) ?
+                                    displayItem.content.substring(0, 30) + "..." : (displayItem.content != null ? displayItem.content : "");
+                            setText(displayItem.label + ": " + preview);
+                        }
                     }
                 }
             });
