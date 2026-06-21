@@ -6,6 +6,7 @@ import com.praiseview.util.TextPaginationUtil;
 import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -291,7 +292,9 @@ public class ProjectionController {
                 if (availableHeight <= 0) availableHeight = 100; // Fallback
                 
                 // Set TextFlow to wrap at availableWidth, let height grow naturally
+                titleLabel.setMaxWidth(availableWidth);
                 lyricsFlow.setPrefWidth(availableWidth);
+                lyricsFlow.setMinWidth(availableWidth);
                 lyricsFlow.setMaxWidth(availableWidth);
                 lyricsFlow.setPrefHeight(Region.USE_COMPUTED_SIZE);
                 lyricsFlow.setMaxHeight(Double.MAX_VALUE);
@@ -363,7 +366,7 @@ public class ProjectionController {
                 mainText.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-line-spacing: %.1fpx;",
                         activeTheme.getFontFamily(), activeTheme.getFontSize(), activeTheme.getLineSpacing()));
                 lyricsFlow.getChildren().add(mainText);
-                lyricsFlow.setTextAlignment(TextAlignment.valueOf(activeTheme.getTextAlignment().toUpperCase()));
+                applyThemeTextAlignment(activeTheme.getTextAlignment());
                 break;
 
             case "IMAGE":
@@ -605,19 +608,7 @@ public class ProjectionController {
         titleLabel.setVisible(theme.isShowTitle());
         titleLabel.setManaged(theme.isShowTitle());
 
-        // Apply text alignment
-        switch (theme.getTextAlignment().toUpperCase()) {
-            case "LEFT":
-                lyricsFlow.setTextAlignment(TextAlignment.LEFT);
-                break;
-            case "RIGHT":
-                lyricsFlow.setTextAlignment(TextAlignment.RIGHT);
-                break;
-            case "CENTER":
-            default:
-                lyricsFlow.setTextAlignment(TextAlignment.CENTER);
-                break;
-        }
+        applyThemeTextAlignment(theme.getTextAlignment());
 
         // Handle background: color, image, or video
         // First, clear any existing theme background media
@@ -813,6 +804,24 @@ public class ProjectionController {
 
     public TextFlow getLyricsFlow() {
         return lyricsFlow;
+    }
+
+    private void applyThemeTextAlignment(String alignment) {
+        if ("LEFT".equalsIgnoreCase(alignment)) {
+            lyricsFlow.setTextAlignment(TextAlignment.LEFT);
+            textContentContainer.setAlignment(Pos.CENTER_LEFT);
+            titleLabel.setAlignment(Pos.CENTER_LEFT);
+            return;
+        }
+        if ("RIGHT".equalsIgnoreCase(alignment)) {
+            lyricsFlow.setTextAlignment(TextAlignment.RIGHT);
+            textContentContainer.setAlignment(Pos.CENTER_RIGHT);
+            titleLabel.setAlignment(Pos.CENTER_RIGHT);
+            return;
+        }
+        lyricsFlow.setTextAlignment(TextAlignment.CENTER);
+        textContentContainer.setAlignment(Pos.CENTER);
+        titleLabel.setAlignment(Pos.CENTER);
     }
 
     public String getCurrentDisplayedTitle() {

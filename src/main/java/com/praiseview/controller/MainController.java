@@ -1161,7 +1161,14 @@ public class MainController {
                             previewLineSpacing
                     ));
                     livePreviewText.getChildren().add(mainText);
-                    livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+                    String alignment = currentActiveTheme != null ? currentActiveTheme.getTextAlignment() : null;
+                    if ("LEFT".equalsIgnoreCase(alignment)) {
+                        livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.LEFT);
+                    } else if ("RIGHT".equalsIgnoreCase(alignment)) {
+                        livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.RIGHT);
+                    } else {
+                        livePreviewText.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+                    }
                 }
 
                 // Update sub-item list for text-based items
