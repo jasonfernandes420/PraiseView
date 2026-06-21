@@ -7,11 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
@@ -25,7 +23,7 @@ public class Prayer implements Projectable {
     private String category;
 
     // Transient fields for pagination
-    private transient Map<String, String> paginatedContent;
+    private transient List<String> paginatedPages;
     private transient double lastFontSize = -1;
     private transient double lastMaxWidth = -1;
     private transient double lastMaxHeight = -1;
@@ -39,7 +37,7 @@ public class Prayer implements Projectable {
     public void setContent(String content) {
         this.content = content;
         // Invalidate pagination cache when content changes
-        this.paginatedContent = null;
+        this.paginatedPages = null;
     }
 
     @Override
@@ -69,7 +67,7 @@ public class Prayer implements Projectable {
 
     public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
         // Recalculate pagination only if dimensions or content have changed
-        if (paginatedContent == null ||
+        if (paginatedPages == null ||
             lastFontSize != fontSize ||
             lastMaxWidth != maxWidth ||
             lastMaxHeight != maxHeight) {
@@ -77,10 +75,7 @@ public class Prayer implements Projectable {
             AppLogger.log("Prayer: Recalculating pagination for '" + this.title + "' with fontSize=" + fontSize + ", maxWidth=" + maxWidth + ", maxHeight=" + maxHeight);
 
             List<String> pages = TextPaginationUtil.paginateText(this.content, fontSize, maxWidth, maxHeight);
-            paginatedContent = new HashMap<>();
-            for (int i = 0; i < pages.size(); i++) {
-                paginatedContent.put(String.valueOf(i + 1), pages.get(i));
-            }
+            paginatedPages = new ArrayList<>(pages);
 
             this.lastFontSize = fontSize;
             this.lastMaxWidth = maxWidth;
@@ -88,21 +83,24 @@ public class Prayer implements Projectable {
         } else {
             AppLogger.log("Prayer: Using cached pagination for '" + this.title + "'");
         }
-        return paginatedContent.values().stream().collect(Collectors.toList());
+        return new ArrayList<>(paginatedPages);
     }
 
     @Override
     public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
         // Ensure pagination is up-to-date before retrieving content
         paginateForDimensions(fontSize, maxWidth, maxHeight);
-        return paginatedContent.getOrDefault(String.valueOf(index + 1), "");
+        if (paginatedPages == null || index < 0 || index >= paginatedPages.size()) {
+            return "";
+        }
+        return paginatedPages.get(index);
     }
 
     @Override
     public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
         // Ensure pagination is up-to-date before getting count
         paginateForDimensions(fontSize, maxWidth, maxHeight);
-        return paginatedContent.size();
+        return paginatedPages == null ? 0 : paginatedPages.size();
     }
 
     @Override

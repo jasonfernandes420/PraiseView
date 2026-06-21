@@ -2,7 +2,7 @@
 
 **Modern JavaFX alternative to OpenLP for church projection.**
 
-PraiseView is an open-source projection software built specifically for churches and worship services. It offers a clean, modern JavaFX interface with powerful support for songs, prayers, announcements, service planning, and multi-monitor projection.
+PraiseView is an open-source projection software built specifically for Catholic churches and worship services. It offers a clean, modern JavaFX interface with powerful support for songs, prayers, announcements, service planning, and multi-monitor projection.
 
 ## ✨ Features
 
