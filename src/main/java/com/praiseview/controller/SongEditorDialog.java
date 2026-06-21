@@ -37,6 +37,13 @@ public class SongEditorDialog extends Dialog<Song> {
         languageCombo.setValue(songToEdit != null && songToEdit.getLanguage() != null ? songToEdit.getLanguage() : "English");
         languageCombo.setPrefWidth(150);
 
+        Label unicodeNoteLabel = new Label("Note: Paste only Unicode-compatible text. If the copied lyrics are not Unicode-compatible, convert them online first and paste the converted text.");
+        unicodeNoteLabel.setWrapText(true);
+        unicodeNoteLabel.setMaxWidth(520);
+        unicodeNoteLabel.setStyle("-fx-text-fill: #a15c00; -fx-font-style: italic;");
+        unicodeNoteLabel.setVisible(false);
+        unicodeNoteLabel.setManaged(false);
+
         CheckComboBox<String> categoryCombo = new CheckComboBox<>();
         categoryCombo.getItems().addAll("Entrance Hymn", "Penitential Rite", "Gloria",
                 "Responsorial Psalm", "Gospel Acclamation", "Offertory", "Communion",
@@ -59,6 +66,17 @@ public class SongEditorDialog extends Dialog<Song> {
         Label langLabel = new Label("Language:");
         Label catLabel = new Label("Category:");
         langCategoryBox.getChildren().addAll(langLabel, languageCombo, catLabel, categoryCombo);
+
+        Runnable updateUnicodeNote = () -> {
+            String selectedLanguage = languageCombo.getValue();
+            boolean showNote = selectedLanguage != null
+                    && !"English".equalsIgnoreCase(selectedLanguage)
+                    && !"Latin".equalsIgnoreCase(selectedLanguage);
+            unicodeNoteLabel.setVisible(showNote);
+            unicodeNoteLabel.setManaged(showNote);
+        };
+        languageCombo.valueProperty().addListener((obs, oldVal, newVal) -> updateUnicodeNote.run());
+        updateUnicodeNote.run();
 
         // === Verse Section ===
         HBox verseSection = new HBox(15);
@@ -239,6 +257,7 @@ public class SongEditorDialog extends Dialog<Song> {
         mainLayout.getChildren().addAll(
                 new Label("Title:"), titleField,
                 langCategoryBox,
+                unicodeNoteLabel,
                 new Separator(),
                 verseSection
         );
