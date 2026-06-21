@@ -9,6 +9,7 @@ import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
@@ -238,6 +239,7 @@ public class MainController {
 
         // Setup Service Planner
         servicePlannerList.setItems(serviceQueue);
+        serviceQueue.addListener((ListChangeListener<ServiceItem>) change -> sendServiceListToPhone());
         servicePlannerList.setCellFactory(lv -> new ListCell<ServiceItem>() {
             @Override
             protected void updateItem(ServiceItem serviceItem, boolean empty) { // Renamed 'item' to 'serviceItem'
@@ -1143,7 +1145,7 @@ public class MainController {
                         AppLogger.log("Invalid text color in active theme: '" + (currentActiveTheme != null ? currentActiveTheme.getTextColor() : "NULL THEME") + "'. Falling back to WHITE. Error: " + e.getMessage());
                         mainText.setFill(Color.WHITE); // Fallback
                     }
-                    
+
                     // Scale text based on actual projection dimensions
                     double previewWidth = livePreviewPane.getWidth();
                     double scaleFactor = previewWidth / projectionWidth;
@@ -1939,6 +1941,7 @@ public class MainController {
                 currentSubItemIndex = 0;
                 clearScreen(); // Clear main preview after loading new service
                 updateWindowTitle(); // Update window title with loaded file name
+                sendServiceListToPhone();
                 AppLogger.log("Service loaded: " + file.getName());
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load service file.");
