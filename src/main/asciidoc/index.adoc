@@ -1,0 +1,73 @@
+= PraiseView Documentation
+:toc: left
+:sectanchors:
+:icons: font
+:source-highlighter: coderay
+:encoding: utf-8
+
+== Welcome to PraiseView
+
+PraiseView is a powerful church presentation software designed to help you manage and display songs, prayers, scriptures, and multimedia content during worship services.
+
+=== Quick Links
+
+* xref:user-guide.adoc[User Guide]
+* xref:features.adoc[Features]
+* xref:getting-started.adoc[Getting Started]
+
+== Main Features
+
+* **Song Management** - Organize and display hymns and worship songs by category
+* **Prayer Management** - Store and project prayers during services
+* **Multimedia Support** - Display images, videos, and audio
+* **PowerPoint Integration** - Project presentations alongside your content
+* **Phone Remote Control** - Control presentations from your mobile device
+* **Theme System** - Customize the look and feel of your projections
+* **Service Planning** - Create and manage service orders for your worship
+
+== Getting Started
+
+=== Starting Your First Service
+
+1. Launch PraiseView
+2. A blank new service order will be created
+3. Add songs, prayers, and other content from the library tabs at the bottom
+4. Use the Up and Down buttons on the left panel to arrange your items
+5. Click "Project" to start displaying content on your projection screen
+
+=== Importing Content
+
+PraiseView supports importing songs and prayers from JSON files.
+
+1. Go to **File > Import Songs** or **File > Import Prayers**
+2. Select the JSON file containing your content
+3. The new items will be added to your library
+
+== Key Concepts
+
+=== Service Items
+
+A service item is any content piece that can be displayed during a worship service:
+* Songs (with verses)
+* Prayers
+* Scripture texts or Informative texts
+* Images
+* Videos
+* Audio Files
+* Presentations
+
+=== Categories
+
+Organize your hymns by category. Use the category filter in the Songs tab to quickly find songs/hymns.
+
+=== Themes
+
+Apply different visual themes to your projections. Themes can include background images or videos that appear behind your content.
+
+== Support
+
+For more information, see the detailed user guide and feature documentation.
+
+== Reporting bugs
+
+Mail at fernandes.jason120@gmail.com along with the log file present in C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log

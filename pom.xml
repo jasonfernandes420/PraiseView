@@ -7,7 +7,7 @@
 
     <groupId>com.praiseview</groupId>
     <artifactId>praiseview</artifactId>
-    <version>2.1.4</version>
+    <version>2.2.1</version>
     <name>PraiseView</name>
 
     <properties>
@@ -37,6 +37,11 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
             <version>${javafx.version}</version>
         </dependency>
 
@@ -114,6 +119,7 @@
             <artifactId>javafx-swing</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -189,6 +195,44 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 
                             </transformers>
+
+                        </configuration>
+
+                    </execution>
+                </executions>
+
+            </plugin>
+
+            <plugin>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctor-maven-plugin</artifactId>
+                <version>3.2.0</version>
+
+                <executions>
+                    <execution>
+                        <id>generate-docs</id>
+                        <phase>generate-resources</phase>
+
+                        <goals>
+                            <goal>process-asciidoc</goal>
+                        </goals>
+
+                        <configuration>
+
+                            <sourceDirectory>
+                                src/main/asciidoc
+                            </sourceDirectory>
+
+                            <outputDirectory>
+                                ${project.build.outputDirectory}/docs
+                            </outputDirectory>
+
+                            <backend>html5</backend>
+
+                            <attributes>
+                                <toc>left</toc>
+                                <icons>font</icons>
+                            </attributes>
 
                         </configuration>
 

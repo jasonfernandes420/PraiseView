@@ -14,7 +14,7 @@ public class AppLogger {
 
     private static Path LOG_DIRECTORY;
     private static Path LOG_FILE_PATH;
-    private static final String LOG_FILE_NAME = "praiseview.log";
+    private static final String LOG_FILE_NAME = "praiseviewLog.log";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     static {

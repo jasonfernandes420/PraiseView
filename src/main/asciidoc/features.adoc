@@ -1,0 +1,324 @@
+= PraiseView Features Guide
+:toc: left
+:sectanchors:
+:icons: font
+:source-highlighter: coderay
+
+== Overview
+
+PraiseView is packed with powerful features to make managing day-to-day church presentations easy and professional.
+
+== Songs and Music
+
+=== Song Library
+
+Store unlimited songs with the following details:
+- Title
+- Category (for organization)
+- Language
+- Multiple verses with labels
+- Performance Ordering
+
+=== Category-Based Organization
+
+Organize your songs by category and use the filter panel to quickly find songs:
+
+* Filter by category (e.g., "Entrance", "Recessional", "Christmas")
+* View all songs with "[All Songs]" option
+* Combined with search for powerful filtering
+
+=== Multiple Verses
+
+Each song can have multiple verses with custom labels:
+- Verse 1, Verse 2, Chorus, Bridge, etc.
+- Navigate through verses during projection
+- Arrange verse order as needed
+
+== Prayers and Scripture
+
+=== Prayer Library
+
+Store prayers and scripture readings:
+- Quick access to important prayers
+- Display during prayer times
+- Share with congregation
+
+=== Text Slides
+
+Create custom text slides for:
+- Announcements
+- Scripture passages
+- Custom messages
+- Welcome slides
+
+== Multimedia Support
+
+=== Images
+
+Display images during worship:
+- Support for common formats (JPG, PNG, GIF, BMP)
+- Preview before displaying
+- Full-screen projection
+
+=== Videos
+
+Play videos in your presentations:
+- Support for MP4, WMV, and other video formats
+- Built-in playback controls
+- Rewind/forward with 10-second increments
+- Play/pause functionality
+
+=== Audio
+
+Add audio content:
+- Play background music
+- Audio playback during presentations
+- Built-in playback controls
+- Rewind/forward with 10-second increments
+- Play/pause functionality
+
+=== PowerPoint Presentations
+
+Display PowerPoint slides:
+- Support for .ppt and .pptx formats
+- Navigate through slides
+
+== Projection System
+
+=== Live Preview
+
+See what's being displayed before projecting to the main screen.
+Control the screen with dedicated buttons for: Project, Blackout, Clear, Next and Previous.
+Also use the left and right arrow keys to navigate.
+
+=== Themes
+
+=== Multiple Themes
+
+Create and apply multiple visual themes:
+- Custom background images
+- Background videos
+- Color schemes
+- Font customization
+
+=== Theme Application
+
+Themes appear behind all projected content, including:
+- Songs and prayers
+- Images
+- Videos
+- Text slides
+
+=== Show/Hide Title
+
+Toggle title visibility on projections for different visual effects.
+
+== Service Management
+
+=== Service Planning
+
+Plan your mass service with:
+- Drag-and-drop service organization
+- Easy reordering of items
+- Support for all content types
+- Save services for future use
+
+=== Service Queue
+
+The left panel shows your current service order:
+- Double-click to start from any item
+- Right-click for context menu options
+- Keyboard shortcuts for quick navigation
+- Automatic projection updates
+
+== Phone Remote Control
+
+=== Connect Your Mobile Device
+
+Control presentations from your phone:
+- WebSocket-based connection
+- Works on the same local network
+- Real-time synchronization
+- No app installation needed
+
+=== Phone Capabilities
+
+- View service list
+- Select songs and prayers
+- Navigate to specific verses
+- Control playback
+
+== Import/Export
+
+=== Import Content
+
+Add content from other sources:
+- **Import Songs**: JSON format
+- **Import Prayers**: JSON format
+
+[NOTE]
+JSON files must follow the correct format. See documentation for format details.
+
+=== Export Content
+
+Share your content:
+- **Export Songs**: Export by language selection
+- **Export Prayers**: Export all prayers
+
+== User Interface Features
+
+=== Search Functionality
+
+Quick search across your library:
+- Search song titles
+- Search prayer titles
+- Search by category
+- Real-time filtering
+
+=== Category Filtering
+
+NEW: Filter songs by category:
+- Left panel with category list
+- Click to filter by category
+- Clear filter button
+- Combined with search
+
+=== Drag and Drop
+
+Easy content management:
+- Drag songs to service order
+- Drag prayers to service order
+- Drag media to service order
+- Drag to reorder within service
+
+=== Context Menus
+
+Right-click options:
+- Delete service items
+- Edit content
+- Quick actions
+
+== Keyboard Shortcuts
+
+=== Navigation
+
+- **Previous**: Previous verse or slide
+- **Next**: Next verse or slide
+
+=== Service Management
+
+- **Ctrl+Up**: Move service item up
+- **Ctrl+Down**: Move service item down
+- **Delete**: Remove service item
+
+== Advanced Features
+
+=== Multi-Window Support
+
+- Main application window
+- Separate projection window
+- Synchronized content display
+
+=== Database Storage
+
+All content stored locally in SQLite:
+- Fast access
+- Automatic backups
+- No internet required
+
+=== File Management
+
+- Save and load services as files
+- Export content for sharing
+- Import from other installations
+
+== Updates
+
+=== Check for Updates
+
+Stay current with new features:
+- Click **Help > Update Application**
+- Download and install updates
+
+== Settings and Customization
+
+=== Theme Editor
+
+Create custom themes:
+- Set background images/videos
+- Customize colors
+- Adjust fonts
+- Save your designs
+
+== System Requirements
+
+=== Minimum Requirements
+
+- Java Runtime Environment (JRE) 21 or higher
+- 2GB RAM
+- 500MB disk space
+- Screen resolution 1920x1080 or higher recommended
+
+=== Supported File Formats
+
+[cols="1,2", options="header"]
+|===
+| File Type | Formats
+| Images | JPG, PNG, GIF, BMP
+| Videos | MP4, WMV, AVI
+| Audio | MP3, WAV, FLAC
+| Presentations | PPT, PPTX
+| Data | JSON (for import/export)
+|===
+
+== Performance
+
+=== Optimization Tips
+
+- Limit number of items in service order
+- Use efficient image sizes (1920x1080 or less)
+- For background videos on themes, use 30FPS or below frame rate in Full HD resolution.
+- Regular database maintenance
+- Regular backups of your content
+
+=== Known Limitations
+
+- Large PowerPoint presentations may take time to load
+- Video performance depends on system capabilities
+- Phone remote requires stable network connection
+
+== Accessibility
+
+=== Text Size
+
+- Customizable theme fonts
+- Support for various display sizes
+
+=== Keyboard Navigation
+
+Full keyboard control:
+- Tab navigation
+- Keyboard shortcuts
+- Arrow keys for selection
+
+== Tips for Great Presentations
+
+. **Plan Ahead**: Create your service order before the service
+. **Test Media**: Verify all videos and audio files work
+. **Use Categories**: Organize songs by category for quick access
+. **Create Backups**: Save important services
+. **Regular Updates**: Keep PraiseView updated for best performance
+. **Theme Consistency**: Use consistent themes for professional look
+. **Font Readability**: Ensure fonts are readable from the back of the room
+
+== Future Enhancements
+
+We're constantly improving PraiseView! Watch for:
+- Additional multimedia formats
+- Enhanced phone remote features
+- More theme customization options
+- Performance improvements
+- New content management tools
+
+== For Any Queries or Improvements and to report bugs
+Mail at fernandes.jason120@gmail.com along with the log file present in C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log

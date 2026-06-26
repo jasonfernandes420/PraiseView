@@ -36,6 +36,7 @@
                 <MenuItem text="Theme Editor" onAction="#openThemeEditor"/>
             </Menu>
             <Menu text="Help">
+                <MenuItem text="Documentation" onAction="#showDocumentation"/>
                 <MenuItem text="Connect Phone" onAction="#handleConnectPhone"/> <!-- New menu item for connecting phone -->
                 <MenuItem fx:id="updateApplicationMenuItem" text="Update application" onAction="#checkForApplicationUpdate"/>
                 <MenuItem text="About" onAction="#showAbout"/>
@@ -210,15 +211,24 @@
     <bottom>
         <TabPane prefHeight="260">
             <Tab text="Songs">
-                <VBox>
+                <HBox spacing="8">
                     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-                    <TextField fx:id="searchField" promptText="Search songs..."/>
-                    <ListView fx:id="songLibraryList" prefHeight="220"/>
-                    <HBox spacing="8">
-                        <Button fx:id="addSongButton" text="➕ Add New Song" HBox.hgrow="ALWAYS"/>
-                        <Button fx:id="editSongButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS"/>
-                    </HBox>
-                </VBox>
+                    <!-- Left pane: Category list -->
+                    <VBox prefWidth="130" spacing="5" HBox.hgrow="NEVER">
+                        <Label text="Categories" styleClass="header" style="-fx-font-size: 12px;"/>
+                        <ListView fx:id="songCategoryList" prefHeight="200" VBox.vgrow="ALWAYS"/>
+                        <Button fx:id="clearCategoryFilterButton" text="Clear Filter" style="-fx-font-size: 11px;"/>
+                    </VBox>
+                    <!-- Right pane: Songs list and controls -->
+                    <VBox spacing="8" HBox.hgrow="ALWAYS">
+                        <TextField fx:id="searchField" promptText="Search songs..."/>
+                        <ListView fx:id="songLibraryList" prefHeight="200" VBox.vgrow="ALWAYS"/>
+                        <HBox spacing="8">
+                            <Button fx:id="addSongButton" text="➕ Add New Song" HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="editSongButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                    </VBox>
+                </HBox>
             </Tab>
             <Tab text="Prayers">
                 <VBox><padding><Insets top="8" right="8" bottom="8" left="8"/></padding>

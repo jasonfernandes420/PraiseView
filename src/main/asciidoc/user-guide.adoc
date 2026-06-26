@@ -1,0 +1,289 @@
+= PraiseView User Guide
+:toc: left
+:sectanchors:
+:icons: font
+:source-highlighter: coderay
+
+== Introduction
+
+This guide covers all the essential features and workflows in PraiseView to help you manage and present content during worship services.
+
+== Creating a Service
+
+=== New Service
+
+To start a new service:
+
+1. Click **File > New Service**
+2. Clear the current service order and start fresh
+3. Begin adding content from the library tabs
+
+=== Save Service
+
+Save your service for future use:
+
+1. Click **File > Save Service**
+2. Choose a location and filename
+3. Your service will be saved in PraiseView format
+
+To load a previously saved service, click **File > Load Service** and select the file.
+
+== Managing Songs
+
+=== Adding Songs
+
+==== Add a New Song
+
+1. Go to the **Songs** tab at the bottom
+2. Click **➕ Add New Song**
+3. Enter song details:
+   - Title: Name of the song
+   - Category: Group/category for organization
+   - Language: Language the song is in
+   - Verses: Add individual verses, chorus etc
+4. Add the Available Verses to the Performance order
+5. Click **Save**
+
+==== Import Songs
+
+To import songs from a JSON file:
+
+1. Click **File > Import Songs**
+2. Select your JSON file
+3. Songs will be added to your library automatically
+
+=== Filtering Songs by Category
+
+The Songs tab now includes a category filter on the left side:
+
+1. Click a category name to show only songs in that category
+2. Search by typing in the search field - it will search titles and categories
+3. Click **Clear Filter** to show all songs again
+
+=== Editing Songs
+
+1. Select a song from the library
+2. Click **✎ Edit Selected**
+3. You can Add new verses/chorus or Modify existing verses by selecting on the Available verses list and modifying in Edit/View Lyrics. Then Click on Update Verse.
+4. Click **Save**
+
+== Managing Prayers
+
+=== Adding Prayers
+
+1. Go to the **Prayers** tab
+2. Click **➕ Add New Prayer**
+3. Enter prayer details:
+   - Title: Name/subject of the prayer
+   - Content: The full prayer text
+4. Click **Save**
+
+=== Importing Prayers
+
+1. Click **File > Import Prayers**
+2. Select your JSON file (you can now see all files, not just .json)
+3. Prayers will be added to your library
+
+=== Using Prayers in Services
+
+1. Drag prayers from the prayer library to the service order
+2. Click to project a prayer
+3. Use navigation buttons to go through content
+
+== Service Order Management
+
+The left panel shows your current **Service Order** - the sequence of items to present.
+
+=== Adding Items to Service
+
+Drag items from any library tab to the service order:
+
+1. Click and hold on a song, prayer, or media item
+2. Drag to the service order list
+3. Release to place the item
+
+=== Reordering Items
+
+==== Using Buttons
+
+1. Select an item in the service order
+2. Click **▲ Up** or **▼ Down** to move it
+3. Use multiple clicks to move items to the desired position
+
+==== Using Keyboard
+
+1. Select an item and press **Ctrl+Up** or **Ctrl+Down**
+
+==== Using Drag & Drop
+
+1. Click and drag an item within the service order list
+2. Move it to the desired position
+
+=== Deleting Items
+
+1. Right-click an item in the service order
+2. Click **Delete**
+3. Or select an item and press **Delete**
+
+== Projecting Content
+
+=== Starting Projection
+
+1. Select an item in the service order
+2. Click **Project** button
+3. Content appears on the projection screen
+
+Or double-click an item to start from that point.
+
+=== Navigation Controls
+
+==== Verse/Page Navigation
+
+- **Previous**: Go to previous verse or page
+- **Next**: Go to next verse or page
+
+==== Skipping verses
+- Click on the verse number in the Current item Verses/Pages to skip to a specific verse.
+
+==== Video Controls
+
+- **⏪ -10s**: Rewind 10 seconds
+- **⏯️ Play/Pause**: Toggle playback
+- **⏩ +10s**: Forward 10 seconds
+
+==== Screen Controls
+
+- **Blackout**: Show black screen (with fade)
+- **Clear**: Show logo or empty screen
+
+== Multimedia
+
+=== Images
+
+1. Go to **Images** tab
+2. Click **📂 Open Images**
+3. Select image files to add
+4. Drag the image to service pane and click on the image to project it
+
+=== Videos
+
+1. Go to **Videos** tab
+2. Click **🎬 Open Videos**
+3. Select video files
+4. Use video controls to manage playback
+
+=== Audio
+
+1. Go to **Audio** tab
+2. Click **🎵 Open Audio**
+3. Select audio files
+4. Play background music or special effects
+
+=== PowerPoint Presentations
+
+1. Go to **PPT** tab
+2. Click **📊 Open PPTs**
+3. Select .ppt or .pptx files
+4. Navigate through slides using Previous/Next buttons
+
+== Themes
+
+=== Applying Themes
+
+1. Go to the **Themes** tab on the right
+2. Select a theme from the list
+3. The theme background applies to all projections
+
+=== Theme Options
+
+- **Show Title on Projection**: Toggle to show or hide titles
+
+=== Creating Custom Themes
+
+1. Click **Themes > Theme Editor**
+2. Create a new theme or modify existing ones
+3. Set background colors or images
+4. Save your theme
+
+== Phone Remote Control
+Download the PraiseView Companion App from Google Play Store
+
+=== Connecting Your Phone
+
+1. Click **Help > Connect Phone**
+2. Ensure both the Desktop and the Android Phone are on the same network.
+    Alternatively, if your Desktop supports Wifi, start a mobile hotspot on the Phone and
+    add the Desktop to the hotspot.
+3. Scan the QR code from the Android Phone.
+4. Connect to the local network with the provided address
+5. Use your phone to control presentations
+
+=== Phone Features
+
+- View and select songs from your service
+- Select specific verses to display
+- Navigate through content
+- Control playback
+
+== Exporting Content
+
+=== Export Songs
+
+1. Click **File > Export Songs**
+2. Select which languages to export
+3. Choose save location
+4. Songs are saved as JSON file
+
+=== Export Prayers
+
+1. Click **File > Export Prayers**
+2. Choose save location
+3. Prayers are saved as JSON file
+
+== Tips and Tricks
+
+=== Keyboard Shortcuts
+
+- **Ctrl+Up/Down**: Move service items up or down
+- **Delete**: Remove selected service item
+- **Previous/Next**: Navigate verses
+- **Space**: Start/stop projection (when applicable)
+
+=== Best Practices
+
+. Plan your service order before the service starts
+. Test multimedia files before the service
+. Use categories to organize large song libraries
+. Keep backup copies of your important services
+. Regularly update your theme designs for visual variety
+
+== Troubleshooting
+
+=== Can't See JSON Files When Importing
+
+Make sure the file chooser filter is set to "All Files (*.*)" or verify that your JSON file has the correct .json extension.
+
+=== Projection Not Displaying
+
+1. Check that a projection screen is connected
+2. Verify the projection view window is visible
+3. Ensure a service item is selected
+4. Click **Project** button
+
+=== Phone Remote Not Connecting
+
+1. Verify both devices are on the same network
+2. Check firewall settings
+3. Restart the PraiseView application
+4. Try connecting again with the provided address
+
+== Keyboard Shortcuts Reference
+
+[cols="1,2", options="header"]
+|===
+| Shortcut | Action
+| Ctrl+Up | Move service item up
+| Ctrl+Down | Move service item down
+| Delete | Delete selected service item
+| Previous/Next | Navigate verses
+|===

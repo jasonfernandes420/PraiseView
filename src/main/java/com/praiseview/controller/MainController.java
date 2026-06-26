@@ -97,6 +97,10 @@ public class MainController {
     @FXML private ListView<Song> songLibraryList;
     @FXML private TextField searchField;
     @FXML private Button addSongButton;
+     
+    // Song categories
+    @FXML private ListView<String> songCategoryList;
+    @FXML private Button clearCategoryFilterButton;
 
     // Prayer tab
     @FXML private ListView<Prayer> prayerList;
@@ -232,6 +236,56 @@ public class MainController {
             filteredSongs.setPredicate(song -> {
                 if (newVal == null || newVal.isEmpty()) return true;
                 String lower = newVal.toLowerCase();
+                return song.getTitle().toLowerCase().contains(lower) ||
+                        (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
+            });
+        });
+
+        // Setup Song Categories
+        initializeSongCategories();
+        songCategoryList.setOnMouseClicked(e -> {
+            String selectedCategory = songCategoryList.getSelectionModel().getSelectedItem();
+            if (selectedCategory != null && !selectedCategory.isEmpty()) {
+                filteredSongs.setPredicate(song -> {
+                    String lower = searchField.getText() != null ? searchField.getText().toLowerCase() : "";
+                    boolean categoryMatch;
+                     
+                    if (selectedCategory.equals("[All Songs]")) {
+                        categoryMatch = true;
+                    } else if (selectedCategory.equals("Others")) {
+                        // Match songs with no category or empty category
+                        categoryMatch = (song.getCategory() == null || song.getCategory().trim().isEmpty());
+                    } else {
+                        // Match songs that contain this category (handling comma-separated categories)
+                        if (song.getCategory() != null && !song.getCategory().isEmpty()) {
+                            String[] categories = song.getCategory().split(",");
+                            categoryMatch = false;
+                            for (String cat : categories) {
+                                if (cat.trim().equals(selectedCategory)) {
+                                    categoryMatch = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            categoryMatch = false;
+                        }
+                    }
+                     
+                    if (lower.isEmpty()) {
+                        return categoryMatch;
+                    } else {
+                        return categoryMatch && (song.getTitle().toLowerCase().contains(lower) ||
+                                (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower)));
+                    }
+                });
+            }
+        });
+         
+        clearCategoryFilterButton.setOnAction(e -> {
+            songCategoryList.getSelectionModel().clearSelection();
+            filteredSongs.setPredicate(song -> {
+                if (searchField.getText() == null || searchField.getText().isEmpty()) return true;
+                String lower = searchField.getText().toLowerCase();
                 return song.getTitle().toLowerCase().contains(lower) ||
                         (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
             });
@@ -489,6 +543,63 @@ public class MainController {
         if (textLibraryList != null) {
             textLibraryList.refresh();
         }
+    }
+
+    private void initializeSongCategories() {
+        // Get unique categories from all songs (handling comma-separated categories)
+        Set<String> categories = new TreeSet<>();
+        categories.add("[All Songs]"); // Add "All Songs" as first option
+         
+        boolean[] hasUncategorized = {false};
+        allSongs.forEach(song -> {
+            if (song.getCategory() != null && !song.getCategory().trim().isEmpty()) {
+                // Split by comma and add each category individually
+                String[] cats = song.getCategory().split(",");
+                for (String cat : cats) {
+                    String trimmedCat = cat.trim();
+                    if (!trimmedCat.isEmpty()) {
+                        categories.add(trimmedCat);
+                    }
+                }
+            } else {
+                hasUncategorized[0] = true;
+            }
+        });
+         
+        if (hasUncategorized[0]) {
+            categories.add("Others"); // Add "Others" for uncategorized songs
+        }
+         
+        // Update the category list
+        songCategoryList.setItems(FXCollections.observableArrayList(categories));
+         
+        // Listen for changes to allSongs and refresh categories
+        allSongs.addListener((ListChangeListener<Song>) change -> {
+            Set<String> updatedCategories = new TreeSet<>();
+            updatedCategories.add("[All Songs]");
+             
+            boolean[] hasUncategorizedSongs = {false};
+            allSongs.forEach(song -> {
+                if (song.getCategory() != null && !song.getCategory().trim().isEmpty()) {
+                    // Split by comma and add each category individually
+                    String[] cats = song.getCategory().split(",");
+                    for (String cat : cats) {
+                        String trimmedCat = cat.trim();
+                        if (!trimmedCat.isEmpty()) {
+                            updatedCategories.add(trimmedCat);
+                        }
+                    }
+                } else {
+                    hasUncategorizedSongs[0] = true;
+                }
+            });
+             
+            if (hasUncategorizedSongs[0]) {
+                updatedCategories.add("Others");
+            }
+             
+            songCategoryList.setItems(FXCollections.observableArrayList(updatedCategories));
+        });
     }
 
     private void setupDragAndDrop() {
@@ -2017,6 +2128,7 @@ public class MainController {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Save Songs Export");
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All Files", "*.*"));
             fileChooser.setInitialFileName("songs_export.json");
 
             File file = fileChooser.showSaveDialog(null);
@@ -2042,6 +2154,7 @@ public class MainController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Import Songs");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All Files", "*.*"));
 
         File file = fileChooser.showOpenDialog(null);
         if (file != null) {
@@ -2071,6 +2184,7 @@ public class MainController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Prayers");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All Files", "*.*"));
         fileChooser.setInitialFileName("prayers_export.json");
 
         File file = fileChooser.showSaveDialog(null);
@@ -2084,6 +2198,7 @@ public class MainController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Import Prayers");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All Files", "*.*"));
 
         File file = fileChooser.showOpenDialog(null);
         if (file != null) {
@@ -2691,14 +2806,29 @@ public class MainController {
         alert.setContentText(content);
         alert.getDialogPane().setMinWidth(520);
         alert.getDialogPane().setMinHeight(440);
-    
+     
         ButtonType githubButton = new ButtonType("Visit GitHub");
-    
+     
         alert.showAndWait().ifPresent(response -> {
             if (response == githubButton) {
                 PraiseViewApp.getStaticHostServices().showDocument("https://github.com/jasonfernandes420/PraiseView");
             }
         });
+    }
+     
+    @FXML
+    private void showDocumentation() {
+        try {
+            HelpDialog helpDialog = new HelpDialog();
+            helpDialog.show();
+        } catch (Exception e) {
+            AppLogger.log("Failed to open help documentation: " + e.getMessage());
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to Load Documentation");
+            alert.setContentText("Could not load the documentation: " + e.getMessage());
+            alert.show();
+        }
     }
 
     @FXML
