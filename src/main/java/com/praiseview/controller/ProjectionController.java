@@ -21,6 +21,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
+import lombok.Getter;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class ProjectionController {
     @FXML
     public StackPane projectionRoot;
     @FXML private Label titleLabel;
+    @Getter
     @FXML public TextFlow lyricsFlow; // Made public for MainController to access dimensions
 
     // FXML elements for content items
@@ -51,8 +53,11 @@ public class ProjectionController {
 
     public double currentFontSize = 62.0; // Made public for MainController to access
 
+    @Getter
     private Projectable currentProjectedItem; // Stores the currently projected item
+    @Getter
     private int currentSubItemIndex = 0; // Stores the current verse/page index
+    @Getter
     private List<String> currentProjectedItemPages; // Cached paginated content for the current item
 
     private Theme activeTheme; // Store the currently active theme to check showTitle property
@@ -112,11 +117,7 @@ public class ProjectionController {
             itemMediaPlayer = null;
             AppLogger.log("ProjectionController: Stopped and disposed item media player.");
         }
-        // Do NOT hide logo here, showLogo() will handle its visibility
-        // if (logoImageView != null) {
-        //     logoImageView.setVisible(false);
-        //     logoImageView.setManaged(false);
-        // }
+
         titleLabel.setText(""); // Clear title
         titleLabel.setVisible(false); // Ensure title is hidden
         titleLabel.setManaged(false); // Ensure title is not taking up space
@@ -798,14 +799,6 @@ public class ProjectionController {
         return content;
     }
 
-    public List<String> getCurrentProjectedItemPages() {
-        return currentProjectedItemPages;
-    }
-
-    public TextFlow getLyricsFlow() {
-        return lyricsFlow;
-    }
-
     private void applyThemeTextAlignment(String alignment) {
         if ("LEFT".equalsIgnoreCase(alignment)) {
             lyricsFlow.setTextAlignment(TextAlignment.LEFT);
@@ -827,14 +820,6 @@ public class ProjectionController {
     public String getCurrentDisplayedTitle() {
         // Only return title text if it's currently visible
         return (titleLabel != null && titleLabel.isVisible()) ? titleLabel.getText() : "";
-    }
-
-    public Projectable getCurrentProjectedItem() {
-        return currentProjectedItem;
-    }
-
-    public int getCurrentSubItemIndex() {
-        return currentSubItemIndex;
     }
 
     public void blackout() {
@@ -1018,24 +1003,5 @@ public class ProjectionController {
         if (currentProjectedItem != null) {
             showItem(currentProjectedItem, currentSubItemIndex);
         }
-    }
-
-
-    public void setFontSize(double size) {
-        currentFontSize = size;
-        // Invalidate pagination cache to force re-pagination with new font size
-        lastPaginatedItem = null;
-        lastPaginatedFontSize = -1;
-        lastPaginatedWidth = -1;
-        lastPaginatedHeight = -1;
-        // Re-render the current item with the new font size, which will trigger re-pagination
-        if (currentProjectedItem != null) {
-            showItem(currentProjectedItem, currentSubItemIndex);
-        }
-    }
-
-    // Expose paginateText for MainController's preview functionality
-    public List<String> paginateText(String fullText, double fontSize, double maxWidth, double maxHeight) {
-        return TextPaginationUtil.paginateText(fullText, fontSize, maxWidth, maxHeight);
     }
 }

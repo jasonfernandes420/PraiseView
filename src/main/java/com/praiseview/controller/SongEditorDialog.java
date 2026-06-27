@@ -4,10 +4,13 @@ import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.input.*;
-import javafx.scene.layout.*;
-import javafx.scene.text.Font;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -294,7 +297,7 @@ public class SongEditorDialog extends Dialog<Song> {
     }
 
     private void setupDragAndDrop(ListView<Verse> listView) {
-        listView.setCellFactory(lv -> new ListCell<Verse>() {
+        listView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(Verse item, boolean empty) {
                 super.updateItem(item, empty);
@@ -317,13 +320,9 @@ public class SongEditorDialog extends Dialog<Song> {
             e.consume();
         });
 
-        listView.setOnDragEntered(e -> {
-            listView.setStyle("-fx-border-color: #0078d4; -fx-border-width: 2;");
-        });
+        listView.setOnDragEntered(e -> listView.setStyle("-fx-border-color: #0078d4; -fx-border-width: 2;"));
 
-        listView.setOnDragExited(e -> {
-            listView.setStyle("");
-        });
+        listView.setOnDragExited(e -> listView.setStyle(""));
 
         listView.setOnDragDropped(e -> {
             Dragboard db = e.getDragboard();

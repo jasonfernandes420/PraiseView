@@ -161,13 +161,11 @@ public class MainController {
 
     private int currentQueueIndex = -1;
     private int currentSubItemIndex = 0; // For songs: verse index, for prayers/announcements: page index
+    @Setter
     private javafx.scene.Scene scene;
 
     // Constants for preview text sizing (can be adjusted or made dynamic)
     private static final double PREVIEW_FONT_SIZE = 16.0;
-    private static final double PREVIEW_WIDTH_DEFAULT = 400.0; // Default width for preview pane
-    private static final double PREVIEW_HEIGHT_DEFAULT = 300.0; // Default height for preview pane
-
     // For drag and drop reordering within servicePlannerList
     private int dragSourceIndex = -1;
 
@@ -177,10 +175,6 @@ public class MainController {
     // Track currently loaded service file for Save functionality
     private File currentServiceFile = null;
 
-
-    public void setScene(javafx.scene.Scene scene) {
-        this.scene = scene;
-    }
 
     // New method to initialize themes file path
     private void initializeThemesPath() {
@@ -196,7 +190,6 @@ public class MainController {
             AppLogger.log("Themes file path: " + THEMES_FILE_PATH.toAbsolutePath());
         } catch (IOException e) {
             AppLogger.log("Error initializing themes file path: " + e.getMessage());
-            e.printStackTrace();
             // Fallback to current directory if app data path fails
             THEMES_FILE_PATH = Paths.get("themes.json");
             AppLogger.log("Falling back to current directory for themes file: " + THEMES_FILE_PATH.toAbsolutePath());
@@ -215,13 +208,11 @@ public class MainController {
         loadThemes(); // Load themes on startup
 
         // Force re-apply background after full layout
-        Platform.runLater(() -> {
-            Platform.runLater(() -> {  // Double runLater for safety
-                if (currentActiveTheme != null) {
-                    applyThemeBackgroundToLivePreview(currentActiveTheme);
-                }
-            });
-        });
+        Platform.runLater(() -> Platform.runLater(() -> {  // Double runLater for safety
+            if (currentActiveTheme != null) {
+                applyThemeBackgroundToLivePreview(currentActiveTheme);
+            }
+        }));
         debugBackgroundImage();
 
         // Initialize UpdateService
@@ -240,14 +231,12 @@ public class MainController {
         filteredSongs = new FilteredList<>(allSongs, p -> true);
         songLibraryList.setItems(filteredSongs);
 
-        searchField.textProperty().addListener((obs, old, newVal) -> {
-            filteredSongs.setPredicate(song -> {
-                if (newVal == null || newVal.isEmpty()) return true;
-                String lower = newVal.toLowerCase();
-                return song.getTitle().toLowerCase().contains(lower) ||
-                        (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
-            });
-        });
+        searchField.textProperty().addListener((obs, old, newVal) -> filteredSongs.setPredicate(song -> {
+            if (newVal == null || newVal.isEmpty()) return true;
+            String lower = newVal.toLowerCase();
+            return song.getTitle().toLowerCase().contains(lower) ||
+                    (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
+        }));
 
         // Setup Song Categories
         initializeSongCategories();
@@ -1070,7 +1059,6 @@ public class MainController {
 
         } catch (IOException e) {
             AppLogger.log("Error opening text editor: " + e.getMessage());
-            e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Could not open Text Editor");
