@@ -25,7 +25,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
@@ -41,6 +40,10 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +55,7 @@ import java.util.stream.Collectors;
 
 public class MainController {
 
+    private static final Logger log = LogManager.getLogger(MainController.class);
     // Left: Service Planner
     @FXML private ListView<ServiceItem> servicePlannerList;
     @FXML private Button editSongButton;
@@ -99,7 +103,7 @@ public class MainController {
     @FXML private Button addSongButton;
      
     // Song categories
-    @FXML private ListView<String> songCategoryList;
+    @FXML private TreeView<String> songCategoryList;
     @FXML private Button clearCategoryFilterButton;
 
     // Prayer tab
@@ -144,22 +148,24 @@ public class MainController {
     private ObservableList<MediaItem> audioLibrary = FXCollections.observableArrayList(); // New ObservableList for Audio
     private ObservableList<PptItem> pptLibrary = FXCollections.observableArrayList();
 
+    // Theme Management Getters/Setters
     // Theme Management
+    @Getter
     private ObservableList<Theme> availableThemes = FXCollections.observableArrayList();
     private static Path THEMES_FILE_PATH; // Changed to Path
+    @Getter
+    @Setter
     private Theme currentActiveTheme; // The theme currently applied to projection and preview
     private boolean livePreviewThemeHiddenByBlackout = false; // Track if preview theme was hidden by blackout
 
 
     private int currentQueueIndex = -1;
     private int currentSubItemIndex = 0; // For songs: verse index, for prayers/announcements: page index
+    @Setter
     private javafx.scene.Scene scene;
 
     // Constants for preview text sizing (can be adjusted or made dynamic)
     private static final double PREVIEW_FONT_SIZE = 16.0;
-    private static final double PREVIEW_WIDTH_DEFAULT = 400.0; // Default width for preview pane
-    private static final double PREVIEW_HEIGHT_DEFAULT = 300.0; // Default height for preview pane
-
     // For drag and drop reordering within servicePlannerList
     private int dragSourceIndex = -1;
 
@@ -169,10 +175,6 @@ public class MainController {
     // Track currently loaded service file for Save functionality
     private File currentServiceFile = null;
 
-
-    public void setScene(javafx.scene.Scene scene) {
-        this.scene = scene;
-    }
 
     // New method to initialize themes file path
     private void initializeThemesPath() {
@@ -188,7 +190,6 @@ public class MainController {
             AppLogger.log("Themes file path: " + THEMES_FILE_PATH.toAbsolutePath());
         } catch (IOException e) {
             AppLogger.log("Error initializing themes file path: " + e.getMessage());
-            e.printStackTrace();
             // Fallback to current directory if app data path fails
             THEMES_FILE_PATH = Paths.get("themes.json");
             AppLogger.log("Falling back to current directory for themes file: " + THEMES_FILE_PATH.toAbsolutePath());
@@ -207,13 +208,11 @@ public class MainController {
         loadThemes(); // Load themes on startup
 
         // Force re-apply background after full layout
-        Platform.runLater(() -> {
-            Platform.runLater(() -> {  // Double runLater for safety
-                if (currentActiveTheme != null) {
-                    applyThemeBackgroundToLivePreview(currentActiveTheme);
-                }
-            });
-        });
+        Platform.runLater(() -> Platform.runLater(() -> {  // Double runLater for safety
+            if (currentActiveTheme != null) {
+                applyThemeBackgroundToLivePreview(currentActiveTheme);
+            }
+        }));
         debugBackgroundImage();
 
         // Initialize UpdateService
@@ -232,54 +231,72 @@ public class MainController {
         filteredSongs = new FilteredList<>(allSongs, p -> true);
         songLibraryList.setItems(filteredSongs);
 
-        searchField.textProperty().addListener((obs, old, newVal) -> {
-            filteredSongs.setPredicate(song -> {
-                if (newVal == null || newVal.isEmpty()) return true;
-                String lower = newVal.toLowerCase();
-                return song.getTitle().toLowerCase().contains(lower) ||
-                        (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
-            });
-        });
+        searchField.textProperty().addListener((obs, old, newVal) -> filteredSongs.setPredicate(song -> {
+            if (newVal == null || newVal.isEmpty()) return true;
+            String lower = newVal.toLowerCase();
+            return song.getTitle().toLowerCase().contains(lower) ||
+                    (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower));
+        }));
 
         // Setup Song Categories
         initializeSongCategories();
-        songCategoryList.setOnMouseClicked(e -> {
-            String selectedCategory = songCategoryList.getSelectionModel().getSelectedItem();
-            if (selectedCategory != null && !selectedCategory.isEmpty()) {
-                filteredSongs.setPredicate(song -> {
-                    String lower = searchField.getText() != null ? searchField.getText().toLowerCase() : "";
-                    boolean categoryMatch;
-                     
-                    if (selectedCategory.equals("[All Songs]")) {
-                        categoryMatch = true;
-                    } else if (selectedCategory.equals("Others")) {
-                        // Match songs with no category or empty category
-                        categoryMatch = (song.getCategory() == null || song.getCategory().trim().isEmpty());
-                    } else {
-                        // Match songs that contain this category (handling comma-separated categories)
-                        if (song.getCategory() != null && !song.getCategory().isEmpty()) {
-                            String[] categories = song.getCategory().split(",");
+        songCategoryList.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldItem, newItem) -> {
+
+                    if (newItem == null) {
+                        return;
+                    }
+
+                    // Ignore group headings like "📖 Mass Parts"
+                    if (!newItem.isLeaf()) {
+                        return;
+                    }
+
+                    String selectedCategory = newItem.getValue();
+
+                    filteredSongs.setPredicate(song -> {
+
+                        String lower = searchField.getText() != null
+                                ? searchField.getText().toLowerCase()
+                                : "";
+
+                        boolean categoryMatch;
+
+                        if ("[All Songs]".equals(selectedCategory)) {
+
+                            categoryMatch = true;
+
+                        } else if ("Others".equals(selectedCategory)) {
+
+                            categoryMatch = song.getCategory() == null
+                                    || song.getCategory().trim().isEmpty();
+
+                        } else {
+
                             categoryMatch = false;
-                            for (String cat : categories) {
-                                if (cat.trim().equals(selectedCategory)) {
-                                    categoryMatch = true;
-                                    break;
+
+                            if (song.getCategory() != null) {
+
+                                for (String cat : song.getCategory().split(",")) {
+
+                                    if (cat.trim().equals(selectedCategory)) {
+                                        categoryMatch = true;
+                                        break;
+                                    }
                                 }
                             }
-                        } else {
-                            categoryMatch = false;
                         }
-                    }
-                     
-                    if (lower.isEmpty()) {
-                        return categoryMatch;
-                    } else {
-                        return categoryMatch && (song.getTitle().toLowerCase().contains(lower) ||
-                                (song.getCategory() != null && song.getCategory().toLowerCase().contains(lower)));
-                    }
+
+                        if (lower.isEmpty()) {
+                            return categoryMatch;
+                        }
+
+                        return categoryMatch &&
+                                (song.getTitle().toLowerCase().contains(lower)
+                                        || (song.getCategory() != null
+                                        && song.getCategory().toLowerCase().contains(lower)));
+                    });
                 });
-            }
-        });
          
         clearCategoryFilterButton.setOnAction(e -> {
             songCategoryList.getSelectionModel().clearSelection();
@@ -500,20 +517,7 @@ public class MainController {
             showTitleCheckBox.setOnAction(this::handleShowTitleToggle);
         }
 
-       /* // Add listeners to livePreviewPane dimensions to re-apply theme background
-        // This ensures correct scaling once the pane has its actual size after layout.
-        livePreviewPane.widthProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() > 0 && currentActiveTheme != null) {
-                AppLogger.log("MainController: livePreviewPane width changed to " + newVal.doubleValue() + ", re-applying theme background.");
-                applyThemeBackgroundToLivePreview(currentActiveTheme);
-            }
-        });
-        livePreviewPane.heightProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() > 0 && currentActiveTheme != null) {
-                AppLogger.log("MainController: livePreviewPane height changed to " + newVal.doubleValue() + ", re-applying theme background.");
-                applyThemeBackgroundToLivePreview(currentActiveTheme);
-            }
-        });*/
+
         AppLogger.log("MainController: currentSubItemList (after setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
     }
 
@@ -569,38 +573,163 @@ public class MainController {
         if (hasUncategorized[0]) {
             categories.add("Others"); // Add "Others" for uncategorized songs
         }
-         
+
+        TreeItem<String> root = getMassCategories(categories);
+
+        songCategoryList.setRoot(root);
         // Update the category list
-        songCategoryList.setItems(FXCollections.observableArrayList(categories));
+        //songCategoryList.setItems(FXCollections.observableArrayList(categories));
          
         // Listen for changes to allSongs and refresh categories
         allSongs.addListener((ListChangeListener<Song>) change -> {
+
             Set<String> updatedCategories = new TreeSet<>();
             updatedCategories.add("[All Songs]");
-             
-            boolean[] hasUncategorizedSongs = {false};
-            allSongs.forEach(song -> {
+
+            boolean hasUncategorizedSongs = false;
+
+            for (Song song : allSongs) {
+
                 if (song.getCategory() != null && !song.getCategory().trim().isEmpty()) {
-                    // Split by comma and add each category individually
-                    String[] cats = song.getCategory().split(",");
-                    for (String cat : cats) {
-                        String trimmedCat = cat.trim();
-                        if (!trimmedCat.isEmpty()) {
-                            updatedCategories.add(trimmedCat);
+
+                    for (String cat : song.getCategory().split(",")) {
+
+                        String trimmed = cat.trim();
+
+                        if (!trimmed.isEmpty()) {
+                            updatedCategories.add(trimmed);
                         }
                     }
+
                 } else {
-                    hasUncategorizedSongs[0] = true;
+                    hasUncategorizedSongs = true;
                 }
-            });
-             
-            if (hasUncategorizedSongs[0]) {
+            }
+
+            if (hasUncategorizedSongs) {
                 updatedCategories.add("Others");
             }
-             
-            songCategoryList.setItems(FXCollections.observableArrayList(updatedCategories));
+
+            TreeItem<String> massRoot = getMassCategories(updatedCategories);
+            songCategoryList.setRoot(massRoot);
         });
     }
+
+    private static TreeItem<String> getMassCategories(Set<String> categories) {
+
+        TreeItem<String> root = new TreeItem<>("Song Categories");
+        root.setExpanded(true);
+
+        // Always add All Songs first if present
+        if (categories.contains("[All Songs]")) {
+            root.getChildren().add(new TreeItem<>("[All Songs]"));
+        }
+
+        TreeItem<String> mass = new TreeItem<>("📖 Mass Parts");
+        TreeItem<String> seasons = new TreeItem<>("🎄 Liturgical Seasons");
+        TreeItem<String> devotion = new TreeItem<>("🙏 Devotions");
+        TreeItem<String> special = new TreeItem<>("💍 Special Occasions");
+        TreeItem<String> other = new TreeItem<>("📂 Other");
+
+        // Mass Parts
+        for (String cat : MASS_PART_ORDER) {
+            if (categories.contains(cat)) {
+                mass.getChildren().add(new TreeItem<>(cat));
+            }
+        }
+
+        // Seasons
+        for (String cat : SEASON_ORDER) {
+            if (categories.contains(cat)) {
+                seasons.getChildren().add(new TreeItem<>(cat));
+            }
+        }
+
+        // Devotions
+        for (String cat : DEVOTION_ORDER) {
+            if (categories.contains(cat)) {
+                devotion.getChildren().add(new TreeItem<>(cat));
+            }
+        }
+
+        // Special Occasions
+        for (String cat : SPECIAL_ORDER) {
+            if (categories.contains(cat)) {
+                special.getChildren().add(new TreeItem<>(cat));
+            }
+        }
+
+        // Any remaining categories go under Other
+        for (String cat : categories) {
+
+            if ("[All Songs]".equals(cat)) {
+                continue;
+            }
+
+            if (!MASS_PART_ORDER.contains(cat)
+                    && !SEASON_ORDER.contains(cat)
+                    && !DEVOTION_ORDER.contains(cat)
+                    && !SPECIAL_ORDER.contains(cat)) {
+
+                other.getChildren().add(new TreeItem<>(cat));
+            }
+        }
+
+        // Only add non-empty groups
+        if (!mass.getChildren().isEmpty()) {
+            root.getChildren().add(mass);
+        }
+
+        if (!seasons.getChildren().isEmpty()) {
+            root.getChildren().add(seasons);
+        }
+
+        if (!devotion.getChildren().isEmpty()) {
+            root.getChildren().add(devotion);
+        }
+
+        if (!special.getChildren().isEmpty()) {
+            root.getChildren().add(special);
+        }
+
+        if (!other.getChildren().isEmpty()) {
+            root.getChildren().add(other);
+        }
+
+        return root;
+    }
+    private static final List<String> MASS_PART_ORDER = List.of(
+            "Entrance Hymn",
+            "Penitential Rite",
+            "Gloria",
+            "Responsorial Psalm",
+            "Gospel Acclamation",
+            "Offertory",
+            "Sanctus (Holy Holy)",
+            "Memorial Acclamation",
+            "Lamb of God (Agnus Dei)",
+            "Communion",
+            "Meditation",
+            "Recessional"
+    );
+
+    private static final List<String> SEASON_ORDER = List.of(
+            "Advent Hymn",
+            "Christmas Hymn",
+            "Lenten Hymn",
+            "Holy Week",
+            "Easter Hymn"
+    );
+
+    private static final List<String> DEVOTION_ORDER = List.of(
+            "Adoration",
+            "Marian Hymn"
+    );
+
+    private static final List<String> SPECIAL_ORDER = List.of(
+            "Wedding",
+            "Funeral"
+    );
 
     private void setupDragAndDrop() {
         // === Drag from Song Library ===
@@ -859,6 +988,7 @@ public class MainController {
 
     private void openSongEditor(Song song) {
         SongEditorDialog dialog = new SongEditorDialog(song);
+        System.out.println("Opening Song Editor for: " + (song != null ? song.getCategory() : "New Song"));
         dialog.showAndWait().ifPresent(result -> {
             dbService.saveSong(result);
             loadSongs();
@@ -929,7 +1059,6 @@ public class MainController {
 
         } catch (IOException e) {
             AppLogger.log("Error opening text editor: " + e.getMessage());
-            e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Could not open Text Editor");
@@ -1086,7 +1215,10 @@ public class MainController {
         // Disable video controls when not showing video or audio
         if (videoPlayPauseButton != null) videoPlayPauseButton.setDisable(true);
         if (videoRewindButton != null) videoRewindButton.setDisable(true);
-        if (videoForwardButton != null) videoPlayPauseButton.setDisable(true);
+        if (videoForwardButton != null) {
+            assert videoPlayPauseButton != null;
+            videoPlayPauseButton.setDisable(true);
+        }
 
         // Also hide theme background media views
         if (liveThemeBackgroundImageView != null) {
@@ -2046,14 +2178,6 @@ public class MainController {
                 serviceQueue.clear();
                 serviceQueue.addAll(loadedService);
                 currentServiceFile = file; // Track the loaded file for future saves
-                // For Announcement, rePaginate is still used as its implementation hasn't changed
-                /*for (ServiceItem item : serviceQueue) {
-                    Projectable projectable = item.getContent();
-                    if (projectable instanceof Announcement) {
-                        // This call is now redundant as ProjectionController will handle pagination for all text types
-                        // ((Announcement) projectable).rePaginate(PREVIEW_FONT_SIZE, PREVIEW_WIDTH_DEFAULT, PREVIEW_HEIGHT_DEFAULT);
-                    }
-                }*/
                 servicePlannerList.refresh();
                 currentQueueIndex = -1;
                 currentSubItemIndex = 0;
@@ -2103,7 +2227,7 @@ public class MainController {
             }
         }
 
-        content.getChildren().add(0, exportAllCheckbox); // Add "Export All" at the top
+        content.getChildren().addFirst(exportAllCheckbox); // Add "Export All" at the top
 
         dialog.getDialogPane().setContent(content);
 
@@ -2134,7 +2258,7 @@ public class MainController {
             File file = fileChooser.showSaveDialog(null);
             if (file != null) {
                 List<Song> songsToExport;
-                if (selectedLanguages.containsAll(uniqueLanguages) && selectedLanguages.size() == uniqueLanguages.size()) {
+                if (new HashSet<>(selectedLanguages).containsAll(uniqueLanguages) && selectedLanguages.size() == uniqueLanguages.size()) {
                     // If all languages were selected (or no languages existed), export all songs
                     songsToExport = new ArrayList<>(allSongs);
                     AppLogger.log("Exporting all songs to: " + file.getAbsolutePath());
@@ -2285,19 +2409,6 @@ public class MainController {
         System.exit(0);
     }
 
-    // Theme Management Getters/Setters
-    public ObservableList<Theme> getAvailableThemes() {
-        return availableThemes;
-    }
-
-    public Theme getCurrentActiveTheme() {
-        return currentActiveTheme;
-    }
-
-    public void setCurrentActiveTheme(Theme theme) {
-        this.currentActiveTheme = theme;
-    }
-
     private void loadThemes() {
         // Use the initialized THEMES_FILE_PATH
         File themesFile = THEMES_FILE_PATH.toFile();
@@ -2326,18 +2437,6 @@ public class MainController {
         // Ensure currentActiveTheme is set
         currentActiveTheme = availableThemes.getFirst();
         applyTheme(currentActiveTheme);   // This should still be here
-    }
-
-    private void createDefaultTheme() {
-        // This method is now effectively replaced by the logic in loadThemes()
-        // but kept for clarity if other parts of the code still call it.
-        // The robust initialization is now handled in loadThemes().
-        AppLogger.log("createDefaultTheme() called, but primary default creation is in loadThemes().");
-        if (availableThemes.isEmpty()) {
-            Theme defaultTheme = new Theme();
-            availableThemes.add(defaultTheme);
-            saveThemes();
-        }
     }
 
     public void saveThemes() { // Made public so ThemeEditorController can call it
@@ -2538,7 +2637,6 @@ public class MainController {
 
         } catch (IOException e) {
             AppLogger.log("Error opening theme editor: " + e.getMessage());
-            e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Could not open Theme Editor");
@@ -2869,7 +2967,6 @@ public class MainController {
 
         } catch (IOException e) {
             AppLogger.log("Error opening Connect Phone dialog: " + e.getMessage());
-            e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Could not open Connect Phone dialog");

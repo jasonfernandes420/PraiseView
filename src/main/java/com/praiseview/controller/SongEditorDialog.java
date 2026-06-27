@@ -4,10 +4,13 @@ import com.praiseview.model.Song;
 import com.praiseview.model.Verse;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.input.*;
-import javafx.scene.layout.*;
-import javafx.scene.text.Font;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,14 +49,17 @@ public class SongEditorDialog extends Dialog<Song> {
 
         CheckComboBox<String> categoryCombo = new CheckComboBox<>();
         categoryCombo.getItems().addAll("Entrance Hymn", "Penitential Rite", "Gloria",
-                "Responsorial Psalm", "Gospel Acclamation", "Offertory", "Communion",
+                "Responsorial Psalm", "Gospel Acclamation", "Offertory", "Sanctus (Holy Holy)", "Memorial Acclamation",
+                "Lamb of God (Agnus Dei)", "Communion",
                 "Meditation", "Recessional", "Adoration", "Marian Hymn", "Lenten Hymn","Advent Hymn",
                 "Christmas Hymn", "Easter Hymn", "Holy Week", "Funeral", "Wedding");
         categoryCombo.setPrefWidth(250);
         
         // Load existing categories if editing
+
         if (songToEdit != null && songToEdit.getCategory() != null && !songToEdit.getCategory().isEmpty()) {
             String[] cats = songToEdit.getCategory().split(",");
+
             for (String cat : cats) {
                 cat = cat.trim();
                 int idx = categoryCombo.getItems().indexOf(cat);
@@ -291,7 +297,7 @@ public class SongEditorDialog extends Dialog<Song> {
     }
 
     private void setupDragAndDrop(ListView<Verse> listView) {
-        listView.setCellFactory(lv -> new ListCell<Verse>() {
+        listView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(Verse item, boolean empty) {
                 super.updateItem(item, empty);
@@ -314,13 +320,9 @@ public class SongEditorDialog extends Dialog<Song> {
             e.consume();
         });
 
-        listView.setOnDragEntered(e -> {
-            listView.setStyle("-fx-border-color: #0078d4; -fx-border-width: 2;");
-        });
+        listView.setOnDragEntered(e -> listView.setStyle("-fx-border-color: #0078d4; -fx-border-width: 2;"));
 
-        listView.setOnDragExited(e -> {
-            listView.setStyle("");
-        });
+        listView.setOnDragExited(e -> listView.setStyle(""));
 
         listView.setOnDragDropped(e -> {
             Dragboard db = e.getDragboard();
