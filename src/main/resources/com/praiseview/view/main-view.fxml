@@ -158,7 +158,7 @@
                         <graphic>
                             <ImageView fitHeight="20" fitWidth="20" pickOnBounds="true" preserveRatio="true">
                                 <image>
-                                    <Image url="@../images/rewind.png"/> <!-- Placeholder for icon -->
+                                    <Image url="@../images/mrewind.png"/> <!-- Placeholder for icon -->
                                 </image>
                             </ImageView>
                         </graphic>
@@ -214,9 +214,9 @@
                 <HBox spacing="8">
                     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
                     <!-- Left pane: Category list -->
-                    <VBox prefWidth="130" spacing="5" HBox.hgrow="NEVER">
+                    <VBox prefWidth="250" spacing="5" HBox.hgrow="NEVER">
                         <Label text="Categories" styleClass="header" style="-fx-font-size: 12px;"/>
-                        <ListView fx:id="songCategoryList" prefHeight="200" VBox.vgrow="ALWAYS"/>
+                        <TreeView  fx:id="songCategoryList" prefHeight="200" VBox.vgrow="ALWAYS"/>
                         <Button fx:id="clearCategoryFilterButton" text="Clear Filter" style="-fx-font-size: 11px;"/>
                     </VBox>
                     <!-- Right pane: Songs list and controls -->

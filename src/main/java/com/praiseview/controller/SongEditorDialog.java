@@ -46,14 +46,17 @@ public class SongEditorDialog extends Dialog<Song> {
 
         CheckComboBox<String> categoryCombo = new CheckComboBox<>();
         categoryCombo.getItems().addAll("Entrance Hymn", "Penitential Rite", "Gloria",
-                "Responsorial Psalm", "Gospel Acclamation", "Offertory", "Communion",
+                "Responsorial Psalm", "Gospel Acclamation", "Offertory", "Sanctus (Holy Holy)", "Memorial Acclamation",
+                "Lamb of God (Agnus Dei)", "Communion",
                 "Meditation", "Recessional", "Adoration", "Marian Hymn", "Lenten Hymn","Advent Hymn",
                 "Christmas Hymn", "Easter Hymn", "Holy Week", "Funeral", "Wedding");
         categoryCombo.setPrefWidth(250);
         
         // Load existing categories if editing
+
         if (songToEdit != null && songToEdit.getCategory() != null && !songToEdit.getCategory().isEmpty()) {
             String[] cats = songToEdit.getCategory().split(",");
+
             for (String cat : cats) {
                 cat = cat.trim();
                 int idx = categoryCombo.getItems().indexOf(cat);

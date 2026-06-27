@@ -109,7 +109,7 @@ public class DatabaseService {
             // Convert verseOrder to comma-separated string
             String verseOrderStr = song.getVerseOrder().isEmpty() ? "" : 
                 String.join(",", song.getVerseOrder().stream().map(String::valueOf).toArray(String[]::new));
-
+            AppLogger.log("Saving song: " + song.getTitle() + " with verse order: " + verseOrderStr +"song category:"+song.getCategory());
             // Save song
             String songSql = """
                 INSERT OR REPLACE INTO songs (id, title, language, category, author, composer, copyright, verse_order)
