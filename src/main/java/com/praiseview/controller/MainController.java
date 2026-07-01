@@ -1875,19 +1875,31 @@ public class MainController {
         }
 
         java.util.List<String> projectedPages = proj.getCurrentProjectedItemPages();
-        if (projectedPages == null || projectedPages.isEmpty()) {
+        boolean showTitleFirstSlide = proj.isSongTitleFirstSlideEnabled(projectable);
+        java.util.List<String> pages = projectedPages != null ? projectedPages : java.util.Collections.emptyList();
+
+        if (!showTitleFirstSlide && pages.isEmpty()) {
             AppLogger.log("No projected pages available for phone verse list.");
             return;
         }
 
-        int maxVerses = projectedPages.size();
         java.util.List<VerseListDTO.VerseItemDTO> verseItems = new java.util.ArrayList<>();
 
-        for (int i = 0; i < maxVerses; i++) {
+        if (showTitleFirstSlide) {
+            verseItems.add(new VerseListDTO.VerseItemDTO(
+                    0,
+                    "Title",
+                    projectable.getTitle(),
+                    projectable.getTitle()
+            ));
+        }
+
+        for (int i = 0; i < pages.size(); i++) {
+            int verseIndex = showTitleFirstSlide ? i + 1 : i;
             String label = projectable.getSubItemLabel(i);
-            String content = projectedPages.get(i);
+            String content = pages.get(i);
             String preview = content.length() > 100 ? content.substring(0, 100) + "..." : content;
-            verseItems.add(new VerseListDTO.VerseItemDTO(i, label, preview, content));
+            verseItems.add(new VerseListDTO.VerseItemDTO(verseIndex, label, preview, content));
         }
 
         VerseListDTO dto = new VerseListDTO(
