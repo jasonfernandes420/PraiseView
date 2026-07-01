@@ -7,7 +7,7 @@
 
     <groupId>com.praiseview</groupId>
     <artifactId>praiseview</artifactId>
-    <version>2.2.3</version>
+    <version>2.2.4</version>
     <name>PraiseView</name>
 
     <properties>
@@ -162,6 +162,33 @@
                 </configuration>
             </plugin>
 
+            <!-- Resources - copy CSS to docs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-custom-css</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/docs</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/asciidoc</directory>
+                                    <includes>
+                                        <include>custom.css</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Manifest -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -248,12 +275,22 @@
                             <attributes>
                                 <toc>left</toc>
                                 <icons>font</icons>
+                                <stylesheet>custom.css</stylesheet>
+                                <linkcss>true</linkcss>
                             </attributes>
 
                         </configuration>
 
                     </execution>
                 </executions>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctorj</artifactId>
+                        <version>2.5.13</version>
+                    </dependency>
+                </dependencies>
 
             </plugin>
 
