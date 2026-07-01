@@ -8,8 +8,7 @@
 
 <VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.praiseview.controller.ConnectPhoneController"
-      prefWidth="400" prefHeight="450">
+      fx:controller="com.praiseview.controller.ConnectPhoneController">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
     <Label text="Connect Your Phone" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>

@@ -8,6 +8,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebView;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class HelpDialog {
@@ -18,8 +20,11 @@ public class HelpDialog {
     public HelpDialog() {
         stage = new Stage();
         stage.setTitle("PraiseView Help & Documentation");
-        stage.setWidth(1000);
-        stage.setHeight(700);
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        stage.setWidth(Math.min(1000, visualBounds.getWidth() * 0.92));
+        stage.setHeight(Math.min(700, visualBounds.getHeight() * 0.92));
+        stage.setMinWidth(Math.min(700, visualBounds.getWidth() * 0.75));
+        stage.setMinHeight(Math.min(500, visualBounds.getHeight() * 0.75));
 
         webView = new WebView();
         documentSelector = new ComboBox<>();

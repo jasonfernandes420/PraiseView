@@ -8,6 +8,8 @@
 
 Welcome to PraiseView! This guide will help you get up and running in just a few minutes.
 
+image::../images/logo-transparent.png[PraiseView logo, align=center, width=220]
+
 == Installation
 
 === System Requirements
@@ -102,7 +104,8 @@ Customize the look of your projections:
 1. Click **Themes** (menu) in the top menu bar
 2. Select **Theme Editor**
 3. Create a new theme with a background image
-4. Apply it to your service
+4. Set title display mode in the Theme Editor if needed
+5. Apply it to your service
 
 == Common Tasks
 

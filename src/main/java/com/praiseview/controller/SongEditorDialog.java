@@ -9,6 +9,8 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
 import org.controlsfx.control.CheckComboBox;
 
 import java.util.ArrayList;
@@ -23,7 +25,11 @@ public class SongEditorDialog extends Dialog<Song> {
     public SongEditorDialog(Song songToEdit) {
         setTitle(songToEdit == null ? "Add New Song" : "Edit Song");
         setResizable(true);
-        getDialogPane().setPrefSize(950, 820);
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        double dialogWidth = Math.min(950, visualBounds.getWidth() * 0.9);
+        double dialogHeight = Math.min(820, visualBounds.getHeight() * 0.9);
+        getDialogPane().setPrefSize(dialogWidth, dialogHeight);
+        getDialogPane().setMinSize(Math.min(640, dialogWidth), Math.min(500, dialogHeight));
 
         VBox mainLayout = new VBox(12);
         mainLayout.setPadding(new Insets(15));

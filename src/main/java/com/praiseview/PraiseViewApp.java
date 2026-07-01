@@ -5,6 +5,7 @@ import com.praiseview.controller.ProjectionController;
 import com.praiseview.service.PhoneRemoteServer;
 import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
+import com.praiseview.util.PowerAwakeService;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
@@ -14,6 +15,7 @@ import javafx.scene.image.Image;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.geometry.Rectangle2D;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -34,6 +36,7 @@ public class PraiseViewApp extends Application {
         instance = this; // Set the static instance
         this.primaryStage = primaryStage; // Store primary stage reference
         staticHostServices = getHostServices(); // Assign HostServices to the static field
+        PowerAwakeService.requestAwakeMode();
 
         // Add handler to close projection stage when primary stage closes
         primaryStage.setOnCloseRequest(event -> {
@@ -41,6 +44,7 @@ public class PraiseViewApp extends Application {
                 projStage.close();
             }
             PhoneRemoteServer.stopServer();
+            PowerAwakeService.releaseAwakeMode();
             // Also ensure the application exits cleanly, especially if there are background threads
             Platform.exit();
             System.exit(0);
@@ -49,13 +53,16 @@ public class PraiseViewApp extends Application {
 
         // Load main UI only after update check is initiated, and potentially shown later
         FXMLLoader mainLoader = new FXMLLoader(getClass().getResource("/com/praiseview/view/main-view.fxml"));
-        Scene mainScene = new Scene(mainLoader.load(), 1280, 720);
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        double initialWidth = Math.max(1000, Math.min(1280, visualBounds.getWidth() * 0.92));
+        double initialHeight = Math.max(650, Math.min(820, visualBounds.getHeight() * 0.9));
+        Scene mainScene = new Scene(mainLoader.load(), initialWidth, initialHeight);
     //    mainScene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm()); // Add this line
 
         primaryStage.setTitle("PraiseView - Operator Control");
         primaryStage.setScene(mainScene);
-        primaryStage.setMinWidth(1300);
-        primaryStage.setMinHeight(780);
+        primaryStage.setMinWidth(Math.min(900, visualBounds.getWidth() * 0.75));
+        primaryStage.setMinHeight(Math.min(580, visualBounds.getHeight() * 0.75));
         primaryStage.show(); // Moved to Platform.runLater in update check or after if no update
 
         // Set application icon for the primary stage
@@ -74,6 +81,9 @@ public class PraiseViewApp extends Application {
 
         // Initialize Update Service
         updateService = new UpdateService(getHostServices());
+
+        // Check for updates automatically on startup without forcing a "no updates" popup.
+        updateService.checkForUpdate(false);
 
     }
 
@@ -193,6 +203,7 @@ public class PraiseViewApp extends Application {
     @Override
     public void stop() throws Exception{
         PhoneRemoteServer.stopServer();
+        PowerAwakeService.releaseAwakeMode();
         super.stop();
     }
 }

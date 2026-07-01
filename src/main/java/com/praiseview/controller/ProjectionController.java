@@ -241,6 +241,8 @@ public class ProjectionController {
         String titleText = item.getTitle();
         String contentToDisplay = "";
         int totalSubItems = 0;
+        boolean songTitleSlideEnabled = isSongTitleFirstSlideEnabled(item);
+        boolean titleSlide = isTitleSlide(item, subItemIndex);
 
         // Declare imageFile and slideImageFile here to ensure definite assignment
         File imageFile = null;
@@ -271,7 +273,7 @@ public class ProjectionController {
                 textContentContainer.setMaxHeight(Double.MAX_VALUE);
 
                 // Set title visibility and calculate its height for pagination
-                if (activeTheme != null && activeTheme.isShowTitle()) {
+                if (activeTheme != null && activeTheme.isShowTitle() && !titleSlide) {
                     titleLabel.setText(titleText);
                     // Temporarily apply style to measure height accurately
                     titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
@@ -331,16 +333,21 @@ public class ProjectionController {
                     lastPaginatedHeight = availableHeight;
                 }
 
-                totalSubItems = currentProjectedItemPages.size();
+                totalSubItems = currentProjectedItemPages.size() + (songTitleSlideEnabled ? 1 : 0);
 
                 // Ensure subItemIndex is within bounds of the newly calculated pages
-                if (currentProjectedItemPages != null && subItemIndex >= currentProjectedItemPages.size()) {
-                    this.currentSubItemIndex = currentProjectedItemPages.size() - 1;
-                    if (this.currentSubItemIndex < 0) this.currentSubItemIndex = 0; // Fallback for empty content
+                if (subItemIndex >= totalSubItems) {
+                    this.currentSubItemIndex = totalSubItems - 1;
+                    if (this.currentSubItemIndex < 0) this.currentSubItemIndex = 0;
                 }
 
-                if (currentProjectedItemPages != null && !currentProjectedItemPages.isEmpty()) {
-                    contentToDisplay = currentProjectedItemPages.get(this.currentSubItemIndex);
+                if (titleSlide) {
+                    contentToDisplay = "";
+                } else if (currentProjectedItemPages != null && !currentProjectedItemPages.isEmpty()) {
+                    int pageIndex = songTitleSlideEnabled ? Math.max(0, this.currentSubItemIndex - 1) : this.currentSubItemIndex;
+                    if (pageIndex >= 0 && pageIndex < currentProjectedItemPages.size()) {
+                        contentToDisplay = currentProjectedItemPages.get(pageIndex);
+                    }
                 }
 
                 // Removed X/Y indicator from title for text-based items
@@ -349,24 +356,30 @@ public class ProjectionController {
                 // }
 
                 // Re-set title text after pagination count is known
-                if (activeTheme != null && activeTheme.isShowTitle()) {
+                if (activeTheme != null && (activeTheme.isShowTitle() || titleSlide)) {
                     titleLabel.setText(titleText);
+                    titleLabel.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-text-fill: %s;",
+                            activeTheme.getTitleFontFamily(), activeTheme.getTitleFontSize(), activeTheme.getTitleTextColor()));
+                    titleLabel.setVisible(true);
+                    titleLabel.setManaged(true);
                 }
 
 
                 lyricsFlow.getChildren().clear(); // Ensure cleared before adding new text
-                Text mainText = new Text(contentToDisplay);
-                // Set fill color using theme's text color
-                try {
-                    mainText.setFill(Color.web(activeTheme.getTextColor()));
-                } catch (IllegalArgumentException | NullPointerException e) {
-                    AppLogger.log("Invalid or null text color in active theme: '" + activeTheme.getTextColor() + "'. Falling back to WHITE. Error: " + e.getMessage());
-                    mainText.setFill(Color.WHITE); // Fallback
+                if (!titleSlide && contentToDisplay != null && !contentToDisplay.isEmpty()) {
+                    Text mainText = new Text(contentToDisplay);
+                    // Set fill color using theme's text color
+                    try {
+                        mainText.setFill(Color.web(activeTheme.getTextColor()));
+                    } catch (IllegalArgumentException | NullPointerException e) {
+                        AppLogger.log("Invalid or null text color in active theme: '" + activeTheme.getTextColor() + "'. Falling back to WHITE. Error: " + e.getMessage());
+                        mainText.setFill(Color.WHITE); // Fallback
+                    }
+                    // Apply font settings from activeTheme
+                    mainText.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-line-spacing: %.1fpx;",
+                            activeTheme.getFontFamily(), activeTheme.getFontSize(), activeTheme.getLineSpacing()));
+                    lyricsFlow.getChildren().add(mainText);
                 }
-                // Apply font settings from activeTheme
-                mainText.setStyle(String.format("-fx-font-family: '%s'; -fx-font-size: %.1fpx; -fx-line-spacing: %.1fpx;",
-                        activeTheme.getFontFamily(), activeTheme.getFontSize(), activeTheme.getLineSpacing()));
-                lyricsFlow.getChildren().add(mainText);
                 applyThemeTextAlignment(activeTheme.getTextAlignment());
                 break;
 
@@ -708,6 +721,7 @@ public class ProjectionController {
             if (availableWidth <= 0) availableWidth = 100;
             if (availableHeight <= 0) availableHeight = 100;
 
+            boolean songTitleSlideEnabled = isSongTitleFirstSlideEnabled(currentProjectedItem);
             if (activeTheme != null && activeTheme.isShowTitle()) {
                 // Temporarily set title text and style to measure height
                 String tempTitleText = currentProjectedItem.getTitle();
@@ -735,7 +749,6 @@ public class ProjectionController {
                     currentProjectedItemPages.add(currentProjectedItem.getSubItemContent(i, currentFontSize, availableWidth, availableHeight));
                 }
             }
-
             // Update cached pagination parameters
             lastPaginatedItem = currentProjectedItem;
             lastPaginatedFontSize = currentFontSize;
@@ -744,7 +757,7 @@ public class ProjectionController {
         }
 
         if (currentProjectedItemPages != null) {
-            return currentProjectedItemPages.size();
+            return currentProjectedItemPages.size() + (isSongTitleFirstSlideEnabled(currentProjectedItem) ? 1 : 0);
         }
         return 0;
     }
@@ -765,8 +778,18 @@ public class ProjectionController {
             case "TEXT":
             case "ANNOUNCEMENT":
                 // Return content from the cached pages
-                if (currentProjectedItemPages != null && currentSubItemIndex >= 0 && currentSubItemIndex < currentProjectedItemPages.size()) {
-                    content = currentProjectedItemPages.get(currentSubItemIndex);
+                int totalPages = currentProjectedItemPages != null
+                        ? currentProjectedItemPages.size() + (isSongTitleFirstSlideEnabled(currentProjectedItem) ? 1 : 0)
+                        : 0;
+                if (currentProjectedItemPages != null && currentSubItemIndex >= 0 && currentSubItemIndex < totalPages) {
+                    int pageIndex = isSongTitleFirstSlideEnabled(currentProjectedItem)
+                            ? Math.max(0, currentSubItemIndex - 1)
+                            : currentSubItemIndex;
+                    if (isCurrentSongTitleSlide()) {
+                        content = "";
+                    } else if (pageIndex >= 0 && pageIndex < currentProjectedItemPages.size()) {
+                        content = currentProjectedItemPages.get(pageIndex);
+                    }
                 } else {
                     AppLogger.log("ProjectionController.getCurrentDisplayedContent: currentProjectedItemPages is null or index out of bounds for text type.");
                 }
@@ -820,6 +843,18 @@ public class ProjectionController {
     public String getCurrentDisplayedTitle() {
         // Only return title text if it's currently visible
         return (titleLabel != null && titleLabel.isVisible()) ? titleLabel.getText() : "";
+    }
+
+    public boolean isCurrentSongTitleSlide() {
+        return isTitleSlide(currentProjectedItem, currentSubItemIndex);
+    }
+
+    public boolean isSongTitleFirstSlideEnabled(Projectable item) {
+        return item instanceof Song && activeTheme != null && activeTheme.isShowTitleAsFirstSlide();
+    }
+
+    private boolean isTitleSlide(Projectable item, int index) {
+        return item instanceof Song && activeTheme != null && activeTheme.isShowTitleAsFirstSlide() && index == 0;
     }
 
     public void blackout() {

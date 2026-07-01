@@ -7,8 +7,7 @@
 
 <DialogPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.praiseview.controller.ThemeEditorController"
-            prefWidth="700" prefHeight="600">
+            fx:controller="com.praiseview.controller.ThemeEditorController">
     <headerText>Theme Editor</headerText>
     <content>
         <HBox spacing="15">
@@ -60,7 +59,8 @@
                     <Label text="Line Spacing:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
                     <Slider fx:id="lineSpacingSlider" min="0" max="20" value="8" showTickLabels="true" showTickMarks="true" majorTickUnit="5" minorTickCount="1" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
 
-                    <CheckBox fx:id="showTitleCheckBox" text="Show Title on Projection" GridPane.rowIndex="9" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+                    <CheckBox fx:id="showTitleCheckBox" text="Show Title on All Slides" GridPane.rowIndex="9" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+                    <CheckBox fx:id="showTitleAsFirstSlideCheckBox" text="Show Title as First Slide" GridPane.rowIndex="10" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
                 </GridPane>
 
                 <!-- Title Font Settings (visible only if showTitleCheckBox is selected) -->

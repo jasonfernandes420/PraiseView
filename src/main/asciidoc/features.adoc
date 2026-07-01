@@ -8,6 +8,8 @@
 
 PraiseView is packed with powerful features to make managing day-to-day church presentations easy and professional.
 
+image::../images/logo-transparent.png[PraiseView logo, align=center, width=220]
+
 == Songs and Music
 
 === Song Library
@@ -111,7 +113,11 @@ Themes appear behind all projected content, including:
 
 === Show/Hide Title
 
-Toggle title visibility on projections for different visual effects.
+Choose between:
+- **Show Title on All Slides**
+- **Show Title as First Slide**
+
+These options are configured in the Theme Editor and are mutually exclusive.
 
 == Service Management
 
