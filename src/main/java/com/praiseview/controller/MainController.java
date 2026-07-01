@@ -7,6 +7,7 @@ import com.praiseview.service.JsonService;
 import com.praiseview.service.PhoneRemoteServer;
 import com.praiseview.service.UpdateService;
 import com.praiseview.util.AppLogger;
+import com.praiseview.util.PowerAwakeService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -37,6 +38,8 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -1045,6 +1048,8 @@ public class MainController {
             dialog.setDialogPane(dialogPane);
             dialog.initOwner(scene.getWindow());
             dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setResizable(true);
+            applyResponsiveDialogSize(dialog, 720, 520, 520, 380);
 
             dialog.showAndWait().ifPresent(result -> {
                 if (result == ButtonType.OK) {
@@ -1311,8 +1316,8 @@ public class MainController {
         
         AppLogger.log("MainController: Projection dimensions - Width: " + projectionWidth + ", Height: " + projectionHeight + ", Aspect Ratio: " + projectionAspectRatio);
 
-        // Set title visibility based on currentActiveTheme.showTitle
-        if (currentActiveTheme != null && currentActiveTheme.isShowTitle()) {
+        // Set title visibility based on theme or title slide mode
+        if (currentActiveTheme != null && (currentActiveTheme.isShowTitle() || proj.isCurrentSongTitleSlide())) {
             stageViewTitle.setText(displayedTitle);
             stageViewTitle.setVisible(true);
             stageViewTitle.setManaged(true);
@@ -2397,6 +2402,7 @@ public class MainController {
     @FXML private void exitApp() {
         AppLogger.log("Application exited");
         PhoneRemoteServer.stopServer();
+        PowerAwakeService.releaseAwakeMode();
         // Clean up all temporary PPT image directories on exit
         for (ServiceItem item : serviceQueue) {
             if (item.getContent() instanceof PptItem) {
@@ -2612,9 +2618,12 @@ public class MainController {
     private void handleShowTitleToggle(ActionEvent event) {
         if (currentActiveTheme != null) {
             currentActiveTheme.setShowTitle(showTitleCheckBox.isSelected());
+            if (showTitleCheckBox.isSelected()) {
+                currentActiveTheme.setShowTitleAsFirstSlide(false);
+            }
             applyTheme(currentActiveTheme); // Re-apply theme to propagate change
             saveThemes(); // Save the updated theme setting
-            AppLogger.log("Show Title toggled to: " + showTitleCheckBox.isSelected() + " for theme: " + currentActiveTheme.getName());
+            AppLogger.log("Show Title on All Slides toggled to: " + showTitleCheckBox.isSelected() + " for theme: " + currentActiveTheme.getName());
         }
     }
 
@@ -2632,6 +2641,8 @@ public class MainController {
             dialog.setDialogPane(dialogPane);
             dialog.initOwner(scene.getWindow()); // Set owner to main window
             dialog.initModality(Modality.APPLICATION_MODAL); // Block interaction with other windows
+            dialog.setResizable(true);
+            applyResponsiveDialogSize(dialog, 980, 760, 700, 500);
 
             dialog.showAndWait();
 
@@ -2778,17 +2789,28 @@ public class MainController {
 
         if (item != null && proj != null) {
             List<String> paginatedContent = proj.getCurrentProjectedItemPages();
+            boolean showTitleFirstSlide = proj.isSongTitleFirstSlideEnabled(item);
+
+            if (showTitleFirstSlide) {
+                subItems.add(new SubItemDisplayItem(0, "Title", item.getTitle()));
+            }
 
             if (paginatedContent != null && !paginatedContent.isEmpty()) {
                 for (int i = 0; i < paginatedContent.size(); i++) {
+                    int position = showTitleFirstSlide ? i + 1 : i;
                     String label = item.getSubItemLabel(i); // Use the item's label logic
                     String contentPreview = paginatedContent.get(i);
-                    subItems.add(new SubItemDisplayItem(i, label, contentPreview));
+                    if ("__TITLE_SLIDE__".equals(contentPreview)) {
+                        continue;
+                    }
+                    subItems.add(new SubItemDisplayItem(position, label, contentPreview));
                 }
-            } else {
+            } else if (!showTitleFirstSlide) {
                 AppLogger.log("MainController: No paginated content available from ProjectionController for sub-item list.");
                 // Fallback to showing a single item if no pages are generated
                 subItems.add(new SubItemDisplayItem(0, item.getSubItemLabel(0), item.getFullContent()));
+            } else {
+                subItems.add(new SubItemDisplayItem(0, "Title", item.getTitle()));
             }
         }
 
@@ -2962,6 +2984,12 @@ public class MainController {
             stage.setScene(new javafx.scene.Scene(root));
             stage.initOwner(scene.getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setResizable(true);
+            Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+            stage.setWidth(Math.min(460, visualBounds.getWidth() * 0.9));
+            stage.setHeight(Math.min(560, visualBounds.getHeight() * 0.9));
+            stage.setMinWidth(Math.min(360, visualBounds.getWidth() * 0.75));
+            stage.setMinHeight(Math.min(420, visualBounds.getHeight() * 0.75));
             stage.setOnHidden(event -> controller.dispose());
             stage.showAndWait();
 
@@ -2973,6 +3001,20 @@ public class MainController {
             alert.setContentText("An error occurred while loading the connection dialog: " + e.getMessage());
             alert.showAndWait();
         }
+    }
+
+    private void applyResponsiveDialogSize(Dialog<?> dialog, double preferredWidth, double preferredHeight,
+                                           double minWidth, double minHeight) {
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        DialogPane pane = dialog.getDialogPane();
+        pane.setPrefSize(
+                Math.min(preferredWidth, visualBounds.getWidth() * 0.9),
+                Math.min(preferredHeight, visualBounds.getHeight() * 0.9)
+        );
+        pane.setMinSize(
+                Math.min(minWidth, visualBounds.getWidth() * 0.75),
+                Math.min(minHeight, visualBounds.getHeight() * 0.75)
+        );
     }
 
     private void debugBackgroundImage() {

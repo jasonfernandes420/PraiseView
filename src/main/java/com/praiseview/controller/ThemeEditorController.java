@@ -27,6 +27,7 @@ public class ThemeEditorController {
     @FXML private ComboBox<String> textAlignmentComboBox;
     @FXML private Slider lineSpacingSlider;
     @FXML private CheckBox showTitleCheckBox;
+    @FXML private CheckBox showTitleAsFirstSlideCheckBox;
 
     // New FXML elements for Title Font Settings
     @FXML private VBox titleSettingsContainer;
@@ -76,9 +77,20 @@ public class ThemeEditorController {
         titleFontFamilyComboBox.setItems(FXCollections.observableArrayList(Font.getFamilies()));
         titleFontFamilyComboBox.getSelectionModel().select("Arial"); // Default selection
 
-        // Bind visibility of title settings to showTitleCheckBox
-        titleSettingsContainer.visibleProperty().bind(showTitleCheckBox.selectedProperty());
-        titleSettingsContainer.managedProperty().bind(showTitleCheckBox.selectedProperty());
+        // Bind visibility of title settings to either title option
+        titleSettingsContainer.visibleProperty().bind(showTitleCheckBox.selectedProperty().or(showTitleAsFirstSlideCheckBox.selectedProperty()));
+        titleSettingsContainer.managedProperty().bind(showTitleCheckBox.selectedProperty().or(showTitleAsFirstSlideCheckBox.selectedProperty()));
+
+        showTitleCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                showTitleAsFirstSlideCheckBox.setSelected(false);
+            }
+        });
+        showTitleAsFirstSlideCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                showTitleCheckBox.setSelected(false);
+            }
+        });
 
         // Listener for theme selection changes
         themeListView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
@@ -126,6 +138,12 @@ public class ThemeEditorController {
             textAlignmentComboBox.getSelectionModel().select(theme.getTextAlignment());
             lineSpacingSlider.setValue(theme.getLineSpacing());
             showTitleCheckBox.setSelected(theme.isShowTitle());
+            showTitleAsFirstSlideCheckBox.setSelected(theme.isShowTitleAsFirstSlide());
+            if (theme.isShowTitle()) {
+                showTitleAsFirstSlideCheckBox.setSelected(false);
+            } else if (theme.isShowTitleAsFirstSlide()) {
+                showTitleCheckBox.setSelected(false);
+            }
 
             // Title Font Settings
             titleFontFamilyComboBox.getSelectionModel().select(theme.getTitleFontFamily());
@@ -156,6 +174,7 @@ public class ThemeEditorController {
         textAlignmentComboBox.getSelectionModel().select("CENTER");
         lineSpacingSlider.setValue(8);
         showTitleCheckBox.setSelected(true);
+        showTitleAsFirstSlideCheckBox.setSelected(false);
 
         // Clear Title Font Settings
         titleFontFamilyComboBox.getSelectionModel().select("Arial");
@@ -175,6 +194,7 @@ public class ThemeEditorController {
             theme.setTextAlignment(textAlignmentComboBox.getSelectionModel().getSelectedItem());
             theme.setLineSpacing(lineSpacingSlider.getValue());
             theme.setShowTitle(showTitleCheckBox.isSelected());
+            theme.setShowTitleAsFirstSlide(showTitleAsFirstSlideCheckBox.isSelected());
 
             // Update Title Font Settings
             theme.setTitleFontFamily(titleFontFamilyComboBox.getSelectionModel().getSelectedItem());

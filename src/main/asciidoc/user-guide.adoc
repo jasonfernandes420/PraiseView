@@ -8,6 +8,8 @@
 
 This guide covers all the essential features and workflows in PraiseView to help you manage and present content during worship services.
 
+image::../images/logo-transparent.png[PraiseView logo, align=center, width=220]
+
 == Creating a Service
 
 === New Service
@@ -196,7 +198,10 @@ Or double-click an item to start from that point.
 
 === Theme Options
 
-- **Show Title on Projection**: Toggle to show or hide titles
+- **Show Title on All Slides**: Show the title on every lyric slide
+- **Show Title as First Slide**: Show the title only on the first slide
+- These two options are mutually exclusive
+- This setting is configured in **Themes > Theme Editor**
 
 === Creating Custom Themes
 

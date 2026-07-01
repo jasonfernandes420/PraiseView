@@ -1,16 +1,22 @@
 package com.praiseview.controller;
 
 import com.praiseview.model.Prayer;
+import javafx.geometry.Rectangle2D;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
 
 public class PrayerEditorDialog extends Dialog<Prayer> {
 
     public PrayerEditorDialog(Prayer prayerToEdit) {
         setTitle(prayerToEdit == null ? "Add New Prayer" : "Edit Prayer");
         setResizable(true);
-        getDialogPane().setPrefSize(700, 580);
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        double dialogWidth = Math.min(700, visualBounds.getWidth() * 0.85);
+        double dialogHeight = Math.min(580, visualBounds.getHeight() * 0.85);
+        getDialogPane().setPrefSize(dialogWidth, dialogHeight);
+        getDialogPane().setMinSize(Math.min(520, dialogWidth), Math.min(420, dialogHeight));
 
         VBox layout = new VBox(12);
         layout.setPadding(new Insets(15));

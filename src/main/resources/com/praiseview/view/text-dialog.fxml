@@ -6,8 +6,7 @@
 
 <DialogPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.praiseview.controller.TextDialogController"
-            prefWidth="600" prefHeight="400">
+            fx:controller="com.praiseview.controller.TextDialogController">
     <headerText>
         Add/Edit Text
     </headerText>

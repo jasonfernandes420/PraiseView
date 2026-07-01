@@ -9,6 +9,8 @@
 
 PraiseView is a powerful church presentation software designed to help you manage and display songs, prayers, scriptures, and multimedia content during worship services.
 
+image::../images/logo-transparent.png[PraiseView logo, align=center, width=260]
+
 === Quick Links
 
 * xref:user-guide.adoc[User Guide]

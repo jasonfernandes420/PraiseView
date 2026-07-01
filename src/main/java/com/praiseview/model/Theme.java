@@ -16,6 +16,7 @@ public class Theme {
     private String textAlignment; // e.g., "CENTER", "LEFT"
     private double lineSpacing;
     private boolean showTitle; // Whether to show the title on projection and stage view
+    private boolean showTitleAsFirstSlide; // Whether to show a song title slide before lyrics
 
     // New properties for title font settings
     private String titleFontFamily;
@@ -35,6 +36,7 @@ public class Theme {
         this.textAlignment = "CENTER";
         this.lineSpacing = 8.0;
         this.showTitle = true; // Default to showing title
+        this.showTitleAsFirstSlide = false;
 
         // Set sensible defaults for title
         this.titleFontFamily = "Arial";
@@ -53,6 +55,7 @@ public class Theme {
                  @JsonProperty("textAlignment") String textAlignment,
                  @JsonProperty("lineSpacing") double lineSpacing,
                  @JsonProperty("showTitle") boolean showTitle,
+                 @JsonProperty("showTitleAsFirstSlide") boolean showTitleAsFirstSlide,
                  @JsonProperty("titleFontFamily") String titleFontFamily,
                  @JsonProperty("titleFontSize") double titleFontSize,
                  @JsonProperty("titleTextColor") String titleTextColor) {
@@ -66,6 +69,7 @@ public class Theme {
         this.textAlignment = textAlignment;
         this.lineSpacing = lineSpacing;
         this.showTitle = showTitle;
+        this.showTitleAsFirstSlide = showTitleAsFirstSlide;
         this.titleFontFamily = titleFontFamily;
         this.titleFontSize = titleFontSize;
         this.titleTextColor = titleTextColor;
@@ -110,6 +114,10 @@ public class Theme {
 
     public boolean isShowTitle() {
         return showTitle;
+    }
+
+    public boolean isShowTitleAsFirstSlide() {
+        return showTitleAsFirstSlide;
     }
 
     public String getTitleFontFamily() {
@@ -163,6 +171,16 @@ public class Theme {
 
     public void setShowTitle(boolean showTitle) {
         this.showTitle = showTitle;
+        if (showTitle) {
+            this.showTitleAsFirstSlide = false;
+        }
+    }
+
+    public void setShowTitleAsFirstSlide(boolean showTitleAsFirstSlide) {
+        this.showTitleAsFirstSlide = showTitleAsFirstSlide;
+        if (showTitleAsFirstSlide) {
+            this.showTitle = false;
+        }
     }
 
     public void setTitleFontFamily(String titleFontFamily) {
@@ -190,6 +208,7 @@ public class Theme {
         return Double.compare(fontSize, theme.fontSize) == 0 &&
                Double.compare(lineSpacing, theme.lineSpacing) == 0 &&
                showTitle == theme.showTitle &&
+               showTitleAsFirstSlide == theme.showTitleAsFirstSlide &&
                Double.compare(titleFontSize, theme.titleFontSize) == 0 &&
                Objects.equals(name, theme.name) &&
                Objects.equals(fontFamily, theme.fontFamily) &&
@@ -204,6 +223,6 @@ public class Theme {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, fontFamily, fontSize, textColor, backgroundColor, backgroundImagePath, backgroundVideoPath, textAlignment, lineSpacing, showTitle, titleFontFamily, titleFontSize, titleTextColor);
+        return Objects.hash(name, fontFamily, fontSize, textColor, backgroundColor, backgroundImagePath, backgroundVideoPath, textAlignment, lineSpacing, showTitle, showTitleAsFirstSlide, titleFontFamily, titleFontSize, titleTextColor);
     }
 }

@@ -12,8 +12,7 @@
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.praiseview.controller.MainController"
-            styleClass="root"
-            prefWidth="1480" prefHeight="920">
+            styleClass="root">
 
     <!-- Top Menu -->
     <top>
@@ -46,7 +45,7 @@
 
     <!-- Left: Mass Planner / Service Order -->
     <left>
-        <VBox prefWidth="340" spacing="8" VBox.vgrow="ALWAYS">
+        <VBox prefWidth="280" minWidth="220" spacing="8" VBox.vgrow="ALWAYS">
             <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
             <Label text="Mass Planner - Service Order" styleClass="header"/>
             <ListView fx:id="servicePlannerList" VBox.vgrow="ALWAYS"/>
@@ -67,7 +66,7 @@
             <VBox spacing="8" HBox.hgrow="ALWAYS">
                 <Label text="Stage View (Current Projection)" styleClass="header"/>
                 <!-- The livePreviewPane will now contain its own title and textflow -->
-                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" prefWidth="640" prefHeight="360">
+                <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" minHeight="220">
                     <!-- Theme Background Image/Video (placed at the bottom) -->
                     <ImageView fx:id="liveThemeBackgroundImageView" fitWidth="${livePreviewPane.width}" fitHeight="${livePreviewPane.height}"
                                preserveRatio="true" visible="false" managed="false" StackPane.alignment="CENTER"/>
@@ -185,7 +184,7 @@
             </VBox>
 
             <!-- Current Song Verses List (moved from right) -->
-            <VBox prefWidth="280" minWidth="280" spacing="8" HBox.hgrow="NEVER">
+            <VBox prefWidth="240" minWidth="200" spacing="8" HBox.hgrow="NEVER">
                 <Label text="Current Item Verses/Pages" styleClass="header"/>
                 <ListView fx:id="currentSubItemList" VBox.vgrow="ALWAYS"/>
             </VBox>
@@ -194,13 +193,12 @@
 
     <!-- Right: Theme Editor (repurposed from old controls) -->
     <right>
-        <TabPane prefWidth="280" tabClosingPolicy="UNAVAILABLE">
+        <TabPane prefWidth="240" minWidth="200" tabClosingPolicy="UNAVAILABLE">
             <Tab text="Themes">
                 <VBox spacing="10">
                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                     <Label text="Available Themes" styleClass="header"/>
                     <ListView fx:id="themeListView" VBox.vgrow="ALWAYS" onMouseClicked="#handleThemeSelection"/>
-                    <CheckBox fx:id="showTitleCheckBox" text="Show Title on Projection" onAction="#handleShowTitleToggle"/>
                 </VBox>
             </Tab>
             <!-- Add other tabs if needed in the future -->
@@ -209,20 +207,20 @@
 
     <!-- Bottom: Library -->
     <bottom>
-        <TabPane prefHeight="260">
+        <TabPane prefHeight="220">
             <Tab text="Songs">
                 <HBox spacing="8">
                     <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
                     <!-- Left pane: Category list -->
-                    <VBox prefWidth="250" spacing="5" HBox.hgrow="NEVER">
+                    <VBox prefWidth="220" minWidth="170" spacing="5" HBox.hgrow="NEVER">
                         <Label text="Categories" styleClass="header" style="-fx-font-size: 12px;"/>
-                        <TreeView  fx:id="songCategoryList" prefHeight="200" VBox.vgrow="ALWAYS"/>
+                        <TreeView fx:id="songCategoryList" VBox.vgrow="ALWAYS"/>
                         <Button fx:id="clearCategoryFilterButton" text="Clear Filter" style="-fx-font-size: 11px;"/>
                     </VBox>
                     <!-- Right pane: Songs list and controls -->
                     <VBox spacing="8" HBox.hgrow="ALWAYS">
                         <TextField fx:id="searchField" promptText="Search songs..."/>
-                        <ListView fx:id="songLibraryList" prefHeight="200" VBox.vgrow="ALWAYS"/>
+                        <ListView fx:id="songLibraryList" VBox.vgrow="ALWAYS"/>
                         <HBox spacing="8">
                             <Button fx:id="addSongButton" text="➕ Add New Song" HBox.hgrow="ALWAYS"/>
                             <Button fx:id="editSongButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS"/>
@@ -236,7 +234,7 @@
                         <Button fx:id="addPrayerButton" text="➕ Add New Prayer" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="editPrayerButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS" onAction="#editSelectedPrayer"/>
                     </HBox>
-                    <ListView fx:id="prayerList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                    <ListView fx:id="prayerList" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
             <Tab text="Texts"> <!-- New Tab for Texts -->
@@ -246,7 +244,7 @@
                         <Button fx:id="addTextButton" text="➕ Add New Text" HBox.hgrow="ALWAYS" onAction="#addNewText"/>
                         <Button fx:id="editTextButton" text="✎ Edit Selected" HBox.hgrow="ALWAYS" onAction="#editSelectedText"/>
                     </HBox>
-                    <ListView fx:id="textLibraryList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                    <ListView fx:id="textLibraryList" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
             <Tab text="Images">
@@ -256,7 +254,7 @@
                         <Button fx:id="openImageButton" text="📂 Open Images" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="clearImageButton" text="🗑️ Clear Images" HBox.hgrow="ALWAYS"/>
                     </HBox>
-                    <ListView fx:id="imageList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                    <ListView fx:id="imageList" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
             <Tab text="Videos">
@@ -266,7 +264,7 @@
                         <Button fx:id="openVideoButton" text="🎬 Open Videos" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="clearVideoButton" text="🗑️ Clear Videos" HBox.hgrow="ALWAYS"/>
                     </HBox>
-                    <ListView fx:id="videoList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                    <ListView fx:id="videoList" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
             <Tab text="Audio"> <!-- New Tab for Audio -->
@@ -276,7 +274,7 @@
                         <Button fx:id="openAudioButton" text="🎵 Open Audio" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="clearAudioButton" text="🗑️ Clear Audio" HBox.hgrow="ALWAYS"/>
                     </HBox>
-                    <ListView fx:id="audioList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                    <ListView fx:id="audioList" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
             <Tab text="PPT">
@@ -286,7 +284,7 @@
                         <Button fx:id="openPptButton" text="📊 Open PPTs" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="clearPptButton" text="🗑️ Clear PPTs" HBox.hgrow="ALWAYS"/>
                     </HBox>
-                    <ListView fx:id="pptList" VBox.vgrow="ALWAYS" prefHeight="220"/>
+                    <ListView fx:id="pptList" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
         </TabPane>
