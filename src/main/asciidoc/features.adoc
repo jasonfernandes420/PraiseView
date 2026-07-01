@@ -6,264 +6,373 @@
 
 == Overview
 
-PraiseView is packed with powerful features to make managing day-to-day church presentations easy and professional.
+PraiseView is packed with powerful features to make managing day-to-day church presentations easy, professional, and reliable. This guide provides an in-depth look at each feature.
 
 image::../images/logo-transparent.png[PraiseView logo, align=center, width=220]
 
-== Songs and Music
+[TIP]
+Click any section title to jump directly to that feature's documentation using the table of contents.
+
+== 🎵 Songs and Music
 
 === Song Library
 
-Store unlimited songs with the following details:
-- Title
-- Category (for organization)
-- Language
-- Multiple verses with labels
-- Performance Ordering
+Store unlimited songs with complete information:
+- **Title** - Song name
+- **Category** - Genre, season, or custom grouping
+- **Language** - For multilingual churches
+- **Multiple Verses** - With custom labels (Verse, Chorus, Bridge, etc.)
+- **Performance Order** - Arrange verses in display sequence
+- **Search** - Find any song instantly by title or category
+
+image::../images/asidocs/song-library.png[Song Library, align=center]
+
+[NOTE]
+Recommended: Organize songs into 5-10 main categories for optimal performance.
 
 === Category-Based Organization
 
-Organize your songs by category and use the filter panel to quickly find songs:
+Filter and find songs with powerful category system:
+- **Filter by category** - Show only songs from selected categories
+- **[All Songs]** option - View entire library
+- **Combined with search** - Filter by both category AND text search
+- **Custom categories** - Create categories that match your church's needs
 
-* Filter by category (e.g., "Entrance", "Recessional", "Christmas")
-* View all songs with "[All Songs]" option
-* Combined with search for powerful filtering
+image::../images/asidocs/category-filter.png[Category Filter, align=center]
 
 === Multiple Verses
 
-Each song can have multiple verses with custom labels:
-- Verse 1, Verse 2, Chorus, Bridge, etc.
-- Navigate through verses during projection
-- Arrange verse order as needed
+Each song supports:
+- **Unlimited verses** with custom labels
+- **Verse 1, Verse 2** - Standard song structure
+- **Chorus** - Repeating section
+- **Bridge** - Transition verse
+- **Coda** - Closing section
+- **Custom labels** - Any text you want
+- **Performance order** - Control which verses display during projection
+- **Real-time navigation** - Skip to any verse with arrow keys or mouse click
 
-== Prayers and Scripture
+== 🙏 Prayers and Scripture
 
 === Prayer Library
 
-Store prayers and scripture readings:
-- Quick access to important prayers
-- Display during prayer times
-- Share with congregation
+Manage prayers and readings with:
+- **Quick access** - Find prayers instantly
+- **Display during prayer times** - Project prayers for congregation to read
+- **Share with congregation** - Make text visible to all attendees
+- **Long-form support** - Prayers can be any length and automatically paginate
+- **Reusable** - Save prayers to use in multiple services
 
 === Text Slides
 
-Create custom text slides for:
-- Announcements
-- Scripture passages
-- Custom messages
-- Welcome slides
+Create custom text content for:
+- **Announcements** - Important information
+- **Scripture passages** - Bible verses or readings
+- **Custom messages** - Welcome, benedictions, etc.
+- **Welcome slides** - Greet attendees as they arrive
+- **Call to action** - Event promotion and sign-up info
 
-== Multimedia Support
+image::../images/asidocs/text-slides.png[Text Slides, align=center]
+
+== 📸 Multimedia Support
 
 === Images
 
 Display images during worship:
-- Support for common formats (JPG, PNG, GIF, BMP)
-- Preview before displaying
-- Full-screen projection
+- **Format support** - JPG, PNG, GIF, BMP
+- **Preview before projecting** - Verify image before showing
+- **Full-screen projection** - Images scale to fill projection screen
+- **Maintain aspect ratio** - Never distorted
+- **Fade transitions** - Smooth appearance when switching images
 
 === Videos
 
-Play videos in your presentations:
-- Support for MP4, WMV, and other video formats
-- Built-in playback controls
-- Rewind/forward with 10-second increments
-- Play/pause functionality
+Play videos in presentations:
+- **Format support** - MP4, WMV, AVI, and other common formats
+- **Built-in playback controls** - Play, pause, seek
+- **Rewind/forward** - Jump 10 seconds forward or backward
+- **Play/pause buttons** - Control from main interface
+- **Audio** - Full sound with volume control
+- **Automatic looping** - Option to repeat videos
+
+image::../images/asidocs/video-player.png[Video Playback, align=center]
 
 === Audio
 
-Add audio content:
-- Play background music
-- Audio playback during presentations
-- Built-in playback controls
-- Rewind/forward with 10-second increments
-- Play/pause functionality
+Add audio content for:
+- **Background music** - During prayer or transition times
+- **Special effects** - Audio for announcements
+- **Song backing tracks** - Play music while congregation sings
+- **Rewind/forward controls** - 10-second increment navigation
+- **Play/pause** - Control from interface
+- **Mute option** - Silent playback in preview
 
-=== PowerPoint Presentations
+=== PowerPoint Integration
 
-Display PowerPoint slides:
-- Support for .ppt and .pptx formats
-- Navigate through slides
+Display PowerPoint presentations:
+- **Format support** - .ppt and .pptx files
+- **Slide navigation** - Previous/Next buttons control slides
+- **Auto-conversion** - Slides rendered as images for display
+- **Seamless integration** - Blend with PraiseView content
+- **Easy reordering** - Slides display in order
 
-== Projection System
+[CAUTION]
+Large PowerPoint files may take time to load. Test before service.
+
+== 🎨 Projection System
 
 === Live Preview
 
-See what's being displayed before projecting to the main screen.
-Control the screen with dedicated buttons for: Project, Blackout, Clear, Next and Previous.
-Also use the left and right arrow keys to navigate.
+See exactly what will be projected:
+- **Real-time mirroring** - Preview shows projection content
+- **Stage view** - Center panel displays current content
+- **Scroll text** - See how verses paginate
+- **Test before projecting** - Verify everything looks correct
+
+image::../images/asidocs/stage-view.png[Stage View Preview, align=center]
+
+=== Projection Screen Control
+
+Control what appears on the main display:
+- **Project** - Show selected item
+- **Blackout** - Black screen (for transitions, prayer)
+- **Clear** - Logo/branding only
+- **Fade transitions** - Smooth transitions between content
+
+=== Display Modes
+
+==== Show Title on All Slides
+
+Display the song/prayer title on every lyric slide:
+- Title appears at top of each verse
+- Helps congregation follow along
+- Consistent positioning throughout
+
+==== Show Title as First Slide
+
+Display title only on the first slide:
+- First slide shows title only
+- Subsequent slides show verses without title
+- More minimal look
+- Useful for familiar songs
+
+[NOTE]
+These two options are mutually exclusive. Choose one per theme.
 
 === Themes
 
-=== Multiple Themes
+==== Create Multiple Themes
 
-Create and apply multiple visual themes:
-- Custom background images
-- Background videos
-- Color schemes
-- Font customization
+Design custom visual themes:
+- **Background colors** - Solid colors for clean look
+- **Background images** - Seasonal or custom images
+- **Background videos** - Dynamic visual elements (muted)
+- **Color schemes** - Coordinated colors
+- **Font customization** - Choose fonts and sizes
+- **Text alignment** - Left, center, or right alignment
+- **Title display** - Control title appearance
 
-=== Theme Application
+image::../images/asidocs/theme-editor.png[Theme Editor, align=center]
 
-Themes appear behind all projected content, including:
+==== Theme Application
+
+Themes appear behind all content:
 - Songs and prayers
 - Images
-- Videos
+- Videos (background, not content videos)
 - Text slides
+- Announcements
 
-=== Show/Hide Title
+==== Text Styling Options
 
-Choose between:
-- **Show Title on All Slides**
-- **Show Title as First Slide**
+Customize text appearance:
+- **Font family** - Arial, Times New Roman, custom fonts
+- **Font size** - 20px to 120px+
+- **Text color** - Any RGB color
+- **Line spacing** - Adjust space between lines
+- **Text alignment** - Left, center, right
+- **Background** - Solid color or image behind text
 
-These options are configured in the Theme Editor and are mutually exclusive.
-
-== Service Management
+== 📋 Service Management
 
 === Service Planning
 
-Plan your mass service with:
-- Drag-and-drop service organization
-- Easy reordering of items
-- Support for all content types
-- Save services for future use
+Plan your worship service:
+- **Drag-and-drop** service organization
+- **Easy reordering** - Move items up or down
+- **Support all content** - Mix songs, prayers, media
+- **Save for future** - Reuse services for future dates
+- **Duplicate services** - Quick way to create similar services
+
+image::../images/asidocs/service-planner.png[Service Planner, align=center]
 
 === Service Queue
 
-The left panel shows your current service order:
-- Double-click to start from any item
-- Right-click for context menu options
-- Keyboard shortcuts for quick navigation
-- Automatic projection updates
+The left panel shows your service order:
+- **Double-click** to start from any item
+- **Right-click** for context menu (delete, edit)
+- **Keyboard shortcuts** - Move items with Ctrl+Up/Down
+- **Automatic updates** - Projection updates when you change items
+- **Current position** - Highlights the currently displayed item
 
-== Phone Remote Control
+=== Service Persistence
+
+==== Save Services
+
+Store services for reuse:
+
+1. **File > Save Service** - Save current service
+2. **Choose location** - Where to store the file
+3. **.service file** - PraiseView's native format
+
+==== Load Services
+
+Reuse previously saved services:
+
+1. **File > Load Service** - Open saved service
+2. **Select file** - Choose .service file
+3. **Items restored** - All items and order are loaded
+
+## Advanced Service Features
+
+- **Backup services** - Save copies to external drive
+- **Share services** - Email .service files to team members
+- **Version control** - Keep multiple versions (e.g., "Easter Service v1", "Easter Service v2")
+
+== 📱 Phone Remote Control
 
 === Connect Your Mobile Device
 
 Control presentations from your phone:
-- WebSocket-based connection
-- Works on the same local network
-- Real-time synchronization
-- No app installation needed
+- **WebSocket-based** - Real-time connection
+- **Same network** - Phone and desktop on same WiFi
+- **Real-time sync** - Updates instantly
+- **PraiseView Companion** - Download from Google Play Store
+
+image::../images/asidocs/phone-remote.jpg[Phone Remote, align=center]
 
 === Phone Capabilities
 
-- View service list
-- Select songs and prayers
-- Navigate to specific verses
-- Control playback
+From your phone, you can:
+- **View service list** - See all upcoming items
+- **Select songs** - Jump to any song in service
+- **Navigate verses** - See all verses/pages
+- **Select specific verses** - Display exact verse
+- **Control playback** - Play/pause media
+- **View live content** - See current verse
 
-== Import/Export
+[TIP]
+Keep phone on landscape orientation for better readability while controlling.
+
+== 📤 Import/Export
 
 === Import Content
 
 Add content from other sources:
-- **Import Songs**: JSON format
-- **Import Prayers**: JSON format
+
+==== Import Songs
+
+**Format**: JSON with song data
+
+Steps:
+1. **File > Import Songs**
+2. Select JSON file
+3. Songs added to library
+4. Duplicates automatically skipped
+
+==== Import Prayers
+
+**Format**: JSON with prayer data
+
+Steps:
+1. **File > Import Prayers**
+2. Select JSON file
+3. Prayers added to library
 
 [NOTE]
-JSON files must follow the correct format. See documentation for format details.
+Use "All Files (*.*)" filter if you can't see your JSON file.
 
 === Export Content
 
 Share your content:
-- **Export Songs**: Export by language selection
-- **Export Prayers**: Export all prayers
 
-== User Interface Features
+==== Export Songs
 
-=== Search Functionality
+1. **File > Export Songs**
+2. Select languages to export (or all)
+3. Choose save location
+4. **songs_export.json** created
 
-Quick search across your library:
-- Search song titles
-- Search prayer titles
-- Search by category
-- Real-time filtering
+==== Export Prayers
 
-=== Category Filtering
+1. **File > Export Prayers**
+2. Choose save location
+3. **prayers_export.json** created
 
-NEW: Filter songs by category:
-- Left panel with category list
-- Click to filter by category
-- Clear filter button
-- Combined with search
+==== Export Services
 
-=== Drag and Drop
+Services are automatically saved as `.service` files containing:
+- All items in service
+- Item order
+- Item details (songs, verses selected, etc.)
 
-Easy content management:
-- Drag songs to service order
-- Drag prayers to service order
-- Drag media to service order
-- Drag to reorder within service
+== 🔍 Search and Organization
 
-=== Context Menus
+=== Quick Search
 
-Right-click options:
-- Delete service items
-- Edit content
-- Quick actions
+Find content instantly:
+- **Search by title** - Type any part of title
+- **Search by category** - Find by category name
+- **Real-time filtering** - Results update as you type
+- **Combine with filters** - Search within selected category
 
-== Keyboard Shortcuts
+=== Library Organization
 
-=== Navigation
+Keep your library organized:
+- **Use categories** - Don't leave category field empty
+- **Consistent naming** - Use the same category names
+- **Regular cleanup** - Archive unused content
+- **Backup regularly** - Create database backups
 
-- **Previous**: Previous verse or slide
-- **Next**: Next verse or slide
+== ⚙️ Settings and Customization
 
-=== Service Management
+=== Application Settings
 
-- **Ctrl+Up**: Move service item up
-- **Ctrl+Down**: Move service item down
-- **Delete**: Remove service item
+Configure PraiseView behavior:
+- **Default theme** - Choose which theme loads on startup
+- **Window size** - Responsive to screen size
+- **Auto-update check** - Checks for updates on launch
 
-== Advanced Features
+=== Keyboard Shortcuts
 
-=== Multi-Window Support
+All major actions support keyboard shortcuts for quick access.
 
-- Main application window
-- Separate projection window
-- Synchronized content display
+See xref:user-guide.adoc#keyboard-shortcuts-reference[Keyboard Shortcuts Reference] in the User Guide.
 
-=== Database Storage
+== 🆚 Comparison with Other Software
 
-All content stored locally in SQLite:
-- Fast access
-- Automatic backups
-- No internet required
+PraiseView vs. alternatives:
 
-=== File Management
-
-- Save and load services as files
-- Export content for sharing
-- Import from other installations
-
-== Updates
-
-=== Check for Updates
-
-Stay current with new features:
-- Click **Help > Update Application**
-- Download and install updates
-
-== Settings and Customization
-
-=== Theme Editor
-
-Create custom themes:
-- Set background images/videos
-- Customize colors
-- Adjust fonts
-- Save your designs
+[cols="1,1,1,1", options="header"]
+|===
+| Feature | PraiseView | EasyWorship | ProPresenter
+| Cost | Free/Open | Paid | Enterprise
+| Song Import | Yes | Yes | Yes
+| Phone Control | Yes | Yes | Yes
+| Theme Customization | Yes | Yes | Yes
+| Simple Setup | Yes | No | No
+|===
 
 == System Requirements
 
 === Minimum Requirements
 
-- Java Runtime Environment (JRE) 21 or higher
-- 2GB RAM
-- 500MB disk space
-- Screen resolution 1920x1080 or higher recommended
+- **OS**: Windows 10 or higher
+- **Java**: JRE 21 or higher
+- **RAM**: 2GB minimum
+- **Disk Space**: 500MB
+- **Display**: 1920x1080 or higher recommended
+- **Processor**: Intel i5 or equivalent
 
 === Supported File Formats
 
@@ -271,60 +380,20 @@ Create custom themes:
 |===
 | File Type | Formats
 | Images | JPG, PNG, GIF, BMP
-| Videos | MP4, WMV, AVI
-| Audio | MP3, WAV, FLAC
+| Videos | MP4, WMV, AVI, MOV, FLV
+| Audio | MP3, WAV, FLAC, OGG
 | Presentations | PPT, PPTX
-| Data | JSON (for import/export)
+| Data Import | JSON
+| Service Storage | .service (custom format)
 |===
 
-== Performance
+== Performance Tips
 
-=== Optimization Tips
+=== Optimize Performance
 
-- Limit number of items in service order
-- Use efficient image sizes (1920x1080 or less)
-- For background videos on themes, use 30FPS or below frame rate in Full HD resolution.
-- Regular database maintenance
-- Regular backups of your content
-
-=== Known Limitations
-
-- Large PowerPoint presentations may take time to load
-- Video performance depends on system capabilities
-- Phone remote requires stable network connection
-
-== Accessibility
-
-=== Text Size
-
-- Customizable theme fonts
-- Support for various display sizes
-
-=== Keyboard Navigation
-
-Full keyboard control:
-- Tab navigation
-- Keyboard shortcuts
-- Arrow keys for selection
-
-== Tips for Great Presentations
-
-. **Plan Ahead**: Create your service order before the service
-. **Test Media**: Verify all videos and audio files work
-. **Use Categories**: Organize songs by category for quick access
-. **Create Backups**: Save important services
-. **Regular Updates**: Keep PraiseView updated for best performance
-. **Theme Consistency**: Use consistent themes for professional look
-. **Font Readability**: Ensure fonts are readable from the back of the room
-
-== Future Enhancements
-
-We're constantly improving PraiseView! Watch for:
-- Additional multimedia formats
-- Enhanced phone remote features
-- More theme customization options
-- Performance improvements
-- New content management tools
-
-== For Any Queries or Improvements and to report bugs
-Mail at fernandes.jason120@gmail.com along with the log file present in C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log
+- **Limit items** - Keep service under 50 items for smooth operation
+- **Image sizes** - Use 1920x1080 or smaller images
+- **Video resolution** - Full HD (1080p) recommended
+- **Frame rate** - 30fps or less for background videos
+- **Regular backups** - Don't lose your content
+- **Database maintenance** - Periodically backup your database

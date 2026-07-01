@@ -7,25 +7,40 @@
 
 == Welcome to PraiseView
 
-PraiseView is a powerful church presentation software designed to help you manage and display songs, prayers, scriptures, and multimedia content during worship services.
+PraiseView is a powerful, modern church presentation software designed to help you manage and display songs, prayers, scriptures, and multimedia content during worship services with ease and professionalism.
 
 image::../images/logo-transparent.png[PraiseView logo, align=center, width=260]
 
-=== Quick Links
+[.text-center]
+_Manage worship content seamlessly from one intuitive interface_
 
-* xref:user-guide.adoc[User Guide]
-* xref:features.adoc[Features]
-* xref:getting-started.adoc[Getting Started]
+=== Quick Navigation
+
+[.feature-grid]
+* 🚀 xref:getting-started.adoc[**Getting Started**] - Launch PraiseView in minutes
+* 📖 xref:user-guide.adoc[**User Guide**] - Complete operational guide
+* ⚙️ xref:features.adoc[**Features**] - Explore all capabilities
 
 == Main Features
 
-* **Song Management** - Organize and display hymns and worship songs by category
-* **Prayer Management** - Store and project prayers during services
-* **Multimedia Support** - Display images, videos, and audio
-* **PowerPoint Integration** - Project presentations alongside your content
-* **Phone Remote Control** - Control presentations from your mobile device
-* **Theme System** - Customize the look and feel of your projections
-* **Service Planning** - Create and manage service orders for your worship
+[.feature-boxes]
+- 🎵 **Song Management** - Organize and display hymns and worship songs by category with powerful search
+- 🙏 **Prayer Management** - Store and project prayers, scripture readings, and announcements
+- 📸 **Multimedia Support** - Display images, videos, and audio during services
+- 📊 **PowerPoint Integration** - Project presentations alongside your content
+- 📱 **Phone Remote Control** - Control presentations from your Android mobile device
+- 🎨 **Theme System** - Customize the look and feel with custom backgrounds, fonts, and colors
+- 📋 **Service Planning** - Create and manage service orders with drag-and-drop simplicity
+
+== Why Choose PraiseView?
+
+✅ **Easy to Use** - Intuitive interface requires minimal training
+
+✅ **Feature-Rich** - Everything you need in one application
+
+✅ **Reliable** - Built for consistent performance during worship
+
+✅ **Flexible** - Supports all your content types and workflows
 
 == Getting Started
 
@@ -39,7 +54,7 @@ image::../images/logo-transparent.png[PraiseView logo, align=center, width=260]
 
 === Importing Content
 
-PraiseView supports importing songs and prayers from JSON files.
+PraiseView supports importing songs and prayers from JSON files for quick library setup.
 
 1. Go to **File > Import Songs** or **File > Import Prayers**
 2. Select the JSON file containing your content
@@ -50,26 +65,54 @@ PraiseView supports importing songs and prayers from JSON files.
 === Service Items
 
 A service item is any content piece that can be displayed during a worship service:
-* Songs (with verses)
-* Prayers
-* Scripture texts or Informative texts
-* Images
-* Videos
-* Audio Files
-* Presentations
+- 🎵 Songs (with verses and choruses)
+- 🙏 Prayers
+- 📝 Scripture texts or Informative texts
+- 🖼️ Images
+- 🎬 Videos
+- 🔊 Audio Files
+- 📊 PowerPoint Presentations
 
 === Categories
 
-Organize your hymns by category. Use the category filter in the Songs tab to quickly find songs/hymns.
+Organize your hymns by category for quick navigation. Use the category filter in the Songs tab to quickly find songs/hymns. Create custom categories to match your church's organization system.
 
 === Themes
 
-Apply different visual themes to your projections. Themes can include background images or videos that appear behind your content.
+Apply different visual themes to your projections. Themes can include:
+- Custom background colors
+- Background images
+- Background videos
+- Custom fonts and sizes
+- Text alignment preferences
+- Title display options (all slides or first slide only)
 
-== Support
+== Advanced Features
 
-For more information, see the detailed user guide and feature documentation.
+=== Live Preview
+See exactly what will be projected before displaying it on the main screen. This stage view mirrors the projection in real-time.
 
-== Reporting bugs
+=== Service Persistence
+Save your services to reuse them for future worship dates. Load previously saved services instantly.
 
-Mail at fernandes.jason120@gmail.com along with the log file present in C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log
+=== Projection Modes
+- **Normal** - Display content on projection screen
+- **Blackout** - Show black screen during transitions or prayers
+- **Clear** - Show only the logo/branding
+
+=== Multi-Monitor Support
+Automatically detects secondary monitors and displays projection content across your setup.
+
+== Community & Support
+
+For more information, see the detailed xref:user-guide.adoc[User Guide] and xref:features.adoc[Feature Documentation].
+
+Have questions? Visit our help resources or contact us.
+
+== Reporting Issues
+
+If you encounter any issues:
+
+1. Check the xref:user-guide.adoc#troubleshooting[Troubleshooting Guide]
+2. Review log files at `C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log`
+3. Report bugs with log file to: fernandes.jason120@gmail.com

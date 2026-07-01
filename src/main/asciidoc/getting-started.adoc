@@ -4,238 +4,427 @@
 :icons: font
 :source-highlighter: coderay
 
-== Welcome!
+== Welcome! 👋
 
-Welcome to PraiseView! This guide will help you get up and running in just a few minutes.
+Welcome to PraiseView! This guide will help you get up and running in just a few minutes. We've designed PraiseView to be intuitive and powerful—whether you're a tech expert or using projection software for the first time.
 
 image::../images/logo-transparent.png[PraiseView logo, align=center, width=220]
 
-== Installation
+[NOTE]
+Complete this guide in 10-15 minutes to have your first service projection working!
+
+== Installation & Setup
 
 === System Requirements
 
-- Java Runtime Environment (JRE) 21 or higher
-- 2GB RAM minimum
-- Screen resolution 1920x1080 or higher recommended
+Before installing, ensure you have:
+- **2GB RAM minimum** (4GB recommended for media-heavy services)
+- **Screen resolution 1920x1080 or higher** (recommended)
+- **Windows 10 or later** (Windows 11 preferred)
+- **500MB free disk space**
 
-=== Running PraiseView
+=== Download and Install
 
-1. Run the PraiseView application (praiseview.msi)
-2. When prompt to run, click on "Run Anyway" and wait for the installation to complete
-3. Search for PraiseView in your Start Menu and click to launch
-4. You should see the main window with various panels
+1. **Download** PraiseView installer (praiseview.msi) from official website
+2. **Run the installer** - Double-click praiseview.msi
+3. **Security prompt** - Click "Run Anyway" if Windows shows a warning
+4. **Wait for installation** - Takes 1-2 minutes
+5. **Launch application** - Search for "PraiseView" in Start Menu
 
-== Your First Launch
+=== First Launch
 
-=== Main Window Layout
+When you open PraiseView for the first time, it will:
+- ✅ Check for the latest updates
+- ✅ Create a database for your content
+- ✅ Initialize default themes
+- ✅ Set up the projection screen (if connected)
 
-When you first open PraiseView, you'll see:
+[TIP]
+Connect your projection screen BEFORE launching PraiseView for best results.
 
-- **Left Panel**: Service Planner - Shows your current service order
-- **Center Panel**: Stage View - Shows what's being projected
-- **Right Panel**: Themes - Visual themes for projections
-- **Bottom Panel**: Library tabs - Songs, Prayers, Images, Videos, etc.
+== Your First Look: Main Window Layout
 
-== Creating Your First Service
+The PraiseView interface is organized into logical sections:
 
-=== Step 1: Add a Song
+image::../images/asidocs/panels.jpg[Main Interface Panels, align=center]
 
-1. Click the **Songs** tab at the bottom
-2. Click **➕ Add New Song**
-3. Enter a song title (e.g., "Amazing Grace") and select the language and categories
-4. Add a verse:
-   - Click "Add Verse"
-   - Change the type of Verse (Verse, Chorus, Coda etc)
-   - Paste or type the lyrics
-   - Click "Add Verse" again for more verses
-5. Add the Songs Performance Order
-6. Click **Save**
+=== The Four Main Areas
 
-=== Step 2: Add to Service Order
+[cols="1,3", options="header"]
+|===
+| Area | Purpose
+| **Left Panel** | Service Planner - Your worship service order (which songs, prayers, etc.)
+| **Center Panel** | Stage View - Preview of what appears on projector
+| **Right Panel** | Themes - Visual designs for your projections
+| **Bottom Panel** | Content Library - Tabs for Songs, Prayers, Images, Videos, Audio, PowerPoint
+|===
 
-1. Find your song in the Songs list
-2. Drag it to the "Service Planner" on the left
-3. It will appear in your service order
+=== Menu Bar Quick Reference
 
-=== Step 3: Project Your Song
+- **File** - Create, save, load services; import/export content
+- **Themes** - Create and manage visual themes
+- **Help** - Documentation, updates, phone remote setup
 
-1. In the Service Planner, select your song
-2. Click the **Project** button
-3. Your song appears on the projection screen!
+== 🚀 Creating Your First Service (5 minutes)
 
-=== Step 4: Navigate Content
+Let's create a simple service with one song. Follow these steps exactly:
 
-- Click **Next** to see the next verse
-- Click **Previous** to go back
-- Use **Blackout** to show a black screen
-- Use **Clear** to show the logo
+=== Step 1: Create Your First Song
 
-== Next Steps
+1. **Bottom left** - Click the **Songs** tab (if not already selected)
+2. **Add button** - Click **➕ Add New Song**
+3. **Fill in details**:
+   - **Title**: "Amazing Grace" (or your favorite song)
+   - **Category**: "Hymns" (you can type a new category)
+   - **Language**: English
+4. **Add verses** - Click **Add Verse** button
+   - **Verse Label**: Leave as "Verse"
+   - **Verse Text**: Paste or type the first verse of your song
+   - Click **Add Verse** again to add more verses
+   - Repeat for each verse/chorus you want
+5. **Performance Order**: Drag verses in the order you want them displayed
+   - Example: Verse 1 → Chorus → Verse 2 → Chorus → Verse 3
+6. **Save** - Click **Save Song** button
 
-=== Build Your Library
+image::../images/asidocs/song-editor.png[Song Editor, align=center]
 
-Add more content to PraiseView:
+[NOTE]
+The Performance Order determines which verses display during projection. Drag them into your preferred sequence.
 
-1. **Add More Songs**
-   - Click **➕ Add New Song** repeatedly
-   - Or import songs from a JSON file
+=== Step 2: Add Song to Service
 
-2. **Add Prayers**
-   - Go to Prayers tab
-   - Click **➕ Add New Prayer**
+1. **Find your song** - Look for "Amazing Grace" in the Songs tab
+2. **Drag to service** - Drag it to the left panel (Service Planner)
+3. **Confirmation** - You should see it appear in the service list on the left
 
-3. **Add Media**
-   - Upload images, videos, or audio
-   - Upload PowerPoint presentations
+=== Step 3: Project Your First Item
 
-=== Organize Your Content
+1. **Select the song** - Click on "Amazing Grace" in the left panel
+2. **Center preview** - Notice the center panel shows the first verse
+3. **Click Project** - Click the **Project** button at the top
+4. **Look at your projection screen** - You should see the song verse displayed!
 
-Use categories to organize songs:
+Congratulations! You've projected your first item. 🎉
 
-1. When adding a song, set its Category field
-2. Go to Songs tab
-3. Use the left panel to filter by category
-4. Makes finding songs much faster!
+=== Step 4: Navigate Through Verses
 
-=== Create a Theme
+Try these controls:
+- **Next ▶** button - Move to next verse
+- **Previous ◀** button - Go back to previous verse
+- **Arrow keys** - Keyboard alternative (← and →)
+- **Left click on verse** - Jump directly to a specific verse (shown in center panel)
 
-Customize the look of your projections:
+[TIP]
+The stage view (center panel) is your "safe" preview. Always check it before clicking Project.
 
-1. Click **Themes** (menu) in the top menu bar
-2. Select **Theme Editor**
-3. Create a new theme with a background image
-4. Set title display mode in the Theme Editor if needed
-5. Apply it to your service
+== Building Your Content Library
 
-== Common Tasks
+Now let's expand beyond one song:
 
-=== Importing Songs
+=== Add More Songs
 
-If you have a JSON file with songs:
+Repeat Step 1 for each song you want to add:
+1. Click ➕ Add New Song
+2. Fill in title, category, language
+3. Add verses
+4. Set performance order
+5. Save
 
-1. Click **File > Import Songs**
-2. Select your JSON file
-3. Songs are added to your library
+[TIP]
+**Pro tip**: Create consistent categories like "Entrance", "Worship", "Prayer Songs", "Recessional" to organize better.
+
+=== Import Songs from JSON (Optional)
+
+If you have a JSON file with multiple songs:
+
+1. **File > Import Songs**
+2. **Choose filter** - Select "All Files (*.*)" if you can't see your .json file
+3. **Select file** - Pick your JSON file
+4. **Wait** - Songs are added to library
+5. **Verify** - Check Songs tab to see imported songs
+
+[NOTE]
+Import is useful for copying songs from another PraiseView installation or from a church songbook provider.
+
+=== Add Prayers
+
+Similar to songs:
+
+1. Click **Prayers** tab
+2. Click ➕ **Add New Prayer**
+3. Enter prayer title and text
+4. Click **Save**
+
+Prayers can be any length—they'll automatically break into multiple slides if needed.
+
+=== Add Images
+
+For visual worship elements:
+
+1. Click **Images** tab
+2. Click 📁 **Open Images**
+3. Select image files from your computer
+4. **Auto-import** - Images appear in Images tab
+5. **Drag to service** - Add to your service order
+
+[TIP]
+Use high-quality images (1920x1080 or higher) for best projection results.
+
+=== Add Videos
+
+For multimedia content:
+
+1. Click **Videos** tab
+2. Click 🎬 **Open Videos**
+3. Select video files (MP4, WMV, AVI)
+4. **Auto-import** - Videos appear in Videos tab
+5. **Drag to service** - Add to your service order
+6. **Double-click to play** - During service, double-click a video in the Service Planner to start playback
+
+[CAUTION]
+Test videos before service! Large files may take time to load.
+
+== Organizing with Categories
+
+PraiseView includes a powerful category system for songs:
+
+=== Filter by Category
+
+1. Go to **Songs** tab
+2. **Left panel** - You'll see a category list
+3. **Click a category** - Shows only songs in that category
+4. **[All Songs]** - Click to show all songs again
+
+=== Create Categories
+
+When adding a song, enter any category name you want:
+- "Contemporary"
+- "Hymns"
+- "Christmas"
+- "Easter"
+- "Children's Songs"
+- Your custom names!
+
+[TIP]
+Songs with no category appear as "Others". Use categories consistently to stay organized.
+
+== Customizing with Themes
+
+Make your projection visually appealing:
+
+=== View Default Themes
+
+1. **Right panel** - Shows available themes
+2. **Click a theme** - Preview appears in center panel
+3. **Double-click theme** - Applies to current item
+
+=== Create Your Own Theme
+
+1. Click **Themes > Theme Editor** in menu bar
+2. **Create New** - Click "New Theme"
+3. **Customize**:
+   - Set background color or image
+   - Adjust font family and size
+   - Choose text color
+   - Set text alignment
+   - Optionally enable title display mode
+4. **Save** - Give your theme a name and save
+
+[TIP]
+Use consistent themes throughout your service for a professional look.
+
+=== Theme Title Display Options
+
+In the Theme Editor, you can choose:
+
+**Show Title on All Slides**::
+  Title appears at the top of every verse slide. Good for unfamiliar songs.
+
+**Show Title as First Slide**::
+  Title appears only on the first slide, then verses display without title. More minimal look.
+
+[NOTE]
+These two options are mutually exclusive. Enable one at a time.
+
+== Managing Your Service
+
+=== The Service Planner (Left Panel)
+
+This shows your worship order:
+- **Double-click an item** - Start projecting from that point
+- **Select an item** - Center panel shows preview
+- **Drag to reorder** - Change the order
+- **Right-click** - Delete or edit options
+- **Keyboard shortcuts**:
+  - Ctrl+Up - Move item up
+  - Ctrl+Down - Move item down
+  - Delete - Remove item
+
+=== Adding Items to Service
+
+Three ways to add items:
+
+**Drag and Drop**::
+  1. Find item in bottom tabs (Songs, Prayers, etc.)
+  2. Drag it to the Service Planner on the left
+  3. It's added to your service
+
+**Double-Click**::
+  1. Find item in bottom tabs
+  2. Double-click to add to service
+
+**Right-Click Menu**::
+  1. Right-click item in bottom tabs
+  2. Select "Add to Service"
 
 === Saving Your Service
 
-Save your service for next time:
+Save your service to use again:
 
-1. Click **File > Save Service**
-2. Choose a location
-3. Your service is saved
+1. **File > Save Service**
+2. **Choose location** - Pick where to save
+3. **Name your service** - e.g., "Sunday Service 2025-01-12"
+4. **Save** - Saved as .service file
 
-To open it later:
-1. Click **File > Load Service**
-2. Select the file
+=== Loading Your Service
 
-=== Reordering Service Items
+Open a saved service:
 
-Move items around in your service:
+1. **File > Load Service**
+2. **Select file** - Choose your .service file
+3. **Open** - All items and order are restored
 
-1. Select an item
-2. Click **▲ Up** or **▼ Down**
-3. Or drag and drop in the list
-4. Or use **Ctrl+Up** or **Ctrl+Down**
+[TIP]
+Create services a day or two before your actual service. Gives you time to test and prepare.
 
-=== Projecting Videos
+== 📱 Phone Remote Control
 
-1. Go to **Videos** tab
-2. Click **🎬 Open Videos**
-3. Select your video files
-4. Drag the video to the service pane
-5. Double-click a video in the Service Planner to start
-6. Use video controls to play/pause/rewind/forward
+Control your service from your smartphone—great for:
+- Standing in different parts of the room
+- Navigating without being tied to the computer
+- Audience interaction
 
-== Phone Remote Control
+=== Quick Setup
 
-Control your presentation from your phone:
+1. **Click** **Help > Connect Phone** in menu bar
+2. **Note the network address** shown in dialog
+3. **Download app** - "PraiseView Companion" from Google Play Store
+4. **Open app on phone** - Enter the network address
+5. **Connect** - Both devices on same WiFi network
 
-1. Click **Help > Connect Phone**
-2. Download the PraiseView Companion app from Google Play Store.
-3. Ensure both the computer and phone are on the same network
-4. Scan the QR code
-5. Connect from any device on your network
-6. Control songs, verses, and playback
+[TIP]
+Use landscape orientation on your phone for better readability.
 
-== Keyboard Shortcuts to Know
+=== What You Can Do with Phone
+
+- 📋 View service list
+- 🎵 Select songs to project
+- ▶️ Navigate to specific verses
+- ⏯️ Control video playback
+- 👁️ See what's currently displayed
+
+== Key Commands Reference
+
+=== Most Important Buttons
+
+[cols="1,2,3", options="header"]
+|===
+| Button | What It Does | When to Use
+| **Project** | Display item on projector | After selecting a song/prayer
+| **Next** | Go to next verse/page | Advance during worship
+| **Previous** | Go to previous verse/page | Go back in the song
+| **Blackout** | Show black screen | For prayers, transitions, special moments
+| **Clear** | Show logo/background only | Between songs, while people are singing
+|===
+
+=== Keyboard Shortcuts
 
 [cols="1,2", options="header"]
 |===
-| Shortcut | What it does
+| Shortcut | Action
 | Ctrl+Up | Move service item up
 | Ctrl+Down | Move service item down
-| Delete | Remove service item
-| Previous Button | Go to previous verse
-| Next Button | Go to next verse
+| Delete | Delete service item
+| ← Arrow | Previous verse/page
+| → Arrow | Next verse/page
 |===
 
-== Tips for Getting the Most Out of PraiseView
+== Common First-Time Mistakes
 
-=== Organization Tips
+Avoid these common issues:
 
-. **Use Categories**: Organize songs by type (Contemporary, Hymns, etc.)
-. **Regular Backups**: Save your services regularly
-. **Consistent Themes**: Use the same theme for a cohesive look
-. **Test Before Service**: Test videos and audio before the service
+❌ **Forgetting to set Performance Order**::
+  Songs won't project if verse order isn't set. Always drag verses into desired order.
 
-=== Presentation Tips
+❌ **Not previewing before projecting**::
+  Always check the center (Stage View) panel before clicking Project.
 
-. **Plan Ahead**: Create your service order before the service starts
-. **Font Size**: Make sure text is readable from the back
-. **Image Quality**: Use good quality images for projections
-. **Verse Order**: Arrange verses in the order you want them displayed
+❌ **Connecting projection screen AFTER starting app**::
+  Connect screen first, then start PraiseView.
 
-=== Technical Tips
+❌ **Using very small fonts**::
+  Remember: people in the back of the room need to read it. Use at least 40pt font.
 
-. Keep PraiseView updated for best performance
-. Close other applications to improve performance
-. Use a dedicated projection computer if possible
-. Test internet connection for phone remote feature
+❌ **Not saving services**::
+  Save your service as .service file so you can reuse it. Don't just rely on memory!
 
-== Troubleshooting
+== Next Steps
 
-=== Application Won't Start
+You're ready to lead worship! Here's what to do next:
 
-. Try restarting your computer
-. Check system requirements
-. Check for error messages in the log file (located in: C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log)
+**Today**::
+  ✅ Complete this guide
+  ✅ Create one test service
+  ✅ Practice navigating verses
+  ✅ Test with your projection screen
 
-=== Projection Not Showing
+**This Week**::
+  1. Import your song library
+  2. Create 2-3 custom themes
+  3. Build a practice service
+  4. Invite someone to test phone remote
+  5. Create your first real service
 
-. Connect your projection screen/monitor first and then start the app.
-. Check the projection window is visible
-. Select a service item and click Project
-. For Song, ensure the performance order is present.
-
-=== Can't Import Songs
-
-. Make sure the file is a valid JSON file
-. Check file has .json extension
-. Verify file contains properly formatted song data
-
-=== Phone Remote Won't Connect
-
-. Verify both devices are on same network
-. Check firewall settings
-. Restart PraiseView
-. Try connecting again
+**This Month**::
+  1. Master all content types (songs, prayers, videos, images)
+  2. Create theme for each season/event (Christmas, Easter, etc.)
+  3. Set up phone remote for your team
+  4. Practice quick service reordering
+  5. Explore advanced features (see User Guide)
 
 == Getting Help
 
-- Read the xref:user-guide.adoc[User Guide] for detailed instructions
-- Check the xref:features.adoc[Features Guide] for what's available
-- Use the Help menu for quick reference
-- Check this getting started guide for common questions
+📖 **Need more details?**
+  - Read the xref:user-guide.adoc[User Guide] for comprehensive instructions
+  - Check xref:features.adoc[Features Guide] for advanced capabilities
 
-== What's Next?
+🆘 **Stuck on something?**
+  - Try the built-in **Help** menu in the application
+  - Check your system log: `C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log`
+  - Email support: fernandes.jason120@gmail.com (include log file)
 
-Now that you've got the basics down:
+🎓 **Want to learn more?**
+  - Watch tutorial videos (coming soon - see Help menu)
+  - Read through the features guide for advanced topics
 
-1. **Explore the Themes**: Try different themes
-2. **Import Your Content**: Add your songs and prayers
-3. **Practice Navigation**: Get comfortable with the controls
-4. **Set Up Phone Remote**: Control from your phone
-5. **Create Services**: Build your complete worship services
+== You're All Set! 🎉
 
-Have fun with PraiseView! If you have questions, check the documentation or the Help menu.
+You now know enough to:
+- ✅ Create and add songs
+- ✅ Organize content with categories
+- ✅ Project to your screen
+- ✅ Navigate verses during service
+- ✅ Customize themes
+- ✅ Save and reuse services
+- ✅ Control from your phone
+
+The rest is practice. Each service will make you faster and more confident. Good luck with your presentations!
+
+---
+
+**Questions?** Check the Help menu in the application for the latest documentation.
+
+**Found a bug?** Email fernandes.jason120@gmail.com with:
+- Description of the issue
+- Steps to reproduce
+- Log file (C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log)

@@ -6,9 +6,26 @@
 
 == Introduction
 
-This guide covers all the essential features and workflows in PraiseView to help you manage and present content during worship services.
+This comprehensive guide covers all the essential features and workflows in PraiseView to help you manage and present content during worship services with confidence and ease.
 
 image::../images/logo-transparent.png[PraiseView logo, align=center, width=220]
+
+[NOTE]
+This guide is organized by task. Use the table of contents on the left to navigate to the section you need.
+
+== Interface Overview
+
+[.ui-section]
+*Main Application Layout*
+
+The PraiseView interface is divided into four main areas:
+
+image::../images/asidocs/interface-layout.jpg[Interface Layout, align=center]
+
+- **Left Panel**: Service Order (Planner) - Your worship service sequence
+- **Center Panel**: Stage View - Live preview of what's being projected
+- **Right Panel**: Themes and Controls - Visual themes and display options
+- **Bottom Panel**: Library Tabs - Access all your content (Songs, Prayers, Media, etc.)
 
 == Creating a Service
 
@@ -264,31 +281,157 @@ Download the PraiseView Companion App from Google Play Store
 
 == Troubleshooting
 
-=== Can't See JSON Files When Importing
+=== Common Issues and Solutions
 
+==== Can't See JSON Files When Importing
+
+**Problem**: File chooser only shows .json files, not all files
+
+**Solution**:
 Make sure the file chooser filter is set to "All Files (*.*)" or verify that your JSON file has the correct .json extension.
 
-=== Projection Not Displaying
 
+==== Projection Not Displaying
+
+**Problem**: Content doesn't appear on the projection screen
+
+**Steps to troubleshoot**:
 1. Check that a projection screen is connected
 2. Verify the projection view window is visible
 3. Ensure a service item is selected
 4. Click **Project** button
+5. Check logs at `C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log`
 
-=== Phone Remote Not Connecting
+==== Phone Remote Not Connecting
 
+**Problem**: Phone app cannot connect to the desktop
+
+**Steps to troubleshoot**:
 1. Verify both devices are on the same network
-2. Check firewall settings
+2. Check firewall settings - PraiseView needs port 8080 access
 3. Restart the PraiseView application
 4. Try connecting again with the provided address
+5. Ensure phone and desktop are on the same WiFi network
+
+==== Slow Performance
+
+**Problem**: Application is running slowly or lagging
+
+**Steps to improve performance**:
+1. Close other applications running on the computer
+2. Ensure you have at least 2GB of RAM available
+3. Check disk space (at least 500MB free)
+4. Reduce the number of videos in active service
+5. Restart PraiseView and try again
+
+==== Video/Audio Not Playing
+
+**Problem**: Video or audio files won't play
+
+**Solution**:
+1. Verify file format is supported (MP4, WMV for video; MP3, WAV for audio)
+2. Check that the file path hasn't changed
+3. Try with a different file to isolate the issue
+4. Update codec drivers on your system
+5. Check logs for detailed error messages
+
+==== Theme Settings Not Applying
+
+**Problem**: Theme changes don't appear on projection
+
+**Solution**:
+1. Ensure you clicked **Save** after editing theme
+2. Verify theme is selected in the Themes panel
+3. Re-select the current item to refresh display
+4. Restart PraiseView if changes still don't appear
+
+==== Font Too Small/Large on Projection
+
+**Problem**: Text is hard to read on projection screen
+
+**Solution**:
+1. Open Theme Editor
+2. Adjust **Font Size** slider
+3. Test with a sample verse before service
+4. Consider room size and viewing distance
+5. Use larger fonts for hymns, smaller for announcements
+
+== Advanced Topics
+
+=== Service File Management
+
+Services are saved as `.service` files containing all items and their order for that service.
+
+**Backing Up Services**:
+1. Save services regularly using **File > Save Service**
+2. Store backup copies on external drives or cloud storage
+3. Create folders organized by month or season
+
+**Sharing Services**:
+Save and email `.service` files to team members or other churches.
+
+=== Database Storage
+
+All your content (songs, prayers, themes) is stored in a local SQLite database:
+- Location: `C:\Users\<username>\AppData\Local\PraiseView\praiseview.db`
+- Automatic backup: Create copies periodically
+- No internet required: All data stays on your computer
+
+=== Performance Optimization
+
+**For Large Song Libraries**:
+- Use category filters to reduce visible items
+- Search by title for quick access
+- Import songs in batches rather than all at once
+
+**For Complex Services**:
+- Limit the number of items in a single service
+- Pre-load videos before service starts
+- Test multimedia files beforehand
+
+**For Older Computers**:
+- Disable background videos in themes
+- Use static image backgrounds instead
+- Reduce font sizes and content per slide
+- Close unnecessary applications
+
+== Getting Help
+
+=== Resources Available
+
+- 📖 **User Guide** - This document with step-by-step instructions
+- ⚙️ **Features Guide** - Detailed explanation of each feature
+- 🚀 **Getting Started** - Quick setup and first-time guide
+- 💬 **Video Tutorials** - Coming soon (placeholders shown below)
+
+=== Tutorial Placeholders
+
+image::../images/asidocs/tutorial-placeholder.jpg[Tutorial Coming Soon]
+
+Future video tutorials will cover:
+- Setting up your first service
+- Creating and managing themes
+- Connecting phone remote
+- Advanced projection tips
+- And more!
+
+=== Contacting Support
+
+For issues not covered in this guide:
+1. Check the log file: `C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log`
+2. Email with log file to: fernandes.jason120@gmail.com
+3. Include detailed description of the issue and steps to reproduce
 
 == Keyboard Shortcuts Reference
 
-[cols="1,2", options="header"]
+[cols="2,3", options="header"]
 |===
 | Shortcut | Action
-| Ctrl+Up | Move service item up
-| Ctrl+Down | Move service item down
-| Delete | Delete selected service item
-| Previous/Next | Navigate verses
+| **Ctrl+Up** | Move service item up
+| **Ctrl+Down** | Move service item down
+| **Delete** | Delete selected service item
+| **←** | Go to previous verse/page
+| **→** | Go to next verse/page
+| **Space** | Play/Pause video (when video is displayed)
+| **F1** | Open this help guide
 |===
