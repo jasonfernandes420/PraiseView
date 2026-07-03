@@ -11,11 +11,14 @@
         Add/Edit Text
     </headerText>
     <content>
-        <VBox spacing="10">
+        <VBox fx:id="mainContainer" spacing="10" VBox.vgrow="ALWAYS">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
             <Label text="Title:"/>
-            <TextField fx:id="titleField" promptText="Enter text title"/>
-            <Label text="Body/Content:"/>
-            <TextArea fx:id="bodyArea" VBox.vgrow="ALWAYS" promptText="Enter text content here..."/>
+            <TextField fx:id="titleField" promptText="Enter text title" prefHeight="35"/>
+            <Label text="Content:"/>
+            <TextArea fx:id="bodyArea" VBox.vgrow="ALWAYS" promptText="Enter text content here..." wrapText="true"/>
         </VBox>
     </content>
     <buttonTypes>
@@ -23,3 +26,4 @@
         <ButtonType fx:constant="CANCEL"/>
     </buttonTypes>
 </DialogPane>
+

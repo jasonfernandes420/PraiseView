@@ -17,20 +17,20 @@ _Manage worship content seamlessly from one intuitive interface_
 === Quick Navigation
 
 [.feature-grid]
-* 🚀 xref:getting-started.adoc[**Getting Started**] - Launch PraiseView in minutes
-* 📖 xref:user-guide.adoc[**User Guide**] - Complete operational guide
-* ⚙️ xref:features.adoc[**Features**] - Explore all capabilities
+* xref:getting-started.adoc[**Getting Started**] - Launch PraiseView in minutes
+* xref:user-guide.adoc[**User Guide**] - Complete operational guide
+* xref:features.adoc[**Features**] - Explore all capabilities
 
 == Main Features
 
 [.feature-boxes]
-- 🎵 **Song Management** - Organize and display hymns and worship songs by category with powerful search
-- 🙏 **Prayer Management** - Store and project prayers, scripture readings, and announcements
-- 📸 **Multimedia Support** - Display images, videos, and audio during services
-- 📊 **PowerPoint Integration** - Project presentations alongside your content
-- 📱 **Phone Remote Control** - Control presentations from your Android mobile device
-- 🎨 **Theme System** - Customize the look and feel with custom backgrounds, fonts, and colors
-- 📋 **Service Planning** - Create and manage service orders with drag-and-drop simplicity
+-  **Song Management** - Organize and display hymns and worship songs by category with powerful search
+-  **Prayer Management** - Store and project prayers, scripture readings, and announcements
+-  **Multimedia Support** - Display images, videos, and audio during services
+-  **PowerPoint Integration** - Project presentations alongside your content
+-  **Phone Remote Control** - Control presentations from your Android mobile device
+-  **Theme System** - Customize the look and feel with custom backgrounds, fonts, and colors
+-  **Service Planning** - Create and manage service orders with drag-and-drop simplicity
 
 == Why Choose PraiseView?
 
@@ -65,13 +65,13 @@ PraiseView supports importing songs and prayers from JSON files for quick librar
 === Service Items
 
 A service item is any content piece that can be displayed during a worship service:
-- 🎵 Songs (with verses and choruses)
-- 🙏 Prayers
-- 📝 Scripture texts or Informative texts
-- 🖼️ Images
-- 🎬 Videos
-- 🔊 Audio Files
-- 📊 PowerPoint Presentations
+-  Songs (with verses and choruses)
+-  Prayers
+-  Scripture texts or Informative texts
+-  Images
+-  Videos
+-  Audio Files
+-  PowerPoint Presentations
 
 === Categories
 

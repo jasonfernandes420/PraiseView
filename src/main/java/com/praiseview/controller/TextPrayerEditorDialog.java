@@ -1,6 +1,5 @@
 package com.praiseview.controller;
 
-import com.praiseview.model.Prayer;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -9,13 +8,23 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.Screen;
 
-public class PrayerEditorDialog extends Dialog<Prayer> {
-
+/**
+ * Unified editor for both Prayers and Custom Texts
+ * Supports slide markers [==slide==] for multi-slide content
+ */
+public class TextPrayerEditorDialog extends Dialog<String> {
+    
     private TextArea contentArea;
+    private String initialContent;
+    private String itemType; // "Prayer" or "Text"
 
-    public PrayerEditorDialog(Prayer prayerToEdit) {
-        setTitle(prayerToEdit == null ? "Add New Prayer" : "Edit Prayer");
+    public TextPrayerEditorDialog(String itemType, String initialContent, String title) {
+        this.itemType = itemType;
+        this.initialContent = initialContent != null ? initialContent : "";
+        
+        setTitle(title);
         setResizable(true);
+        
         Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
         double dialogWidth = Math.min(750, visualBounds.getWidth() * 0.85);
         double dialogHeight = Math.min(600, visualBounds.getHeight() * 0.85);
@@ -25,29 +34,14 @@ public class PrayerEditorDialog extends Dialog<Prayer> {
         VBox layout = new VBox(12);
         layout.setPadding(new Insets(15));
 
-        // Title field
-        Label titleLabel = new Label("Prayer Title:");
-        titleLabel.setStyle("-fx-font-weight: bold;");
-        TextField titleField = new TextField(prayerToEdit != null ? prayerToEdit.getTitle() : "");
-        titleField.setPromptText("Enter prayer title");
-        titleField.setPrefHeight(35);
-        
-        // Category
-        Label categoryLabel = new Label("Category:");
-        categoryLabel.setStyle("-fx-font-weight: bold;");
-        ComboBox<String> categoryCombo = new ComboBox<>();
-        categoryCombo.getItems().addAll("Ordinary", "Eucharistic", "Lenten", "Easter", "Seasonal", "Other");
-        categoryCombo.setValue(prayerToEdit != null ? prayerToEdit.getCategory() : "Ordinary");
-        categoryCombo.setPrefHeight(35);
-
-        // Content area
-        Label contentLabel = new Label("Prayer Content:");
+        // Content editor
+        Label contentLabel = new Label(itemType + " Content:");
         contentLabel.setStyle("-fx-font-weight: bold;");
         
-        contentArea = new TextArea(prayerToEdit != null ? prayerToEdit.getContent() : "");
-        contentArea.setPromptText("Paste the full prayer text here...");
+        contentArea = new TextArea(this.initialContent);
+        contentArea.setPromptText("Enter " + itemType.toLowerCase() + " text here...");
         contentArea.setWrapText(true);
-        contentArea.setPrefHeight(300);
+        contentArea.setPrefHeight(400);
         VBox.setVgrow(contentArea, Priority.ALWAYS);
 
         // New Slide button
@@ -58,8 +52,8 @@ public class PrayerEditorDialog extends Dialog<Prayer> {
 
         // Instructions
         Label instructionsLabel = new Label(
-            "💡 Use '+ New Slide' button to split prayer into multiple slides for projection.\n" +
-            "Each [==slide==] marker creates a new slide. Existing prayers without markers work as single slides."
+            "💡 Use '+ New Slide' button to split content into multiple slides for projection.\n" +
+            "Each [==slide==] marker creates a new slide during rendering."
         );
         instructionsLabel.setWrapText(true);
         instructionsLabel.setStyle("-fx-text-fill: #666666; -fx-font-size: 10px;");
@@ -69,8 +63,6 @@ public class PrayerEditorDialog extends Dialog<Prayer> {
         controlBox.getChildren().addAll(newSlideBtn);
 
         layout.getChildren().addAll(
-            titleLabel, titleField,
-            categoryLabel, categoryCombo,
             contentLabel,
             contentArea,
             instructionsLabel,
@@ -82,11 +74,7 @@ public class PrayerEditorDialog extends Dialog<Prayer> {
 
         setResultConverter(btn -> {
             if (btn == ButtonType.OK) {
-                Prayer prayer = prayerToEdit != null ? prayerToEdit : new Prayer();
-                prayer.setTitle(titleField.getText().trim());
-                prayer.setCategory(categoryCombo.getValue());
-                prayer.setContent(contentArea.getText().trim());
-                return prayer;
+                return contentArea.getText().trim();
             }
             return null;
         });
@@ -108,5 +96,19 @@ public class PrayerEditorDialog extends Dialog<Prayer> {
         // Move cursor after the marker
         contentArea.positionCaret(caretPosition + slideMarker.length());
         contentArea.requestFocus();
+    }
+
+    /**
+     * Factory method for Prayer editor
+     */
+    public static TextPrayerEditorDialog createPrayerEditor(String initialContent, String prayerTitle) {
+        return new TextPrayerEditorDialog("Prayer", initialContent, prayerTitle);
+    }
+
+    /**
+     * Factory method for Text editor
+     */
+    public static TextPrayerEditorDialog createTextEditor(String initialContent, String textTitle) {
+        return new TextPrayerEditorDialog("Text", initialContent, textTitle);
     }
 }

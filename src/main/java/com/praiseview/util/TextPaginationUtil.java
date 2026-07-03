@@ -10,7 +10,7 @@ public class TextPaginationUtil {
 
     /**
      * Helper method to paginate text based on font size, available width, and available height.
-     * This method attempts to split text by lines first, then by words if a single line is too long.
+     * This method first splits by slide markers [==slide==], then paginates each slide section.
      *
      * @param fullText The entire text content to paginate.
      * @param fontSize The font size to use for measurement.
@@ -25,39 +25,60 @@ public class TextPaginationUtil {
             return pages;
         }
 
+        // First, split by slide markers [==slide==]
+        String[] slides = fullText.split("\\[==slide==\\]");
+        
+        // Process each slide section
+        for (String slideContent : slides) {
+            String trimmedSlide = slideContent.trim();
+            if (trimmedSlide.isEmpty()) {
+                continue; // Skip empty slide sections
+            }
+            
+            // Paginate each slide section
+            List<String> slidePages = paginateSingleSlide(trimmedSlide, fontSize, maxWidth, maxHeight);
+            pages.addAll(slidePages);
+        }
+
+        // If no pages were added, return at least an empty page
+        if (pages.isEmpty()) {
+            pages.add("");
+        }
+
+        return pages;
+    }
+
+    /**
+     * Paginates a single slide section (content between [==slide==] markers).
+     */
+    private static List<String> paginateSingleSlide(String slideText, double fontSize, double maxWidth, double maxHeight) {
+        List<String> pages = new ArrayList<>();
+        
         Font font = Font.font("System", fontSize);
         Text helperText = new Text();
         helperText.setFont(font);
-        helperText.setWrappingWidth(maxWidth); // Set the wrapping width for measurement
+        helperText.setWrappingWidth(maxWidth);
 
         StringBuilder currentPageContent = new StringBuilder();
-        String[] lines = fullText.split("\n"); // Split by actual newlines first
+        String[] lines = slideText.split("\n");
 
         for (String line : lines) {
-            // Test if adding this line (with a preceding newline if not the first) exceeds the current page height
             String testContent = currentPageContent.length() == 0 ? line : currentPageContent.toString() + "\n" + line;
             helperText.setText(testContent);
 
             if (helperText.getLayoutBounds().getHeight() > maxHeight) {
-                // The current line, when added to currentPageContent, exceeds maxHeight.
-                // So, currentPageContent (without the current line) forms a complete page.
                 if (currentPageContent.length() > 0) {
                     pages.add(currentPageContent.toString().trim());
                 }
-                // Now, the 'line' itself needs to be processed.
-                // Check if this single 'line' is too long to fit on a page by itself.
-                helperText.setText(line); // Measure the single line
+                helperText.setText(line);
                 if (helperText.getLayoutBounds().getHeight() > maxHeight) {
-                    // The single line is too long, split it by words into sub-pages.
                     List<String> subPages = splitLongLineByWords(line, fontSize, maxWidth, maxHeight);
                     pages.addAll(subPages);
-                    currentPageContent = new StringBuilder(); // Start fresh for the next line
+                    currentPageContent = new StringBuilder();
                 } else {
-                    // The single line fits on a page by itself. Start a new page with it.
                     currentPageContent = new StringBuilder(line);
                 }
             } else {
-                // The line fits on the current page.
                 if (currentPageContent.length() > 0) {
                     currentPageContent.append("\n");
                 }
@@ -65,7 +86,6 @@ public class TextPaginationUtil {
             }
         }
 
-        // Add any remaining content as the last page
         if (currentPageContent.length() > 0) {
             pages.add(currentPageContent.toString().trim());
         }

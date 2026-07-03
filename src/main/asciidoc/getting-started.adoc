@@ -73,23 +73,35 @@ Let's create a simple service with one song. Follow these steps exactly:
 
 1. **Bottom left** - Click the **Songs** tab (if not already selected)
 2. **Add button** - Click **➕ Add New Song**
-3. **Fill in details**:
-   - **Title**: "Amazing Grace" (or your favorite song)
-   - **Category**: "Hymns" (you can type a new category)
-   - **Language**: English
-4. **Add verses** - Click **Add Verse** button
-   - **Verse Label**: Leave as "Verse"
-   - **Verse Text**: Paste or type the first verse of your song
-   - Click **Add Verse** again to add more verses
-   - Repeat for each verse/chorus you want
-5. **Performance Order**: Drag verses in the order you want them displayed
-   - Example: Verse 1 → Chorus → Verse 2 → Chorus → Verse 3
-6. **Save** - Click **Save Song** button
+3. **Song Editor Wizard Opens** with 4 steps:
 
-image::../images/asidocs/song-editor.png[Song Editor, align=center]
+====== Step 1: Basic Information
+   - **Title**: "Amazing Grace" (or your favorite song)
+   - **Language**: English
+   - **Categories**: "Hymns" (select or type a new category)
+   - Click **Next →**
+
+====== Step 2: Add Verses
+   - Click **Add Verse** button for each verse
+   - Select verse type (Verse, Chorus, Bridge, etc.)
+   - Paste or type the verse text
+   - Repeat until all verses/chorus are added
+   - Click **Next →**
+
+====== Step 3: Performance Order
+   - Drag verses to arrange display order
+   - Example: Verse 1 → Chorus → Verse 2 → Chorus → Verse 3
+   - Use buttons to add, remove, or reorder
+   - Click **Next →**
+
+====== Step 4: Confirmation
+   - Review all details (Title, Language, Categories, Verses, Order)
+   - Click **Finish** to save the song
+
+image::../images/asidocs/song-editor.png[Song Editor Wizard, align=center]
 
 [NOTE]
-The Performance Order determines which verses display during projection. Drag them into your preferred sequence.
+The Performance Order determines which verses display during projection. Arrange them in your preferred sequence.
 
 === Step 2: Add Song to Service
 
@@ -152,8 +164,12 @@ Similar to songs:
 
 1. Click **Prayers** tab
 2. Click ➕ **Add New Prayer**
-3. Enter prayer title and text
-4. Click **Save**
+3. Enter prayer title
+4. Enter prayer text
+5. **Optional - Add Slides**: Click "+ New Slide" to split prayer into multiple slides
+   - Inserts `[==slide==]` marker at cursor position
+   - During projection, content displays as separate slides
+6. Click **Save**
 
 Prayers can be any length—they'll automatically break into multiple slides if needed.
 
@@ -210,25 +226,45 @@ Songs with no category appear as "Others". Use categories consistently to stay o
 
 == Customizing with Themes
 
-Make your projection visually appealing:
+Make your projection visually appealing with the new theme editor wizard:
 
 === View Default Themes
 
-1. **Right panel** - Shows available themes
-2. **Click a theme** - Preview appears in center panel
-3. **Double-click theme** - Applies to current item
+1. **Right panel** - Shows available themes and dropdown
+2. **Select from dropdown** - Choose a theme to apply
+3. **Preview** - Changes appear in center panel immediately
+4. **Apply** - Theme applies to current and future items
 
 === Create Your Own Theme
 
-1. Click **Themes > Theme Editor** in menu bar
-2. **Create New** - Click "New Theme"
-3. **Customize**:
-   - Set background color or image
-   - Adjust font family and size
-   - Choose text color
-   - Set text alignment
-   - Optionally enable title display mode
-4. **Save** - Give your theme a name and save
+1. Click **+ Create New Theme** button
+2. **Theme Editor Wizard Opens** with 4 steps:
+
+==== Step 1: Background Selection
+   - Choose type: **Color**, **Image**, or **Video**
+   - Select/upload your background
+   - See preview in real-time
+   - Click **Next →**
+
+==== Step 2: Main Text Settings
+   - **Font family** - Choose typography
+   - **Font size** - Adjust for readability
+   - **Text color** - Select text color
+   - **Line spacing** - Adjust spacing
+   - See preview changes instantly
+   - Click **Next →**
+
+==== Step 3: Title Settings
+   - **Title font** - Separate from main text
+   - **Title size** - Make titles stand out
+   - **Title color** - Choose distinct color
+   - **Title alignment** - Left, center, or right
+   - Click **Next →**
+
+==== Step 4: Confirmation
+   - **Full preview** - See complete theme
+   - **Review all settings** - Verify customizations
+   - Click **Finish** to save and apply theme
 
 [TIP]
 Use consistent themes throughout your service for a professional look.

@@ -183,6 +183,23 @@ public class PraiseViewApp extends Application {
     }
 
     /**
+     * Checks if an extended screen (second screen) is available
+     */
+    public static boolean isExtendedScreenAvailable() {
+        return Screen.getScreens().size() > 1;
+    }
+
+    /**
+     * Gets the extended screen if available
+     */
+    public static Screen getExtendedScreen() {
+        if (Screen.getScreens().size() > 1) {
+            return Screen.getScreens().get(1);
+        }
+        return null;
+    }
+
+    /**
      * Ensures the projection stage is open and visible. If it's closed or null, it attempts to recreate it.
      */
     public static void ensureProjectionStageOpen() {
