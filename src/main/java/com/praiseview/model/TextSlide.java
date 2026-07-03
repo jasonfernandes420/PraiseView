@@ -1,11 +1,13 @@
 package com.praiseview.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.praiseview.util.AppLogger;
+import com.praiseview.util.TextPaginationUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,7 +21,14 @@ public class TextSlide implements Projectable {
     private String title;
     private String content;
 
+    // Transient fields for pagination
+    private transient List<String> paginatedPages;
+    private transient double lastFontSize = -1;
+    private transient double lastMaxWidth = -1;
+    private transient double lastMaxHeight = -1;
+
     // Custom constructor for when ID is not provided (e.g., from UI)
+    // The MainController should then retrieve the full object from allTexts
     public TextSlide(String title, String content) {
         this.title = title != null ? title : "";
         this.content = content != null ? content : "";
@@ -49,6 +58,8 @@ public class TextSlide implements Projectable {
 
     public void setContent(String content) {
         this.content = content != null ? content : "";
+        // Invalidate pagination cache when content changes
+        this.paginatedPages = null;
     }
 
     @Override
@@ -58,22 +69,41 @@ public class TextSlide implements Projectable {
 
     @Override
     public List<String> paginateForDimensions(double fontSize, double maxWidth, double maxHeight) {
-        // For a simple text, we'll treat the entire body as one page for now.
-        // More sophisticated pagination would involve breaking the text into chunks.
-        return Collections.singletonList(content);
+        // Recalculate pagination only if dimensions or content have changed
+        if (paginatedPages == null ||
+            lastFontSize != fontSize ||
+            lastMaxWidth != maxWidth ||
+            lastMaxHeight != maxHeight) {
+
+            AppLogger.log("TextSlide: Recalculating pagination for '" + this.title + "' with fontSize=" + fontSize + ", maxWidth=" + maxWidth + ", maxHeight=" + maxHeight);
+
+            List<String> pages = TextPaginationUtil.paginateText(this.content, fontSize, maxWidth, maxHeight);
+            paginatedPages = new ArrayList<>(pages);
+
+            this.lastFontSize = fontSize;
+            this.lastMaxWidth = maxWidth;
+            this.lastMaxHeight = maxHeight;
+        } else {
+            AppLogger.log("TextSlide: Using cached pagination for '" + this.title + "'");
+        }
+        return new ArrayList<>(paginatedPages);
     }
 
     @Override
     public String getSubItemContent(int index, double fontSize, double maxWidth, double maxHeight) {
-        if (index == 0) {
-            return content;
+        // Ensure pagination is up-to-date before retrieving content
+        paginateForDimensions(fontSize, maxWidth, maxHeight);
+        if (paginatedPages == null || index < 0 || index >= paginatedPages.size()) {
+            return "";
         }
-        return ""; // Only one sub-item (the whole text) for now
+        return paginatedPages.get(index);
     }
 
     @Override
     public int getSubItemCount(double fontSize, double maxWidth, double maxHeight) {
-        return 1; // Only one sub-item (the whole text) for now
+        // Ensure pagination is up-to-date before getting count
+        paginateForDimensions(fontSize, maxWidth, maxHeight);
+        return paginatedPages != null ? paginatedPages.size() : 1;
     }
 
     @Override
