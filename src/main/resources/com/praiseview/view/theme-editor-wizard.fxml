@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.canvas.Canvas?>
+
+<DialogPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.praiseview.controller.ThemeEditorWizardController"
+            prefWidth="1000" prefHeight="750">
+    <headerText>Theme Editor</headerText>
+    <content>
+        <VBox spacing="15">
+            <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+
+            <!-- Main StackPane: Theme Selection vs Steps -->
+            <StackPane VBox.vgrow="ALWAYS" fx:id="mainStackPane">
+
+                <!-- Theme Selection Screen (Step 0) -->
+                <VBox spacing="20" fx:id="themeSelectionContainer" alignment="CENTER">
+                    <Region VBox.vgrow="ALWAYS"/>
+                    
+                    <VBox alignment="CENTER" spacing="20" prefWidth="400">
+                        <Label text="Select or Create a Theme" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-alignment: center;"/>
+                        
+                        <Label text="Select an existing theme:" style="-fx-font-weight: bold;"/>
+                        <ComboBox fx:id="themeSelectionComboBox" prefHeight="35"/>
+
+                        <HBox spacing="10" alignment="CENTER">
+                            <Button fx:id="selectThemeButton" text="Select Theme" onAction="#handleSelectTheme" prefWidth="120" style="-fx-padding: 8;"/>
+                            <Button fx:id="newThemeButton" text="Create New Theme" onAction="#handleNewTheme" prefWidth="130" style="-fx-padding: 8;"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <Label text="Or delete a theme:" style="-fx-font-weight: bold;"/>
+                        <Button fx:id="deleteThemeButton" text="Delete Selected Theme" onAction="#handleDeleteTheme" prefWidth="130" style="-fx-padding: 8;"/>
+                    </VBox>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+                </VBox>
+
+                <!-- Steps Container -->
+                <VBox spacing="15" fx:id="stepsContainer" visible="false" managed="false">
+                    <HBox alignment="CENTER_LEFT" spacing="15">
+                        <Label fx:id="currentStepLabel" text="Background Settings" style="-fx-font-size: 14; -fx-font-weight: bold;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="themeNameLabel" text="Theme Name" style="-fx-font-weight: bold;"/>
+                        <Button text="Back to Themes" onAction="#handleChangeTheme" prefWidth="130"/>
+                    </HBox>
+                    <Separator/>
+
+                    <!-- Steps StackPane -->
+                    <StackPane VBox.vgrow="ALWAYS" fx:id="stepsStackPane">
+                        <!-- Step 1: Background Settings -->
+                        <ScrollPane fx:id="step1Container" fitToWidth="true" fitToHeight="true">
+                            <VBox spacing="15" style="-fx-padding: 10;">
+                                <Label text="Background Color:" style="-fx-font-weight: bold;"/>
+                                <HBox spacing="10" alignment="TOP_LEFT">
+                                    <ColorPicker fx:id="backgroundColorPicker" prefWidth="80"/>
+                                    <Label text="Choose a solid background color" alignment="TOP_LEFT"/>
+                                </HBox>
+
+                                <Separator/>
+
+                                <Label text="Background Image:" style="-fx-font-weight: bold;"/>
+                                <HBox spacing="5">
+                                    <TextField fx:id="backgroundImagePathField" HBox.hgrow="ALWAYS" promptText="Path to image file"/>
+                                    <Button text="Browse..." onAction="#handleSelectBackgroundImage" prefWidth="80"/>
+                                    <Button text="Clear" onAction="#handleClearBackgroundImage" prefWidth="60"/>
+                                </HBox>
+
+                                <Separator/>
+
+                                <Label text="Background Video:" style="-fx-font-weight: bold;"/>
+                                <HBox spacing="5">
+                                    <TextField fx:id="backgroundVideoPathField" HBox.hgrow="ALWAYS" promptText="Path to video file"/>
+                                    <Button text="Browse..." onAction="#handleSelectBackgroundVideo" prefWidth="80"/>
+                                    <Button text="Clear" onAction="#handleClearBackgroundVideo" prefWidth="60"/>
+                                </HBox>
+                                <Region VBox.vgrow="ALWAYS"/>
+                            </VBox>
+                        </ScrollPane>
+
+                        <!-- Step 2: Main Text Settings -->
+                        <ScrollPane fx:id="step2Container" fitToWidth="true" fitToHeight="true" visible="false" managed="false">
+                            <VBox spacing="15" style="-fx-padding: 10;">
+                                <GridPane hgap="15" vgap="15">
+                                    <Label text="Font Family:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <ComboBox fx:id="fontFamilyComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="200"/>
+
+                                    <Label text="Font Size:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <HBox spacing="10" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                                        <Slider fx:id="fontSizeSlider" min="10" max="100" value="62" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5" HBox.hgrow="ALWAYS"/>
+                                        <Label fx:id="fontSizeLabel" text="62" prefWidth="40"/>
+                                    </HBox>
+
+                                    <Label text="Text Color:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <ColorPicker fx:id="textColorPicker" GridPane.rowIndex="2" GridPane.columnIndex="1" prefWidth="80"/>
+
+                                    <Label text="Text Alignment:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <ComboBox fx:id="textAlignmentComboBox" GridPane.rowIndex="3" GridPane.columnIndex="1" prefWidth="200"/>
+
+                                    <Label text="Line Spacing:" GridPane.rowIndex="4" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <HBox spacing="10" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                                        <Slider fx:id="lineSpacingSlider" min="0" max="20" value="8" showTickLabels="true" showTickMarks="true" majorTickUnit="5" minorTickCount="1" HBox.hgrow="ALWAYS"/>
+                                        <Label fx:id="lineSpacingLabel" text="8" prefWidth="40"/>
+                                    </HBox>
+                                </GridPane>
+                                <Region VBox.vgrow="ALWAYS"/>
+                            </VBox>
+                        </ScrollPane>
+
+                        <!-- Step 3: Title Settings -->
+                        <ScrollPane fx:id="step3Container" fitToWidth="true" fitToHeight="true" visible="false" managed="false">
+                            <VBox spacing="15" style="-fx-padding: 10;">
+                                <CheckBox fx:id="showTitleCheckBox" text="Show Title on All Slides"/>
+                                <CheckBox fx:id="showTitleAsFirstSlideCheckBox" text="Show Title as First Slide"/>
+
+                                <Separator/>
+
+                                <GridPane hgap="15" vgap="15" fx:id="titleSettingsGrid">
+                                    <Label text="Title Font Family:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <ComboBox fx:id="titleFontFamilyComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="200"/>
+
+                                    <Label text="Title Font Size:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <HBox spacing="10" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                                        <Slider fx:id="titleFontSizeSlider" min="10" max="100" value="42" showTickLabels="true" showTickMarks="true" majorTickUnit="10" minorTickCount="5" HBox.hgrow="ALWAYS"/>
+                                        <Label fx:id="titleFontSizeLabel" text="42" prefWidth="40"/>
+                                    </HBox>
+
+                                    <Label text="Title Text Color:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                                    <ColorPicker fx:id="titleTextColorPicker" GridPane.rowIndex="2" GridPane.columnIndex="1" prefWidth="80"/>
+                                </GridPane>
+                                <Region VBox.vgrow="ALWAYS"/>
+                            </VBox>
+                        </ScrollPane>
+
+                        <!-- Step 4: Preview -->
+                        <VBox spacing="15" fx:id="step4Container" visible="false" managed="false">
+                            <Label text="Preview - How your theme will look:" style="-fx-font-weight: bold; -fx-font-size: 12;"/>
+
+                            <!-- Canvas-based Preview -->
+                            <Canvas fx:id="previewCanvas" width="500" height="300" style="-fx-border-color: #999999; -fx-border-width: 2;"/>
+                        </VBox>
+                    </StackPane>
+
+                    <!-- Navigation Buttons -->
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Button fx:id="prevButton" text="Previous" onAction="#handlePrevious" prefWidth="100" disable="true"/>
+                        <Button fx:id="nextButton" text="Next" onAction="#handleNext" prefWidth="100"/>
+                        <Button fx:id="finishButton" text="Finish and Save" onAction="#handleFinish" prefWidth="120" visible="false" managed="false"/>
+                    </HBox>
+                </VBox>
+            </StackPane>
+        </VBox>
+    </content>
+    <buttonTypes>
+        <ButtonType buttonData="CANCEL_CLOSE" text="Close"/>
+    </buttonTypes>
+</DialogPane>

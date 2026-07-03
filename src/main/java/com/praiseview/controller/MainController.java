@@ -28,6 +28,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
@@ -94,6 +95,9 @@ public class MainController {
 
     // Right: Theme Editor
     @FXML private ListView<Theme> themeListView; // New FXML element for theme list
+    @FXML private ComboBox<Theme> themeSelectionCombo; // New FXML element for theme dropdown
+    @FXML private Button minimizeThemesButton; // New FXML element for minimize button
+    @FXML private VBox themesPanel; // New FXML element for themes panel
     @FXML private CheckBox showTitleCheckBox; // New FXML element for show title checkbox
 
     // Menu Items
@@ -160,6 +164,9 @@ public class MainController {
     @Setter
     private Theme currentActiveTheme; // The theme currently applied to projection and preview
     private boolean livePreviewThemeHiddenByBlackout = false; // Track if preview theme was hidden by blackout
+    
+    // For theme pane minimize/restore state
+    private double themesPanelWidth = 240; // Default width when visible
 
 
     private int currentQueueIndex = -1;
@@ -508,6 +515,42 @@ public class MainController {
             });
 
             themeListView.setOnMouseClicked(this::handleThemeSelection);
+        }
+
+        // Theme Selection Dropdown Setup
+        if (themeSelectionCombo != null) {
+            themeSelectionCombo.setItems(availableThemes);
+            themeSelectionCombo.setCellFactory(lv -> new ListCell<Theme>() {
+                @Override
+                protected void updateItem(Theme theme, boolean empty) {
+                    super.updateItem(theme, empty);
+                    if (empty || theme == null) {
+                        setText(null);
+                    } else {
+                        setText(theme.getName());
+                    }
+                }
+            });
+            themeSelectionCombo.setButtonCell(new ListCell<Theme>() {
+                @Override
+                protected void updateItem(Theme theme, boolean empty) {
+                    super.updateItem(theme, empty);
+                    if (empty || theme == null) {
+                        setText(null);
+                    } else {
+                        setText(theme.getName());
+                    }
+                }
+            });
+            // Set the initial selection to the current active theme
+            if (currentActiveTheme != null) {
+                themeSelectionCombo.setValue(currentActiveTheme);
+            }
+        }
+
+        // Minimize Button Setup
+        if (minimizeThemesButton != null) {
+            minimizeThemesButton.setOnAction(this::minimizeThemesPane);
         }
 
         if (showTitleCheckBox != null) {
@@ -2639,14 +2682,40 @@ public class MainController {
         }
     }
 
+    @FXML
+    private void handleThemeComboSelection(ActionEvent event) {
+        Theme selectedTheme = themeSelectionCombo.getValue();
+        if (selectedTheme != null) {
+            applyTheme(selectedTheme);
+            AppLogger.log("Theme applied from dropdown: " + selectedTheme.getName());
+        }
+    }
+
+    @FXML
+    private void minimizeThemesPane(ActionEvent event) {
+        if (themesPanel != null) {
+            if (themesPanel.isVisible()) {
+                themesPanel.setVisible(false);
+                themesPanel.setManaged(false);
+                minimizeThemesButton.setText("📂 Show");
+                AppLogger.log("Themes pane minimized");
+            } else {
+                themesPanel.setVisible(true);
+                themesPanel.setManaged(true);
+                minimizeThemesButton.setText("📁 Minimize");
+                AppLogger.log("Themes pane restored");
+            }
+        }
+    }
+
 
     @FXML
     private void openThemeEditor() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/praiseview/view/theme-editor-dialog.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/praiseview/view/theme-editor-wizard.fxml"));
             DialogPane dialogPane = loader.load();
 
-            ThemeEditorController themeEditorController = loader.getController();
+            ThemeEditorWizardController themeEditorController = loader.getController();
             themeEditorController.setMainController(this); // Pass reference to MainController
 
             Dialog<ButtonType> dialog = new Dialog<>();
@@ -2654,7 +2723,7 @@ public class MainController {
             dialog.initOwner(scene.getWindow()); // Set owner to main window
             dialog.initModality(Modality.APPLICATION_MODAL); // Block interaction with other windows
             dialog.setResizable(true);
-            applyResponsiveDialogSize(dialog, 980, 760, 700, 500);
+            applyResponsiveDialogSize(dialog, 600, 500, 550, 450);
 
             dialog.showAndWait();
 
