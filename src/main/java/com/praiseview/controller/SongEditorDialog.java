@@ -108,7 +108,7 @@ public class SongEditorDialog extends Dialog<Song> {
         
         Button cancelBtn = new Button("Cancel");
         cancelBtn.setPrefWidth(100);
-        cancelBtn.setOnAction(e -> getDialogPane().getScene().getWindow().hide());
+        cancelBtn.setOnAction(e -> closeDialog());
         
         finishBtn = new Button("Finish");
         finishBtn.setPrefWidth(100);
@@ -607,6 +607,10 @@ public class SongEditorDialog extends Dialog<Song> {
         song.setVerseOrderFromList(orderList.getItems());
         
         setResult(song);
+        closeDialog();
+    }
+
+    private void closeDialog() {
         getDialogPane().getScene().getWindow().hide();
     }
 

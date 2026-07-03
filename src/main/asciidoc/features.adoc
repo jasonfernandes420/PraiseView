@@ -30,6 +30,37 @@ image::../images/asidocs/song-library.png[Song Library, align=center]
 [NOTE]
 Recommended: Organize songs into 5-10 main categories for optimal performance.
 
+=== Song Editor - Wizard Interface
+
+Create and edit songs with an intuitive step-by-step wizard:
+
+==== Step 1: Basic Information
+- **Song Title** - Enter the song name
+- **Language** - Select from English, Latin, Hindi, Marathi, Konkani, Tamil, etc.
+- **Categories** - Select multiple categories (Entrance Hymn, Gloria, Communion, etc.)
+- **Unicode Note** - Reminder for non-Latin languages when pasting lyrics
+
+==== Step 2: Verses
+- **Add verses** - Create Verse, Chorus, Bridge, Coda, or custom labels
+- **Enter lyrics** - Paste lyrics into text area
+- **View verses** - See all added verses in a list
+- **Edit verses** - Modify existing verses
+- **Delete verses** - Remove unwanted verses
+
+==== Step 3: Performance Order
+- **Drag and drop** - Arrange verses in display sequence
+- **Add to order** - Select verses from available list
+- **Reorder** - Move verses up/down
+- **Duplicate support** - Add same verse multiple times (e.g., Verse 1, Chorus, Verse 2, Chorus)
+- **Visual preview** - See the order before finishing
+
+==== Step 4: Confirmation
+- **Review summary** - See all song details at a glance
+- **Title, Language, Categories** - Verify basic info
+- **Verse count** - Confirm number of verses
+- **Performance order** - Final check before saving
+- **Back button** - Return to any step to make changes
+
 === Category-Based Organization
 
 Filter and find songs with powerful category system:
@@ -62,6 +93,31 @@ Manage prayers and readings with:
 - **Share with congregation** - Make text visible to all attendees
 - **Long-form support** - Prayers can be any length and automatically paginate
 - **Reusable** - Save prayers to use in multiple services
+- **Slide markers** - Split prayers into multiple slides for better presentation control
+
+==== New Slide Button
+
+Use the "+ New Slide" button to split longer prayers across multiple presentation slides:
+- **Insert marker** - Click button to insert `[==slide==]` marker at cursor position
+- **Visual separation** - Marker appears in text editor
+- **Automatic splitting** - When projected, content splits at markers into separate slides
+- **No display** - Markers are hidden during projection (not shown to congregation)
+- **Multiple splits** - Add as many markers as needed
+
+[EXAMPLE]
+====
+Inserting slide markers in a prayer:
+[source]
+----
+First part of prayer...
+[==slide==]
+Second part of prayer...
+[==slide==]
+Final blessing...
+----
+
+Result: 3 slides during projection, each with one section.
+====
 
 === Text Slides
 
@@ -71,6 +127,15 @@ Create custom text content for:
 - **Custom messages** - Welcome, benedictions, etc.
 - **Welcome slides** - Greet attendees as they arrive
 - **Call to action** - Event promotion and sign-up info
+- **Slide markers** - Split longer text into multiple presentation slides
+
+==== Text Editor with Slide Support
+
+- **Main text area** - Enter or paste text content
+- **New Slide button** - Insert slide markers at cursor position
+- **Live preview** - See marker positions in editor
+- **Automatic pagination** - Text automatically fits to screen during projection
+- **Font size reduction** - Content automatically scales if too large for screen
 
 image::../images/asidocs/text-slides.png[Text Slides, align=center]
 
@@ -174,6 +239,39 @@ Design custom visual themes:
 
 image::../images/asidocs/theme-editor.png[Theme Editor, align=center]
 
+==== Theme Editor - Step-by-Step Wizard
+
+The redesigned theme editor uses a professional next-next wizard layout:
+
+===== Step 1: Background Selection
+- **Choose background type** - Color, Image, or Video
+- **Color picker** - Select solid background color
+- **Image selection** - Browse and select image files
+- **Video selection** - Browse and select video files
+- **Preview** - Live preview of selected background
+
+===== Step 2: Main Text Settings
+- **Font family** - Choose typography
+- **Font size** - Adjust text size
+- **Text color** - Select color for main content
+- **Line spacing** - Control spacing between lines
+- **Bold/Italic** - Additional styling options
+- **Real-time preview** - See changes instantly on preview pane
+
+===== Step 3: Title Settings
+- **Choose where to add title** - Select whether the title appears on all slides or only the first slide
+- **Title font** - Separate font for titles
+- **Title size** - Larger size for titles
+- **Title color** - Distinguish from main text
+- **Show title** - Toggle title display
+- **Title alignment** - Left, center, or right
+
+===== Step 4: Confirmation
+- **Full preview** - See complete theme with sample text
+- **Review all settings** - Verify all customizations
+- **Apply theme** - Save and apply to projection
+- **Back navigation** - Return to any step for adjustments
+
 ==== Theme Application
 
 Themes appear behind all content:
@@ -182,6 +280,13 @@ Themes appear behind all content:
 - Videos (background, not content videos)
 - Text slides
 - Announcements
+
+==== Theme Selection
+
+- **Dropdown menu** - Select from available themes
+- **Theme list** - View all created themes
+- **Apply instantly** - Selected theme applies to current and future projections
+- **Multiple themes** - Create themes for different seasons/services
 
 ==== Text Styling Options
 

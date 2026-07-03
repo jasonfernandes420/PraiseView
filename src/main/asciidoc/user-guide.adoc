@@ -51,17 +51,65 @@ To load a previously saved service, click **File > Load Service** and select the
 
 === Adding Songs
 
-==== Add a New Song
+==== Add a New Song - Step-by-Step Wizard
+
+The song editor now features a professional 4-step wizard interface for creating and editing songs.
+
+===== Step 1: Basic Information
 
 1. Go to the **Songs** tab at the bottom
 2. Click **➕ Add New Song**
-3. Enter song details:
-   - Title: Name of the song
-   - Category: Group/category for organization
-   - Language: Language the song is in
-   - Verses: Add individual verses, chorus etc
-4. Add the Available Verses to the Performance order
-5. Click **Save**
+3. **Step 1: Basic Information** opens
+4. Enter song details:
+   - **Title**: Name of the song (required)
+   - **Language**: Select from English, Latin, Hindi, Marathi, Konkani, Tamil, etc.
+   - **Categories**: Select one or more categories (Entrance Hymn, Gloria, Responsorial Psalm, Communion, etc.)
+5. Click **Next →**
+
+===== Step 2: Verses
+
+1. **Add verses** using the dropdown and text area
+2. Select verse type:
+   - **VERSE** - Standard verse
+   - **CHORUS** - Repeating section
+   - **BRIDGE** - Transition verse
+   - **CODA** - Closing section
+   - Custom labels (type your own)
+3. Enter lyrics in the text area
+4. Click **Add Verse** to add to the list
+5. View all added verses in the "Added Verses" list
+6. Review: When editing songs, you can:
+   - Select existing verses to edit
+   - Click **Edit Selected** to modify
+   - Click **Delete Selected** to remove
+7. Click **Next →**
+
+===== Step 3: Performance Order
+
+1. Arrange verses for display
+2. **Available Verses** on left - all added verses
+3. **Performance Order** on right - arrangement for projection
+4. Use buttons to organize:
+   - **→ Add to Order** - Add selected verse
+   - **← Remove** - Remove from order
+   - **↑ Move Up** - Reorder verses
+   - **↓ Move Down** - Reorder verses
+   - **Clear Order** - Start over
+5. **Important**: You can add the same verse multiple times (e.g., Verse 1, Chorus, Verse 2, Chorus)
+6. Drag and drop to reorder (drag within Performance Order list)
+7. Click **Next →**
+
+===== Step 4: Confirmation
+
+1. Review the complete summary:
+   - Title
+   - Language
+   - Categories
+   - All verses with count
+   - Performance order
+2. Verify everything is correct
+3. Click **← Previous** to go back and make changes, or
+4. Click **Finish** to save the song
 
 ==== Import Songs
 
@@ -83,8 +131,9 @@ The Songs tab now includes a category filter on the left side:
 
 1. Select a song from the library
 2. Click **✎ Edit Selected**
-3. You can Add new verses/chorus or Modify existing verses by selecting on the Available verses list and modifying in Edit/View Lyrics. Then Click on Update Verse.
-4. Click **Save**
+3. The song editor wizard opens with all existing data
+4. Make changes using the same 4-step interface
+5. Click **Finish** to save changes
 
 == Managing Prayers
 
@@ -93,9 +142,26 @@ The Songs tab now includes a category filter on the left side:
 1. Go to the **Prayers** tab
 2. Click **➕ Add New Prayer**
 3. Enter prayer details:
-   - Title: Name/subject of the prayer
-   - Content: The full prayer text
-4. Click **Save**
+   - **Title**: Name/subject of the prayer
+   - **Content**: The full prayer text
+4. **New Slide Button**: Use "+ New Slide" to split prayers into multiple slides
+   - Click the button to insert `[==slide==]` marker at cursor position
+   - During projection, content splits at markers into separate slides
+   - Markers are hidden in projection (not visible to congregation)
+5. Click **Save**
+
+[EXAMPLE]
+====
+Adding slides to a prayer:
+
+1. Type: "First part of prayer..."
+2. Click "+ New Slide" button
+3. Type: "Second part of prayer..."
+4. Click "+ New Slide" button again
+5. Type: "Final blessing..."
+
+Result: When projected, appears as 3 separate slides that can be navigated.
+====
 
 === Importing Prayers
 
@@ -108,6 +174,7 @@ The Songs tab now includes a category filter on the left side:
 1. Drag prayers from the prayer library to the service order
 2. Click to project a prayer
 3. Use navigation buttons to go through content
+4. If prayer has slide markers, navigate to different slides with **Next** button
 
 == Service Order Management
 
@@ -205,13 +272,49 @@ Or double-click an item to start from that point.
 3. Select .ppt or .pptx files
 4. Navigate through slides using Previous/Next buttons
 
+=== Text Slides
+
+Add custom text content for announcements, Scripture, or messages:
+
+1. Go to **Text** tab
+2. Click **➕ Add New Text**
+3. Enter text details:
+   - **Title**: Name/description of the text
+   - **Content**: The full text content
+4. **New Slide Button**: Use "+ New Slide" to split text into multiple slides
+   - Click button to insert `[==slide==]` marker at cursor position
+   - Text automatically splits at markers during projection
+   - Markers are hidden from congregation view
+5. Click **Save**
+
+[EXAMPLE]
+====
+Creating a multi-slide announcement:
+
+1. Type: "Welcome to our service..."
+2. Click "+ New Slide" button
+3. Type: "Today's reading from Scripture..."
+4. Click "+ New Slide" button
+5. Type: "Join us for coffee hour after service"
+
+Result: Displays as 3 slides that can be navigated.
+====
+
+==== Using Text in Services
+
+1. Drag text items from Text library to service order
+2. Click to project a text
+3. Use navigation buttons to go through slides
+4. If text has markers, each section displays on separate slide
+
 == Themes
 
 === Applying Themes
 
-1. Go to the **Themes** tab on the right
-2. Select a theme from the list
-3. The theme background applies to all projections
+1. Go to the **Themes** panel on the right
+2. Use the theme dropdown to select a theme
+3. The theme background applies to all projections instantly
+4. Switch between themes anytime during service
 
 === Theme Options
 
@@ -220,12 +323,63 @@ Or double-click an item to start from that point.
 - These two options are mutually exclusive
 - This setting is configured in **Themes > Theme Editor**
 
-=== Creating Custom Themes
+=== Creating Custom Themes - Step-by-Step Wizard
 
-1. Click **Themes > Theme Editor**
-2. Create a new theme or modify existing ones
-3. Set background colors or images
-4. Save your theme
+Click **+ Create New Theme** to open the theme editor with a professional 4-step wizard:
+
+==== Step 1: Background Selection
+
+1. **Choose background type**:
+   - **Color**: Solid color background
+   - **Image**: Static image background
+   - **Video**: Animated video background (muted)
+2. **Color selection**: Use color picker for solid colors
+3. **File browser**: Select image or video files
+4. Click **Next →**
+
+==== Step 2: Main Text Settings
+
+1. **Font family**: Choose typography style
+2. **Font size**: Adjust text size (20px to 120px+)
+3. **Text color**: Select color for lyrics/content
+4. **Line spacing**: Control space between lines
+5. **Additional styles**: Bold, italic options
+6. Click **Next →**
+
+==== Step 3: Title Settings
+
+1. **Choose Title Display**: Select whether the title appears on all slides or only the first slide
+2. **Title font**: Separate font for song/prayer titles
+3. **Title size**: Larger size to distinguish from content
+4. **Title color**: Separate color for titles
+5. **Show title**: Toggle title display on/off
+6. **Title alignment**: Left, center, or right
+7. Click **Next →**
+
+==== Step 4: Confirmation
+
+1. **Full preview**: See complete theme with sample content
+2. **Review all settings**:
+   - Background (color/image/video)
+   - Main text settings
+   - Title settings
+3. **Apply theme**: Click to save and apply
+4. **Back navigation**: Click **← Previous** to return and adjust any step
+
+=== Theme Selection Dropdown
+
+- **Available themes**: All created themes appear in dropdown
+- **Quick switching**: Select theme to apply instantly
+- **Current theme**: Highlighted in the list
+- **Reusable**: Use themes across multiple services
+
+=== Edit Existing Themes
+
+1. Select theme from dropdown
+2. Click **Edit Theme**
+3. Wizard opens with current settings
+4. Make changes to any of the 4 steps
+5. Click **Finish** to save changes
 
 == Phone Remote Control
 Download the PraiseView Companion App from Google Play Store
