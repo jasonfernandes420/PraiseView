@@ -6,10 +6,12 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.praiseview.PraiseViewApp;
 import com.praiseview.service.PhoneRemoteServer;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -29,8 +31,11 @@ public class ConnectPhoneController {
     private Label connectionDetailsLabel;
     @FXML
     private Label connectionStatusLabel;
+    @FXML
+    private Hyperlink playStoreLink;
 
     private static final String APP_NAME = "PraiseView";
+    private static final String PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.praiseview.companion";
     private String ipAddress;
     private int port; // This will be the WebSocket port
     private Consumer<Integer> connectionListener;
@@ -52,6 +57,11 @@ public class ConnectPhoneController {
         updateConnectionStatus(0);
 
         generateQrCode(connectionString);
+        
+        // Setup Play Store link
+        if (playStoreLink != null) {
+            playStoreLink.setOnAction(e -> openPlayStoreLink());
+        }
     }
 
     public void setConnectionDetails(String ipAddress, int port) {
@@ -91,9 +101,32 @@ public class ConnectPhoneController {
         if (activeConnections > 0) {
             connectionStatusLabel.setText("Connected: " + activeConnections + " phone" + (activeConnections == 1 ? "" : "s"));
             connectionStatusLabel.setStyle("-fx-text-fill: #0f8a3b; -fx-font-weight: bold;");
+            
+            // Auto-close dialog after 2 seconds when phone connects
+            Platform.runLater(() -> {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                Platform.runLater(this::closeDialog);
+            });
         } else {
             connectionStatusLabel.setText("Waiting for phone connection...");
             connectionStatusLabel.setStyle("-fx-text-fill: #8a5a00; -fx-font-weight: bold;");
+        }
+    }
+
+    private void closeDialog() {
+        try {
+            if (qrCodeImageView != null) {
+                var stage = qrCodeImageView.getScene().getWindow();
+                if (stage != null) {
+                    stage.hide();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not close dialog: " + e.getMessage());
         }
     }
 
@@ -121,6 +154,14 @@ public class ConnectPhoneController {
         } catch (WriterException e) {
             System.err.println("Error generating QR code: " + e.getMessage());
             // Optionally, display an error message to the user
+        }
+    }
+
+    private void openPlayStoreLink() {
+        try {
+            PraiseViewApp.getStaticHostServices().showDocument(PLAY_STORE_URL);
+        } catch (Exception e) {
+            System.err.println("Could not open Play Store link: " + e.getMessage());
         }
     }
 }
