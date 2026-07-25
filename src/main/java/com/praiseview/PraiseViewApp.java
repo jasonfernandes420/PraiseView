@@ -9,6 +9,7 @@ import com.praiseview.util.PowerAwakeService;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -20,6 +21,8 @@ import javafx.geometry.Rectangle2D;
 import java.io.IOException;
 import java.util.Objects;
 
+import com.praiseview.model.Projectable;
+
 public class PraiseViewApp extends Application {
 
     private static PraiseViewApp instance; // Static reference to the application instance
@@ -28,6 +31,7 @@ public class PraiseViewApp extends Application {
     private UpdateService updateService;
     private Stage primaryStage; // Keep a reference to the primary stage
     private Stage projStage; // Keep a reference to the projection stage
+    private boolean projectionOnExtendedScreen;
 
     private static HostServices staticHostServices; // Static field to hold HostServices
 
@@ -78,6 +82,7 @@ public class PraiseViewApp extends Application {
         mainController = mainLoader.getController(); // Assign MainController instance
         mainController.setScene(mainScene);
         mainController.setupSceneKeyHandler();
+        monitorProjectionScreenChanges();
 
         // Initialize Update Service
         updateService = new UpdateService(getHostServices());
@@ -111,7 +116,8 @@ public class PraiseViewApp extends Application {
 
             var screens = Screen.getScreens();
 
-            if (screens.size() > 1) {
+            projectionOnExtendedScreen = screens.size() > 1;
+            if (projectionOnExtendedScreen) {
                 Screen projector = screens.get(1);
 
                 // Make it undecorated to remove OS window borders/title bar
@@ -170,6 +176,48 @@ public class PraiseViewApp extends Application {
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Moves the live projection window when a projector is connected or removed while
+     * PraiseView is already running.
+     */
+    private void monitorProjectionScreenChanges() {
+        Screen.getScreens().addListener((ListChangeListener<Screen>) change ->
+                Platform.runLater(this::moveProjectionToCurrentDisplay));
+    }
+
+    private void moveProjectionToCurrentDisplay() {
+        boolean extendedScreenAvailable = isExtendedScreenAvailable();
+        if (extendedScreenAvailable == projectionOnExtendedScreen) {
+            return;
+        }
+
+        Projectable itemToRestore = projectionController != null
+                ? projectionController.getCurrentProjectedItem()
+                : null;
+        int subItemIndexToRestore = projectionController != null
+                ? projectionController.getCurrentSubItemIndex()
+                : 0;
+
+        AppLogger.log("Projection display changed. Recreating projection stage for "
+                + (extendedScreenAvailable ? "the connected projector." : "windowed mode."));
+
+        if (projStage != null) {
+            projStage.close();
+        }
+        projectionController = null;
+        setupProjectionScreen();
+
+        // Wait for the replacement stage to receive its final dimensions before
+        // rendering the current item on the new display.
+        if (itemToRestore != null) {
+            Platform.runLater(() -> {
+                if (projectionController != null) {
+                    projectionController.showItem(itemToRestore, subItemIndexToRestore);
+                }
+            });
         }
     }
 

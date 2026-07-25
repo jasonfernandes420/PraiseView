@@ -26,6 +26,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.BorderPane;
@@ -77,6 +78,8 @@ public class MainController {
     @FXML private VBox livePptPlaceholderContainer;
     @FXML private Text livePptPlaceholderText;
     @FXML private ImageView liveLogoImageView; // Added for logo in Stage View
+    @FXML private Region projectionScreenStatusLight;
+    @FXML private Label projectionScreenStatusLabel;
 
     // New FXML elements for theme backgrounds in live preview
     @FXML private ImageView liveThemeBackgroundImageView;
@@ -210,6 +213,10 @@ public class MainController {
     public void initialize() {
         AppLogger.log("MainController: Initializing...");
         AppLogger.log("MainController: currentSubItemList (before setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
+
+        refreshProjectionScreenStatus();
+        Screen.getScreens().addListener((ListChangeListener<Screen>) change ->
+                Platform.runLater(this::refreshProjectionScreenStatus));
 
         initializeThemesPath(); // Initialize themes path first
         loadSongs();
@@ -565,6 +572,25 @@ public class MainController {
 
 
         AppLogger.log("MainController: currentSubItemList (after setup): " + (currentSubItemList != null ? "NOT NULL" : "NULL"));
+    }
+
+    /**
+     * Shows whether JavaFX can see a separate display for the live projection.
+     */
+    private void refreshProjectionScreenStatus() {
+        boolean available = PraiseViewApp.isExtendedScreenAvailable();
+
+        if (available) {
+            projectionScreenStatusLight.setStyle(
+                    "-fx-background-color: #22c55e; -fx-background-radius: 50%; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(34, 197, 94, 0.7), 7, 0.3, 0, 0);");
+            projectionScreenStatusLabel.setText("Projection screen available");
+        } else {
+            projectionScreenStatusLight.setStyle(
+                    "-fx-background-color: #ef4444; -fx-background-radius: 50%; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.65), 7, 0.3, 0, 0);");
+            projectionScreenStatusLabel.setText("No projection screen detected");
+        }
     }
 
     public void setupSceneKeyHandler() {
