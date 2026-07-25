@@ -40,7 +40,7 @@ When you open PraiseView for the first time, it will:
 - ✅ Set up the projection screen (if connected)
 
 [TIP]
-Connect your projection screen BEFORE launching PraiseView for best results.
+PraiseView detects a projector connected before or after the app starts. The status light beside **Stage View** is green when a second display is available and red when it is not.
 
 == Your First Look: Main Window Layout
 
@@ -395,8 +395,8 @@ Avoid these common issues:
 ❌ **Not previewing before projecting**::
   Always check the center (Stage View) panel before clicking Project.
 
-❌ **Connecting projection screen AFTER starting app**::
-  Connect screen first, then start PraiseView.
+✅ **Connecting a projection screen after starting PraiseView**::
+  This is supported. PraiseView detects the new display, switches the live projection to it automatically, and keeps the current item visible.
 
 ❌ **Using very small fonts**::
   Remember: people in the back of the room need to read it. Use at least 40pt font.

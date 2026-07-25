@@ -203,6 +203,8 @@ Control what appears on the main display:
 - **Blackout** - Black screen (for transitions, prayer)
 - **Clear** - Logo/branding only
 - **Fade transitions** - Smooth transitions between content
+- **Screen availability light** - Green when a projector/second display is detected; red when projection is using windowed mode
+- **Automatic display switching** - Connect or disconnect a projector while PraiseView is running and the projection moves to the appropriate display automatically
 
 === Display Modes
 
