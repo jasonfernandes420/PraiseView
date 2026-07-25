@@ -221,6 +221,15 @@ Drag items from any library tab to the service order:
 
 Or double-click an item to start from that point.
 
+=== Projection Screen Status and Automatic Switching
+
+The Stage View heading shows the current projection-screen status:
+
+- **Green light**: A second display/projector is detected. PraiseView shows the live projection full-screen on that display.
+- **Red light**: No second display is detected. The live projection is available in a separate window on the computer instead.
+
+You can connect or disconnect a projector while PraiseView is open. When a projector becomes available, PraiseView automatically closes the windowed projection, opens it on the projector, and restores the current item and page. If the projector is disconnected, it returns the projection to windowed mode.
+
 === Navigation Controls
 
 ==== Verse/Page Navigation
@@ -450,11 +459,11 @@ Make sure the file chooser filter is set to "All Files (*.*)" or verify that you
 **Problem**: Content doesn't appear on the projection screen
 
 **Steps to troubleshoot**:
-1. Check that a projection screen is connected
-2. Verify the projection view window is visible
-3. Ensure a service item is selected
-4. Click **Project** button
-5. Check logs at `C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log`
+1. Check the status light beside **Stage View**. Green means a projector is detected; red means PraiseView is using windowed mode.
+2. If the light is red, check the projector cable, power, and operating-system display settings. Set the display to **Extend**.
+3. If the light is green, verify the projector is on the correct input and the projection is visible on the second display.
+4. Ensure a service item is selected, then click **Project**.
+5. Check logs at `C:\Users\<username>\AppData\Local\PraiseView\praiseviewLog.log`.
 
 ==== Phone Remote Not Connecting
 

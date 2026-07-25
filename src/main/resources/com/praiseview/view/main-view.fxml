@@ -64,7 +64,13 @@
 
             <!-- Stage View and Controls -->
             <VBox spacing="8" HBox.hgrow="ALWAYS">
-                <Label text="Stage View (Current Projection)" styleClass="header"/>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Stage View (Current Projection)" styleClass="header"/>
+                    <Region fx:id="projectionScreenStatusLight"
+                            minWidth="11" minHeight="11" prefWidth="11" prefHeight="11" maxWidth="11" maxHeight="11"
+                            style="-fx-background-radius: 50%;"/>
+                    <Label fx:id="projectionScreenStatusLabel" text="Checking projection screen..." style="-fx-font-size: 11px;"/>
+                </HBox>
                 <!-- The livePreviewPane will now contain its own title and textflow -->
                 <StackPane fx:id="livePreviewPane" style="-fx-background-color: #0f0f0f;" VBox.vgrow="ALWAYS" minHeight="220">
                     <!-- Theme Background Image/Video (placed at the bottom) -->
