@@ -1,5 +1,7 @@
 package com.praiseview.service;
 
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.praiseview.model.Prayer;
 import com.praiseview.model.ServiceItem;
@@ -11,11 +13,22 @@ import java.util.List;
 
 public class JsonService {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
+    private final DefaultPrettyPrinter printer;
+    
+    public JsonService() {
+        this.mapper = new ObjectMapper();
+        // Configure pretty printer to prevent line wrapping issues with file paths
+        this.printer = new DefaultPrettyPrinter();
+        // Set indentation properly - use spaces, not tabs
+        DefaultIndenter indenter = new DefaultIndenter("  ", "\n");
+        printer.indentArraysWith(indenter);
+        printer.indentObjectsWith(indenter);
+    }
 
     public void exportSongs(List<Song> songs, File file) {
         try {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(file, songs);
+            mapper.writer(printer).writeValue(file, songs);
             System.out.println("✅ Songs exported successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();
@@ -36,7 +49,7 @@ public class JsonService {
 
     public void exportPrayers(List<Prayer> prayersList, File file) {
         try {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(file, prayersList);
+            mapper.writer(printer).writeValue(file, prayersList);
             System.out.println("✅ Prayers exported successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,7 +70,7 @@ public class JsonService {
 
     public void exportTexts(List<TextSlide> texts, File file) {
         try {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(file, texts);
+            mapper.writer(printer).writeValue(file, texts);
             System.out.println("✅ Texts exported successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();
@@ -78,7 +91,7 @@ public class JsonService {
 
     public void exportThemes(List<Theme> themes, File file) {
         try {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(file, themes);
+            mapper.writer(printer).writeValue(file, themes);
             System.out.println("✅ Themes exported successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();
@@ -99,7 +112,7 @@ public class JsonService {
 
     public void saveService(List<ServiceItem> serviceQueue, File file) {
         try {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(file, serviceQueue);
+            mapper.writer(printer).writeValue(file, serviceQueue);
             System.out.println("✅ Service saved successfully to: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace();

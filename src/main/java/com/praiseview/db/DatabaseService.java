@@ -17,10 +17,27 @@ public class DatabaseService {
 
     private static final String DB_FILE_NAME = "praiseview.db";
     private static String DB_URL;
+    private final ConnectionProvider connectionProvider;
 
     public DatabaseService() {
         initializeDbPath();
+        connectionProvider = () -> DriverManager.getConnection(DB_URL);
         createTables();
+    }
+
+    /** Constructor for isolated tests and alternative database providers. */
+    DatabaseService(ConnectionProvider connectionProvider) {
+        this.connectionProvider = connectionProvider;
+        createTables();
+    }
+
+    @FunctionalInterface
+    interface ConnectionProvider {
+        Connection getConnection() throws SQLException;
+    }
+
+    private Connection getConnection() throws SQLException {
+        return connectionProvider.getConnection();
     }
 
     private void initializeDbPath() {
@@ -51,7 +68,7 @@ public class DatabaseService {
     }
 
     private void createTables() {
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
             // Updated songs table with all columns
@@ -103,7 +120,7 @@ public class DatabaseService {
     }
 
     public void saveSong(Song song) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+        try (Connection conn = getConnection()) {
             conn.setAutoCommit(false); // Start transaction
 
             // Convert verseOrder to comma-separated string
@@ -157,7 +174,7 @@ public class DatabaseService {
 
     public List<Song> loadAllSongs() {
         List<Song> songs = new ArrayList<>();
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
             ResultSet rs = stmt.executeQuery("SELECT * FROM songs ORDER BY title");
@@ -213,7 +230,7 @@ public class DatabaseService {
     }
 
     public void savePrayer(Prayer prayer) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+        try (Connection conn = getConnection()) {
             String sql = """
             INSERT OR REPLACE INTO prayers (id, title, content, category)
             VALUES (?, ?, ?, ?)""";
@@ -234,7 +251,7 @@ public class DatabaseService {
 
     public List<Prayer> loadAllPrayers() {
         List<Prayer> prayers = new ArrayList<>();
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
             ResultSet rs = stmt.executeQuery("SELECT * FROM prayers ORDER BY title");
@@ -255,7 +272,7 @@ public class DatabaseService {
     }
 
     public void saveText(TextSlide text) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+        try (Connection conn = getConnection()) {
             String sql = """
             INSERT OR REPLACE INTO texts (id, title, body)
             VALUES (?, ?, ?)""";
@@ -275,7 +292,7 @@ public class DatabaseService {
 
     public List<TextSlide> loadAllTexts() {
         List<TextSlide> texts = new ArrayList<>();
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
             ResultSet rs = stmt.executeQuery("SELECT * FROM texts ORDER BY title");
@@ -295,7 +312,7 @@ public class DatabaseService {
     }
 
     public void deleteSong(String songId) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+        try (Connection conn = getConnection()) {
             conn.setAutoCommit(false); // Start transaction
 
             // Delete associated verses (ON DELETE CASCADE in table definition handles this automatically)
@@ -318,7 +335,7 @@ public class DatabaseService {
     }
 
     public void deletePrayer(String prayerId) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+        try (Connection conn = getConnection()) {
             try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM prayers WHERE id = ?")) {
                 pstmt.setString(1, prayerId);
                 pstmt.executeUpdate();
@@ -331,7 +348,7 @@ public class DatabaseService {
     }
 
     public void deleteText(String textId) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+        try (Connection conn = getConnection()) {
             try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM texts WHERE id = ?")) {
                 pstmt.setString(1, textId);
                 pstmt.executeUpdate();
