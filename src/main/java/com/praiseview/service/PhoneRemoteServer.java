@@ -27,6 +27,7 @@ public class PhoneRemoteServer extends WebSocketServer {
 
     public static final int DEFAULT_PORT = 8080;
     public static final String PATH = "/praiseview";
+    private static final long COMMAND_DEBOUNCE_MS = 100; // Debounce rapid commands
 
     private static PhoneRemoteServer instance;
 
@@ -36,9 +37,16 @@ public class PhoneRemoteServer extends WebSocketServer {
     private final Set<Consumer<Integer>> connectionListeners = ConcurrentHashMap.newKeySet();
     private final Set<WebSocket> connectedClients = ConcurrentHashMap.newKeySet();
     private final Map<WebSocket, ScheduledFuture<?>> pingTasks = new ConcurrentHashMap<>();
+    private final Map<WebSocket, Long> lastCommandTime = new ConcurrentHashMap<>(); // For debouncing
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, r -> {
         Thread t = new Thread(r, "PraiseView-Ping");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ScheduledExecutorService commandExecutor = Executors.newScheduledThreadPool(2, r -> {
+        Thread t = new Thread(r, "PraiseView-Commands");
         t.setDaemon(true);
         return t;
     });
@@ -47,7 +55,7 @@ public class PhoneRemoteServer extends WebSocketServer {
         super(new InetSocketAddress("0.0.0.0", port));
         this.mainController = mainController;
         setReuseAddr(true);
-        setConnectionLostTimeout(90);
+        setConnectionLostTimeout(45); // Reduced from 90s to 45s for better mobile network resilience
     }
 
     public static synchronized PhoneRemoteServer start(MainController mainController) {
@@ -91,8 +99,10 @@ public class PhoneRemoteServer extends WebSocketServer {
     @Override
     public void stop() {
         scheduler.shutdownNow();
+        commandExecutor.shutdownNow();
         pingTasks.values().forEach(task -> task.cancel(true));
         pingTasks.clear();
+        lastCommandTime.clear();
         try {
             super.stop();
         } catch (Exception ignored) {}
@@ -107,11 +117,13 @@ public class PhoneRemoteServer extends WebSocketServer {
     }
 
     public void sendServiceListToClients(ServiceListDTO serviceList) {
-        broadcastTyped("service_list", serviceList);
+        // Move serialization to background thread to avoid blocking FX thread
+        commandExecutor.execute(() -> broadcastTyped("service_list", serviceList));
     }
 
     public void sendVerseListToClients(VerseListDTO verseList) {
-        broadcastTyped("verse_list", verseList);
+        // Move serialization to background thread to avoid blocking FX thread
+        commandExecutor.execute(() -> broadcastTyped("verse_list", verseList));
     }
 
     private void broadcastTyped(String type, Object data) {
@@ -132,9 +144,41 @@ public class PhoneRemoteServer extends WebSocketServer {
         AppLogger.log("Phone remote connected: " + conn.getRemoteSocketAddress());
         conn.send("{\"status\":\"connected\",\"app\":\"PraiseView\"}");
 
+        // Send current projection state immediately after connection (for reconnection scenarios)
+        AppLogger.log("Phone remote connected - sending current projection state");
+        commandExecutor.execute(() -> {
+            try {
+                // Send service list
+                if (mainController != null) {
+                    ServiceListDTO serviceList = mainController.getCurrentServiceList();
+                    if (serviceList != null) {
+                        String json = objectMapper.writeValueAsString(Map.of("type", "service_list", "data", serviceList));
+                        try {
+                            if (conn.isOpen()) conn.send(json);
+                        } catch (Exception e) {
+                            AppLogger.log("Failed to send service list after reconnect");
+                        }
+                    }
+                    
+                    // Send verse list for current item
+                    VerseListDTO verseList = mainController.getCurrentVerseList();
+                    if (verseList != null) {
+                        String json = objectMapper.writeValueAsString(Map.of("type", "verse_list", "data", verseList));
+                        try {
+                            if (conn.isOpen()) conn.send(json);
+                        } catch (Exception e) {
+                            AppLogger.log("Failed to send verse list after reconnect");
+                        }
+                    }
+                }
+            } catch (JsonProcessingException e) {
+                AppLogger.log("Error sending state after reconnect: " + e.getMessage());
+            }
+        });
+
         ScheduledFuture<?> pingTask = scheduler.scheduleAtFixedRate(() -> {
             if (conn.isOpen()) conn.sendPing();
-        }, 15, 15, TimeUnit.SECONDS);
+        }, 5, 15, TimeUnit.SECONDS); // Start pinging after 5 seconds instead of 15
         pingTasks.put(conn, pingTask);
     }
 
@@ -145,6 +189,7 @@ public class PhoneRemoteServer extends WebSocketServer {
         if (pingTask != null) {
             pingTask.cancel(true);
         }
+        lastCommandTime.remove(conn); // Clean up debounce tracking
         int count = Math.max(0, connectionCount.decrementAndGet());
         notifyConnectionListeners(count);
 
@@ -158,6 +203,18 @@ public class PhoneRemoteServer extends WebSocketServer {
             conn.send("{\"type\":\"pong\"}");
             return;
         }
+
+        // Debounce rapid commands from same client
+        long now = System.currentTimeMillis();
+        Long lastTime = lastCommandTime.getOrDefault(conn, 0L);
+        if (now - lastTime < COMMAND_DEBOUNCE_MS) {
+            // Command came in too quickly, skip it
+            try {
+                conn.send("{\"status\":\"debounced\"}");
+            } catch (Exception ignored) {}
+            return;
+        }
+        lastCommandTime.put(conn, now);
 
         Platform.runLater(() -> {
             boolean handled = mainController.handleRemoteCommand(message);

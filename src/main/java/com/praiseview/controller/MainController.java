@@ -171,9 +171,27 @@ public class MainController {
     // For theme pane minimize/restore state
     private double themesPanelWidth = 240; // Default width when visible
 
-
-    private int currentQueueIndex = -1;
-    private int currentSubItemIndex = 0; // For songs: verse index, for prayers/announcements: page index
+    private final java.util.concurrent.atomic.AtomicInteger currentQueueIndex = new java.util.concurrent.atomic.AtomicInteger(-1);
+    private final java.util.concurrent.atomic.AtomicInteger currentSubItemIndex = new java.util.concurrent.atomic.AtomicInteger(0); // For songs: verse index, for prayers/announcements: page index
+    private final Object navigationLock = new Object(); // Lock for coordinated navigation changes
+    
+    // Helper methods for atomic field access
+    private int getCurrentQueueIndex() {
+        return currentQueueIndex.get();
+    }
+    
+    private void setCurrentQueueIndex(int value) {
+        currentQueueIndex.set(value);
+    }
+    
+    private int getCurrentSubItemIndex() {
+        return currentSubItemIndex.get();
+    }
+    
+    private void setCurrentSubItemIndex(int value) {
+        currentSubItemIndex.set(value);
+    }
+    
     @Setter
     private javafx.scene.Scene scene;
 
@@ -374,8 +392,8 @@ public class MainController {
                     ((PptItem) removedItem.getContent()).dispose();
                 }
                 // Reset if we deleted the current item
-                if (currentQueueIndex >= serviceQueue.size()) {
-                    currentQueueIndex = -1;
+                if (getCurrentQueueIndex() >= serviceQueue.size()) {
+                    setCurrentQueueIndex(-1);
                 }
                 AppLogger.log("Item removed from service order");
             }
@@ -386,8 +404,8 @@ public class MainController {
             ServiceItem selected = servicePlannerList.getSelectionModel().getSelectedItem();
             if (e.getClickCount() == 2 && selected != null) {
                 // Double-click: start from that song
-                currentQueueIndex = servicePlannerList.getSelectionModel().getSelectedIndex();
-                currentSubItemIndex = 0;
+                setCurrentQueueIndex(servicePlannerList.getSelectionModel().getSelectedIndex());
+                setCurrentSubItemIndex(0);
                 startProjection();
             } else if (e.getButton() == javafx.scene.input.MouseButton.SECONDARY && selected != null) {
                 // Right-click: show context menu
@@ -407,8 +425,8 @@ public class MainController {
                         ((PptItem) removedItem.getContent()).dispose();
                     }
                     // Reset if we deleted the current item
-                    if (currentQueueIndex >= serviceQueue.size()) {
-                        currentQueueIndex = -1;
+                    if (getCurrentQueueIndex() >= serviceQueue.size()) {
+                        setCurrentQueueIndex(-1);
                     }
                     AppLogger.log("Item removed from service order");
                 }
@@ -1209,15 +1227,15 @@ public class MainController {
             alert.show();
             return;
         }
-        if (currentQueueIndex == -1) currentQueueIndex = 0;
-        currentSubItemIndex = 0; // Reset sub-item position for new item
+        if (getCurrentQueueIndex() == -1) setCurrentQueueIndex(0);
+        setCurrentSubItemIndex(0); // Reset sub-item position for new item
 
         // Update projection first, then mirror in preview
-        ServiceItem item = serviceQueue.get(currentQueueIndex);
+        ServiceItem item = serviceQueue.get(getCurrentQueueIndex());
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.showItem(item.getContent(), currentSubItemIndex);
+            proj.showItem(item.getContent(), getCurrentSubItemIndex());
         }else{
             AppLogger.log("ProjectionController is null after ensureProjectionStageOpen. Cannot show item.");
         }
@@ -1230,19 +1248,19 @@ public class MainController {
         // Ensure the projection stage is open before attempting to project
         PraiseViewApp.ensureProjectionStageOpen();
 
-        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+        if (getCurrentQueueIndex() < 0 || getCurrentQueueIndex() >= serviceQueue.size()) {
             clearScreen();
             return;
         }
 
-        ServiceItem item = serviceQueue.get(currentQueueIndex);
+        ServiceItem item = serviceQueue.get(getCurrentQueueIndex());
         Projectable projectable = item.getContent();
 
 
         // Update projection first, then mirror in preview
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj != null) {
-            proj.showItem(projectable, currentSubItemIndex);
+            proj.showItem(projectable, getCurrentSubItemIndex());
         } else {
             AppLogger.log("ProjectionController is null after ensureProjectionStageOpen. Cannot show item.");
         }
@@ -1837,7 +1855,7 @@ public class MainController {
             ));
         }
 
-        ServiceListDTO dto = new ServiceListDTO(items, currentQueueIndex);
+        ServiceListDTO dto = new ServiceListDTO(items, getCurrentQueueIndex());
         server.sendServiceListToClients(dto);
     }
 
@@ -1847,8 +1865,8 @@ public class MainController {
             return;
         }
 
-        currentQueueIndex = serviceIndex;
-        currentSubItemIndex = 0;
+        setCurrentQueueIndex(serviceIndex);
+        setCurrentSubItemIndex(0);
         showCurrentItem();
     }
 
@@ -1896,9 +1914,9 @@ public class MainController {
             return;
         }
 
-        currentQueueIndex = serviceIndex;
+        setCurrentQueueIndex(serviceIndex);
         
-        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        ServiceItem currentItem = serviceQueue.get(getCurrentQueueIndex());
         Projectable projectable = currentItem.getContent();
         
         if (projectable == null) {
@@ -1912,7 +1930,7 @@ public class MainController {
 
         int maxVerses = proj.getCurrentProjectedItemSubItemCount();
         if (verseIndex >= 0 && verseIndex < maxVerses) {
-            currentSubItemIndex = verseIndex;
+            setCurrentSubItemIndex(verseIndex);
             showCurrentItem();
         } else {
             AppLogger.log("Invalid verse index: " + verseIndex + " (max: " + maxVerses + ")");
@@ -1921,11 +1939,11 @@ public class MainController {
 
     private void sendVerseListToPhone() {
         PhoneRemoteServer server = PhoneRemoteServer.getInstance();
-        if (server == null || currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+        if (server == null || getCurrentQueueIndex() < 0 || getCurrentQueueIndex() >= serviceQueue.size()) {
             return;
         }
 
-        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        ServiceItem currentItem = serviceQueue.get(getCurrentQueueIndex());
         Projectable projectable = currentItem.getContent();
         
         if (projectable == null) {
@@ -1975,10 +1993,91 @@ public class MainController {
             currentItem.getTitle(),
             contentId,
             verseItems,
-            currentSubItemIndex
+            getCurrentSubItemIndex()
         );
         server.sendVerseListToClients(dto);
     }
+
+    // Public methods for reconnection state recovery
+    public ServiceListDTO getCurrentServiceList() {
+        java.util.List<ServiceListDTO.ServiceItemDTO> items = new java.util.ArrayList<>();
+        for (int i = 0; i < serviceQueue.size(); i++) {
+            ServiceItem item = serviceQueue.get(i);
+            items.add(new ServiceListDTO.ServiceItemDTO(
+                item.getId(),
+                i,
+                item.getTitle(),
+                item.getType()
+            ));
+        }
+        return new ServiceListDTO(items, getCurrentQueueIndex());
+    }
+
+    public VerseListDTO getCurrentVerseList() {
+        PhoneRemoteServer server = PhoneRemoteServer.getInstance();
+        if (server == null) {
+            return null;
+        }
+
+        int queueIdx = getCurrentQueueIndex();
+        if (queueIdx < 0 || queueIdx >= serviceQueue.size()) {
+            AppLogger.log("Cannot get verse list - no current service selected");
+            return null;
+        }
+
+        ServiceItem currentItem = serviceQueue.get(queueIdx);
+        Projectable projectable = currentItem.getContent();
+        if (projectable == null) {
+            return null;
+        }
+
+        ProjectionController proj = PraiseViewApp.getProjectionController();
+        if (proj == null) {
+            return null;
+        }
+
+        String contentId = getContentId(projectable);
+        if (contentId == null) {
+            AppLogger.log("Could not get content ID for projectable");
+            return null;
+        }
+
+        java.util.List<String> projectedPages = proj.getCurrentProjectedItemPages();
+        boolean showTitleFirstSlide = proj.isSongTitleFirstSlideEnabled(projectable);
+        java.util.List<String> pages = projectedPages != null ? projectedPages : java.util.Collections.emptyList();
+
+        if (!showTitleFirstSlide && pages.isEmpty()) {
+            AppLogger.log("No projected pages available for current item");
+            return null;
+        }
+
+        java.util.List<VerseListDTO.VerseItemDTO> verseItems = new java.util.ArrayList<>();
+
+        if (showTitleFirstSlide) {
+            verseItems.add(new VerseListDTO.VerseItemDTO(
+                    0,
+                    "Title",
+                    projectable.getTitle(),
+                    projectable.getTitle()
+            ));
+        }
+
+        for (int i = 0; i < pages.size(); i++) {
+            int verseIndex = showTitleFirstSlide ? i + 1 : i;
+            String label = projectable.getSubItemLabel(i);
+            String content = pages.get(i);
+            String preview = content.length() > 100 ? content.substring(0, 100) + "..." : content;
+            verseItems.add(new VerseListDTO.VerseItemDTO(verseIndex, label, preview, content));
+        }
+
+        return new VerseListDTO(
+            currentItem.getTitle(),
+            contentId,
+            verseItems,
+            getCurrentSubItemIndex()
+        );
+    }
+
 
     private String getContentId(Projectable projectable) {
         if (projectable instanceof Song) {
@@ -2013,11 +2112,11 @@ public class MainController {
 
     @FXML
     private void nextItemOrSubItem() {
-        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+        if (getCurrentQueueIndex() < 0 || getCurrentQueueIndex() >= serviceQueue.size()) {
             return; // No item selected or queue is empty
         }
 
-        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        ServiceItem currentItem = serviceQueue.get(getCurrentQueueIndex());
         Projectable currentProjectable = currentItem.getContent();
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
@@ -2026,14 +2125,14 @@ public class MainController {
         // Get total sub-items from the ProjectionController's current state
         int totalSubItems = proj.getCurrentProjectedItemSubItemCount();
 
-        if (currentSubItemIndex < totalSubItems - 1) {
-            currentSubItemIndex++; // Move to next sub-item (verse/page)
+        if (getCurrentSubItemIndex() < totalSubItems - 1) {
+            setCurrentSubItemIndex(getCurrentSubItemIndex() + 1); // Move to next sub-item (verse/page)
             showCurrentItem();
         } else {
             // Last sub-item of current Projectable, move to next ServiceItem
-            if (currentQueueIndex < serviceQueue.size() - 1) {
-                currentQueueIndex++;
-                currentSubItemIndex = 0; // Reset sub-item position for new item
+            if (getCurrentQueueIndex() < serviceQueue.size() - 1) {
+                setCurrentQueueIndex(getCurrentQueueIndex() + 1);
+                setCurrentSubItemIndex(0); // Reset sub-item position for new item
                 showCurrentItem();
             }
         }
@@ -2041,25 +2140,25 @@ public class MainController {
 
     @FXML
     private void previousItemOrSubItem() {
-        if (currentQueueIndex < 0 || currentQueueIndex >= serviceQueue.size()) {
+        if (getCurrentQueueIndex() < 0 || getCurrentQueueIndex() >= serviceQueue.size()) {
             return; // No item selected or queue is empty
         }
 
-        ServiceItem currentItem = serviceQueue.get(currentQueueIndex);
+        ServiceItem currentItem = serviceQueue.get(getCurrentQueueIndex());
         Projectable currentProjectable = currentItem.getContent();
 
         ProjectionController proj = PraiseViewApp.getProjectionController();
         if (proj == null) return;
 
-        if (currentSubItemIndex > 0) {
-            currentSubItemIndex--; // Move to previous sub-item (verse/page)
+        if (getCurrentSubItemIndex() > 0) {
+            setCurrentSubItemIndex(getCurrentSubItemIndex() - 1); // Move to previous sub-item (verse/page)
             showCurrentItem();
         } else {
             // First sub-item of current Projectable, move to previous ServiceItem
-            if (currentQueueIndex > 0) {
-                currentQueueIndex--;
+            if (getCurrentQueueIndex() > 0) {
+                setCurrentQueueIndex(getCurrentQueueIndex() - 1);
                 // For previous item, go to its last sub-item
-                ServiceItem prevItem = serviceQueue.get(currentQueueIndex);
+                ServiceItem prevItem = serviceQueue.get(getCurrentQueueIndex());
                 Projectable prevProjectable = prevItem.getContent();
 
                 // This call is now redundant as ProjectionController will handle pagination for all text types
@@ -2067,10 +2166,10 @@ public class MainController {
                 //     ((Announcement) prevProjectable).rePaginate(proj.currentFontSize, proj.getLyricsFlow().getWidth(), proj.getLyricsFlow().getHeight());
                 // }
 
-                // currentSubItemIndex will be set to the last sub-item of the previous item
+                // getCurrentSubItemIndex() will be set to the last sub-item of the previous item
                 // Ensure pagination is up-to-date in ProjectionController before getting count
                 proj.showItem(prevProjectable, 0); // Temporarily show item to ensure pagination is done
-                currentSubItemIndex = proj.getCurrentProjectedItemSubItemCount() - 1;
+                setCurrentSubItemIndex(proj.getCurrentProjectedItemSubItemCount() - 1);
 
                 showCurrentItem(); // Now display the previous item at its last sub-item
             }
@@ -2184,8 +2283,8 @@ public class MainController {
         if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             serviceQueue.clear();
             servicePlannerList.getItems().clear();
-            currentQueueIndex = -1;
-            currentSubItemIndex = 0;
+            setCurrentQueueIndex(-1);
+            setCurrentSubItemIndex(0);
             currentServiceFile = null; // Reset the loaded file reference
             clearScreen(); // Clear main preview as well
             updateWindowTitle(); // Update window title back to default
@@ -2265,8 +2364,8 @@ public class MainController {
                 serviceQueue.addAll(loadedService);
                 currentServiceFile = file; // Track the loaded file for future saves
                 servicePlannerList.refresh();
-                currentQueueIndex = -1;
-                currentSubItemIndex = 0;
+                setCurrentQueueIndex(-1);
+                setCurrentSubItemIndex(0);
                 clearScreen(); // Clear main preview after loading new service
                 updateWindowTitle(); // Update window title with loaded file name
                 sendServiceListToPhone();
@@ -2586,7 +2685,7 @@ public class MainController {
         }
 
         // Re-render current item to reflect new theme
-        if (currentQueueIndex != -1 && currentQueueIndex < serviceQueue.size()) {
+        if (getCurrentQueueIndex() != -1 && getCurrentQueueIndex() < serviceQueue.size()) {
             showCurrentItem();
         } else {
             // If no item is projected, ensure title visibility is updated for the logo screen
@@ -2950,7 +3049,7 @@ public class MainController {
                 if (e.getClickCount() == 2) {
                     SubItemDisplayItem selected = currentSubItemList.getSelectionModel().getSelectedItem();
                     if (selected != null) {
-                        currentSubItemIndex = selected.position;
+                        setCurrentSubItemIndex(selected.position);
                         showCurrentItem();
                     }
                 }
